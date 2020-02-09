@@ -18,3 +18,7 @@ ipython_config.py
 
 # ARTM
 bigartm.*
+
+# App Specific
+
+logs/

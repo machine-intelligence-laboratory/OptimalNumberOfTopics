@@ -1,3 +1,4 @@
+import logging
 import numpy as np
 from topicnet.cooking_machine.models import TopicModel
 from topicnet.cooking_machine.model_constructor import init_simple_default_model
@@ -10,6 +11,9 @@ from .constants import (
 )
 from ..data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
 from ..scores.base_score import BaseScore
+
+
+logger = logging.getLogger('main')
 
 
 class OptimizeScoreMethod(BaseSearchMethod):
@@ -29,12 +33,16 @@ class OptimizeScoreMethod(BaseSearchMethod):
         self._num_topics_interval = num_topics_interval
 
     def search_for_optimum(self, text_collection: VowpalWabbitTextCollection) -> None:
+        logger.info('Starting to search for optimum...')
+
         dataset = text_collection._to_dataset()
         restart_results = list()
 
         for i in range(self._num_restarts):
             seed = i - 1  # so as to use also seed = -1 (whoever knows what this means in ARTM)
             need_set_seed = seed >= 0
+
+            logger.info(f'Seed is {seed}')
 
             restart_result = dict()
             restart_result['optimum'] = None
@@ -105,3 +113,5 @@ class OptimizeScoreMethod(BaseSearchMethod):
         ).tolist()
 
         self._result = result
+
+        logger.info('Finished searching!')
