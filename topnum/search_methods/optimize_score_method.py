@@ -17,6 +17,11 @@ logger = logging.getLogger('main')
 
 
 class OptimizeScoreMethod(BaseSearchMethod):
+    OPTIMUM = 'optimum'
+    OPTIMUM_STD = 'optimum_std'
+    SCORE_VALUES = 'score_values'
+    SCORE_VALUES_STD = 'score_values_std'
+
     def __init__(
             self,
             score: BaseScore,
@@ -79,34 +84,34 @@ class OptimizeScoreMethod(BaseSearchMethod):
                 # Assume score name won't change
                 perplexity_values = model.scores[self._score._name]
 
-                restart_result['score_values'].append(
+                restart_result[OptimizeScoreMethod.SCORE_VALUES].append(
                     perplexity_values[-1]
                 )
 
-            restart_result['optimum'] = nums_topics[
-                np.argmin(restart_result['score_values'])
+            restart_result[OptimizeScoreMethod.OPTIMUM] = nums_topics[
+                np.argmin(restart_result[OptimizeScoreMethod.SCORE_VALUES])
             ]
             restart_results.append(restart_result)
 
         result = dict()
 
-        result['optimum'] = int(np.mean([
-            r['optimum'] for r in restart_results
+        result[OptimizeScoreMethod.OPTIMUM] = int(np.mean([
+            r[OptimizeScoreMethod.OPTIMUM] for r in restart_results
         ]))
-        result['optimum_std'] = np.std(
-            [r['optimum'] for r in restart_results],
+        result[OptimizeScoreMethod.OPTIMUM_STD] = np.std(
+            [r[OptimizeScoreMethod.OPTIMUM] for r in restart_results],
             ddof=1
         ).tolist()
 
-        result['score_values'] = np.mean(
+        result[OptimizeScoreMethod.SCORE_VALUES] = np.mean(
             np.stack(
-                [r['score_values'] for r in restart_results]
+                [r[OptimizeScoreMethod.SCORE_VALUES] for r in restart_results]
             ),
             axis=0
         ).tolist()
-        result['score_values_std'] = np.std(
+        result[OptimizeScoreMethod.SCORE_VALUES_STD] = np.std(
             np.stack(
-                [r['score_values'] for r in restart_results]
+                [r[OptimizeScoreMethod.SCORE_VALUES] for r in restart_results]
             ),
             ddof=1,
             axis=0
