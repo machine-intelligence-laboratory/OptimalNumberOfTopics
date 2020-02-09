@@ -17,7 +17,7 @@ That is, train several models with different number of topics, calculate some qu
 
 Currently, only [*perplexity*](https://en.wikipedia.org/wiki/Perplexity) score in supported (which is minimized).
 
-The method can be invoked like this
+The method can be invoked like this:
 ```bash
 python run_search.py optimize_score perlexity \
     <path-to-vowpal-wabbit-file> \
