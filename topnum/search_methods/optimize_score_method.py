@@ -82,7 +82,7 @@ class OptimizeScoreMethod(BaseSearchMethod):
 
         result = dict()
 
-        result['optimum'] = float(np.mean([
+        result['optimum'] = int(np.mean([
             r['optimum'] for r in restart_results
         ]))
         result['optimum_std'] = np.std(
