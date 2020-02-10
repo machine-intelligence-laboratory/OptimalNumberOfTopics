@@ -3,7 +3,9 @@ from topicnet.cooking_machine.models import TopicModel
 from .base_score import BaseScore
 
 
-class BaseArtmScore(BaseScore):
+class BaseDefaultScore(BaseScore):
+    """Default aka implemented in BigARTM library
+    """
     def __init__(self, name):
         super().__init__(name)
 
