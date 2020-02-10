@@ -74,7 +74,7 @@ class OptimizeScoreMethod(BaseSearchMethod):
 
                 model = TopicModel(artm_model)
 
-                self._score._attach_to_model(model)
+                self._score._attach(model)
 
                 model._fit(
                     dataset.get_batch_vectorizer(),

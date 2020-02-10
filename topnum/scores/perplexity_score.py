@@ -1,4 +1,7 @@
-from artm.scores import PerplexityScore as ArtmPerplexityScore
+from artm.scores import (
+    BaseScore as BaseArtmScore,
+    PerplexityScore as ArtmPerplexityScore,
+)
 from .base_default_score import BaseDefaultScore
 
 
@@ -7,9 +10,9 @@ class PerplexityScore(BaseDefaultScore):
         super().__init__(name)
 
         self._class_ids = class_ids
-        self._score = self._initialize_score()
+        self._score = self._initialize()
 
-    def _initialize_score(self) -> BaseDefaultScore:
+    def _initialize(self) -> BaseArtmScore:
         # self._score = artm.scores.<SCORE>(...)
 
         return ArtmPerplexityScore(
