@@ -35,6 +35,6 @@ python run_search.py optimize_score perlexity \
     .
     ├── run_search.py       # Main script which handles all the methods and their parameters and provides a way to run the process through the command line
     └── topnum              # Core
-    	├── data            # Train data handling (eg. Vowpal Wabbit files)
-    	├── scores          # Scores that are available for optimizing or tracking
-    	└── search_methods  # Some techniques and ideas that can be used for finding an appropriate number of topics
+        ├── data            # Train data handling (eg. Vowpal Wabbit files)
+        ├── scores          # Scores that are available for optimizing or tracking
+        └── search_methods  # Some techniques and ideas that can be used for finding an appropriate number of topics
