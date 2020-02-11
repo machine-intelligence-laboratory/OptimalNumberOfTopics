@@ -9,10 +9,10 @@ class BaseDefaultScore(BaseScore):
     def __init__(self, name):
         super().__init__(name)
 
-    def _attach_to_model(self, model: TopicModel):
+    def _attach(self, model: TopicModel):
         model._model.scores.add(self._score)
 
-    def _initialize_score(self) -> BaseArtmScore:
+    def _initialize(self) -> BaseArtmScore:
         # self._score = artm.scores.<SCORE>(...)
 
         raise NotImplementedError()

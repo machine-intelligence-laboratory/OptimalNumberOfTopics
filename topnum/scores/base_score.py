@@ -11,8 +11,8 @@ class BaseScore:
         self._name = name
         self._score = None
 
-    def _initialize_score(self) -> Union[BaseArtmScore, BaseTopicNetScore]:
+    def _initialize(self) -> Union[BaseArtmScore, BaseTopicNetScore]:
         raise NotImplementedError()
 
-    def _attach_to_model(self, model: TopicModel) -> None:
+    def _attach(self, model: TopicModel) -> None:
         raise NotImplementedError()
