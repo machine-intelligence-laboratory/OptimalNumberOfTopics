@@ -29,3 +29,12 @@ python run_search.py optimize_score perlexity \
     --min-num-topics 100 \  	# minimum number of topics in the text collection
     --num-topics-interval 50  	# search step in number of topics
 ```
+
+## Structure
+
+    .
+    ├── run_search.py 		# Main script which handles all the methods and their parameters and provides a way to run the process through the command line
+    └── topnum           	# Core
+    	├── data 			# Train data handling (eg. Vowpal Wabbit files)
+    	├── scores 			# Scores that are available for optimizing or tracking
+    	└── search_methods 	# Some techniques and ideas that can be used for finding an appropriate number of topics
