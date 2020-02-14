@@ -96,16 +96,15 @@ class TestSearchMethods:
         optimizer.search_for_optimum(self.text_collection)
         result = optimizer._result
 
-        # TODO: constants
-        assert OptimizeScoreMethod.OPTIMUM in result
-        assert isinstance(result[OptimizeScoreMethod.OPTIMUM], int)
+        assert optimizer._key_optimum in result
+        assert isinstance(result[optimizer._key_optimum], int)
 
-        assert OptimizeScoreMethod.OPTIMUM_STD in result
-        assert isinstance(result[OptimizeScoreMethod.OPTIMUM_STD], float)
+        assert optimizer._key_optimum_std in result
+        assert isinstance(result[optimizer._key_optimum_std], float)
 
         for result_key in [
-                OptimizeScoreMethod.SCORE_VALUES,
-                OptimizeScoreMethod.SCORE_VALUES_STD]:
+                optimizer._key_score_values,
+                optimizer._key_score_values_std]:
 
             assert result_key in result
             assert len(result[result_key]) == num_points
