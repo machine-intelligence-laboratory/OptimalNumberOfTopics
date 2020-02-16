@@ -403,15 +403,15 @@ class RenormalizationMethod(BaseSearchMethod):
             if self._verbose is True:
                 print(message)
 
-            if self._method == 'entropy':
+            if self._method == ENTROPY_MERGE_METHOD:
                 topic_a, topic_b = self._select_topics_to_merge_by_entropy(
                     current_topics, current_entropies
                 )
-            elif self._method == 'random':
+            elif self._method == RANDOM_MERGE_METHOD:
                 topic_a, topic_b = self._select_topics_to_merge_by_random(
                     current_topics
                 )
-            elif self._method == 'kl':
+            elif self._method == KL_MERGE_METHOD:
                 topic_a, topic_b = self._select_topics_to_merge_by_kl_divergence(
                     current_topics, pwt
                 )
