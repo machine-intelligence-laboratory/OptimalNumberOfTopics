@@ -95,10 +95,10 @@ class OptimizeScoreMethod(BaseSearchMethod):
                 )
 
                 # Assume score name won't change
-                perplexity_values = model.scores[self._score._name]
+                score_values = model.scores[self._score._name]
 
                 restart_result[self._key_score_values].append(
-                    perplexity_values[-1]
+                    score_values[-1]
                 )
 
             restart_result[self._key_optimum] = nums_topics[

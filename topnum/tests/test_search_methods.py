@@ -3,12 +3,13 @@ import os
 import pytest
 import shutil
 import tempfile
+import warnings
 from typing import List
 
 from topnum.data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
 from topnum.scores import (
     PerplexityScore,
-    RenyiEntropyScore
+    EntropyScore
 )
 from topnum.search_methods.optimize_score_method import OptimizeScoreMethod
 
@@ -84,21 +85,32 @@ class TestSearchMethods:
 
         self._test_optimize_score(score)
 
-    @pytest.mark.parametrize('merge_method', ['entropy', 'random', 'kl'])
+    @pytest.mark.parametrize('entropy', ['renyi', 'shannon'])
     @pytest.mark.parametrize('threshold_factor', [1.0, 0.5, 1e-7, 1e7])
-    def test_optimize_renyi_entropy(self, merge_method, threshold_factor):
-        score = RenyiEntropyScore(
+    def test_optimize_entropy(self, entropy, threshold_factor):
+        score = EntropyScore(
             name='renyi_entropy',
-            merge_method=merge_method,
+            entropy=entropy,
             threshold_factor=threshold_factor
         )
 
         self._test_optimize_score(score)
 
+    # @pytest.mark.parametrize('entropy', ['renyi', 'shannon'])
+    # @pytest.mark.parametrize('threshold_factor', [1.0, 0.5, 1e-7, 1e7])
+    # def test_optimize_renyi_entropy(self, merge_method, threshold_factor):
+    #     score = EntropyScore(
+    #         name='renyi_entropy',
+    #         entropy='renyi'
+    #     )
+    #
+    #     self._test_optimize_score(score)
+
     def _test_optimize_score(self, score):
         min_num_topics = 1
         max_num_topics = 10
         num_topics_interval = 2
+        tiny = 1e-7
 
         optimizer = OptimizeScoreMethod(
             score=score,
@@ -121,8 +133,14 @@ class TestSearchMethods:
         assert isinstance(result[optimizer._key_optimum_std], float)
 
         for result_key in [
-            optimizer._key_score_values,
-            optimizer._key_score_values_std]:
+                optimizer._key_score_values,
+                optimizer._key_score_values_std]:
+
             assert result_key in result
             assert len(result[result_key]) == num_points
             assert all(isinstance(v, float) for v in result[result_key])
+
+            if (result_key == optimizer._key_score_values
+                and not any(abs(v) > tiny for v in result[result_key])):
+
+                warnings.warn(f'All score values "{result_key}" are zero!')
