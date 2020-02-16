@@ -18,6 +18,7 @@ class BaseCustomScore(BaseScore):
             logger.warning(
                 f'Score with such name "{self._name}" already attached to model!'
                 f' So rewriting it...'
+                f' All model\'s custom scores: {list(model.custom_scores.keys())}'
             )
 
         # TODO: TopicModel should provide ability to add custom scores
