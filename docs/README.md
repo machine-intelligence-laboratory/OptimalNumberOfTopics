@@ -15,11 +15,19 @@ It gives an opportunity to try different method to find an *appropriate*, *appro
 The first method is just about optimizing something for the number of topics.
 That is, train several models with different number of topics, calculate some quality function for those models, and find the one which is the best.
 
-Currently, only [*perplexity*](https://en.wikipedia.org/wiki/Perplexity) score in supported (which is minimized).
+Scores, available for optimizing:
+* [*Perplexity*](https://en.wikipedia.org/wiki/Perplexity) (which is minimized).
+Definitely, this is not the best choice (TODO: links, why).
+* [*Rényi entropy*](https://en.wikipedia.org/wiki/R%C3%A9nyi_entropy).
+This one was shown to be a good indicator of some kind of model stability: the more stable the model, the less its entropy.
+    * [Koltcov, Sergei. "Application of Rényi and Tsallis entropies to topic modeling optimization." Physica A: Statistical Mechanics and its Applications 512 (2018): 1192-1204.](https://www.sciencedirect.com/science/article/pii/S0378437118309907)
+    * [Koltcov, Sergei, Vera Ignatenko, and Olessia Koltsova. "Estimating Topic Modeling Performance with Sharma–Mittal Entropy." Entropy 21.7 (2019): 660.](https://www.mdpi.com/1099-4300/21/7/660)
 
 The method can be invoked like this:
 ```bash
-python run_search.py optimize_score perlexity \
+python run_search.py \
+    optimize_score \            # search method
+    perlexity \                 # what score to optimize
     vw.txt \                    # path to vowpal wabbit file
     @text:1 \                   # main modality and its weight
     result.json \               # output file path (the file may not exist)
@@ -29,6 +37,16 @@ python run_search.py optimize_score perlexity \
     --min-num-topics 100 \      # minimum number of topics in the text collection
     --num-topics-interval 50    # search step in number of topics
 ```
+
+
+## Renormalization
+
+The approach is described in the following paper:
+(Koltcov, Sergei, Vera Ignatenko, and Sergei Pashakhin. "Fast tuning of topic models: an application of Rényi entropy and renormalization theory." Conference Proceedings Paper. Vol. 18. No. 30. 2019.)[https://www.researchgate.net/profile/Sergei_Koltsov2/publication/337427975_5th_International_Electronic_Conference_on_Entropy_and_Its_Applications_Fast_tuning_of_topic_models_an_application_of_Renyi_entropy_and_renormalization_theory/links/5dd6d6bf458515dc2f41e248/5th-International-Electronic-Conference-on-Entropy-and-Its-Applications-Fast-tuning-of-topic-models-an-application-of-Renyi-entropy-and-renormalization-theory.pdf].
+Briefly, one model with a big number of topics is trained.
+Then, the number of topics is gradually reduced to one single topic: on each iteration two topics are selected by some criterion and merged into one.
+Minimum value of entropy is supposed to show the best, optimal, number of topics, when the model is most stable.
+
 
 ## Structure
 
