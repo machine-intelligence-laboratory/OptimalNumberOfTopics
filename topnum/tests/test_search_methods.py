@@ -4,6 +4,7 @@ import pytest
 import shutil
 import tempfile
 import warnings
+from topicnet.cooking_machine.dataset import W_DIFF_BATCHES_1
 from typing import List
 
 from topnum.data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
@@ -11,9 +12,13 @@ from topnum.scores import (
     PerplexityScore,
     EntropyScore
 )
-from topnum.search_methods.optimize_score_method import OptimizeScoreMethod
+from topnum.search_methods import (
+    OptimizeScoreMethod,
+    RenormalizationMethod
+)
 
 
+@pytest.mark.filterwarnings(f'ignore:{W_DIFF_BATCHES_1}')
 class TestSearchMethods:
     text_collection_folder = None
     vw_file_name = 'collection_vw.txt'
@@ -76,7 +81,6 @@ class TestSearchMethods:
 
         return texts
 
-    # TODO: eliminate warning about different batches
     def test_optimize_perplexity(self):
         score = PerplexityScore(
             'perplexity_score',
@@ -96,15 +100,58 @@ class TestSearchMethods:
 
         self._test_optimize_score(score)
 
-    # @pytest.mark.parametrize('entropy', ['renyi', 'shannon'])
-    # @pytest.mark.parametrize('threshold_factor', [1.0, 0.5, 1e-7, 1e7])
-    # def test_optimize_renyi_entropy(self, merge_method, threshold_factor):
-    #     score = EntropyScore(
-    #         name='renyi_entropy',
-    #         entropy='renyi'
-    #     )
-    #
-    #     self._test_optimize_score(score)
+    @pytest.mark.parametrize('merge_method', ['entropy', 'random', 'kl'])
+    @pytest.mark.parametrize('threshold_factor', [1.0, 0.5, 1e-7, 1e7])
+    def test_renormalize(self, merge_method, threshold_factor):
+        max_num_topics = 10
+        tiny = 1e-7
+
+        optimizer = RenormalizationMethod(
+            merge_method=merge_method,
+            threshold_factor=threshold_factor,
+            max_num_topics=max_num_topics,
+            num_collection_passes=10,
+            num_restarts=3
+        )
+
+        # TODO: make clearer
+        num_points = max_num_topics - 1
+
+        optimizer.search_for_optimum(self.text_collection)
+        result = optimizer._result
+
+        assert optimizer._key_optimum in result
+        assert isinstance(result[optimizer._key_optimum], int)
+
+        assert optimizer._key_optimum_std in result
+        assert isinstance(result[optimizer._key_optimum_std], float)
+
+        assert optimizer._key_nums_topics in result
+        assert isinstance(result[optimizer._key_nums_topics], list)
+        assert all(
+            abs(v - int(v)) == 0
+            for v in result[optimizer._key_nums_topics]
+        )
+
+        for result_key in [
+                optimizer._key_renyi_entropy_values,
+                optimizer._key_renyi_entropy_values_std,
+                optimizer._key_shannon_entropy_values,
+                optimizer._key_shannon_entropy_values_std,
+                optimizer._key_energy_values,
+                optimizer._key_energy_values_std]:
+
+            assert result_key in result
+            assert len(result[result_key]) == num_points
+            assert all(isinstance(v, float) for v in result[result_key])
+
+        for result_key in [
+            optimizer._key_renyi_entropy_values,
+            optimizer._key_shannon_entropy_values,
+            optimizer._key_energy_values]:
+
+            if not any(abs(v) > tiny for v in result[result_key]):
+                warnings.warn(f'All score values "{result_key}" are zero!')
 
     def _test_optimize_score(self, score):
         min_num_topics = 1

@@ -40,6 +40,8 @@ class OptimizeScoreMethod(BaseSearchMethod):
         self._num_restarts = num_restarts
         self._num_topics_interval = num_topics_interval
 
+        self._result = dict()
+
         self._key_optimum = _OPTIMUM
         self._key_optimum_std = _OPTIMUM_STD
         self._key_score_values = _SCORE_VALUES.format(self._score.name)
@@ -83,7 +85,7 @@ class OptimizeScoreMethod(BaseSearchMethod):
                 model = TopicModel(artm_model)
 
                 # TODO: Find out, why in Renyi entropy test the score already in model here
-                logger.warning(
+                logger.info(
                     f'Model\'s custom scores before attaching: {list(model.custom_scores.keys())}'
                 )
 
