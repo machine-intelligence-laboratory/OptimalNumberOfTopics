@@ -11,7 +11,7 @@ os.makedirs(logs_folder, exist_ok=True)
 
 
 # Creating logger
-logger = logging.getLogger('main')
+logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
 # Creating file handler

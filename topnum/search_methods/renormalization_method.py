@@ -41,7 +41,7 @@ _VALUES = '{}_values'
 _VALUES_STD = '{}_values_std'
 
 
-logger = logging.getLogger('main')
+logger = logging.getLogger()
 
 
 class RenormalizationMethod(BaseSearchMethod):

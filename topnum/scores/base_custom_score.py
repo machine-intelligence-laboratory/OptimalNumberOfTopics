@@ -6,7 +6,7 @@ from topicnet.cooking_machine.models import (
 from .base_score import BaseScore
 
 
-logger = logging.getLogger('main')
+logger = logging.getLogger()
 
 
 class BaseCustomScore(BaseScore):

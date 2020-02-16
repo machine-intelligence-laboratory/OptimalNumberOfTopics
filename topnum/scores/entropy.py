@@ -14,7 +14,7 @@ RENYI = 'renyi'
 SHANNON = 'shannon'
 
 
-logger = logging.getLogger('main')
+logger = logging.getLogger()
 
 
 class EntropyScore(BaseCustomScore):

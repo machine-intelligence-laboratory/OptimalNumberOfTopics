@@ -21,7 +21,7 @@ _SCORE_VALUES = '{}_values'
 _SCORE_VALUES_STD = '{}_values_std'
 
 
-logger = logging.getLogger('main')
+logger = logging.getLogger()
 
 
 class OptimizeScoreMethod(BaseSearchMethod):
