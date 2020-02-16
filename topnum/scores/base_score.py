@@ -11,6 +11,10 @@ class BaseScore:
         self._name = name
         self._score = None
 
+    @property
+    def name(self):
+        return self._name
+
     def _initialize(self) -> Union[BaseArtmScore, BaseTopicNetScore]:
         raise NotImplementedError()
 

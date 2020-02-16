@@ -13,15 +13,18 @@ from ..data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
 from ..scores.base_score import BaseScore
 
 
-logger = logging.getLogger('main')
+_DDOF = 1
+
+_OPTIMUM = 'optimum'
+_OPTIMUM_STD = 'optimum_std'
+_SCORE_VALUES = '{}_values'
+_SCORE_VALUES_STD = '{}_values_std'
+
+
+logger = logging.getLogger()
 
 
 class OptimizeScoreMethod(BaseSearchMethod):
-    OPTIMUM = 'optimum'
-    OPTIMUM_STD = 'optimum_std'
-    SCORE_VALUES = 'score_values'
-    SCORE_VALUES_STD = 'score_values_std'
-
     def __init__(
             self,
             score: BaseScore,
@@ -37,6 +40,13 @@ class OptimizeScoreMethod(BaseSearchMethod):
         self._num_restarts = num_restarts
         self._num_topics_interval = num_topics_interval
 
+        self._result = dict()
+
+        self._key_optimum = _OPTIMUM
+        self._key_optimum_std = _OPTIMUM_STD
+        self._key_score_values = _SCORE_VALUES.format(self._score.name)
+        self._key_score_values_std = _SCORE_VALUES_STD.format(self._score.name)
+
     def search_for_optimum(self, text_collection: VowpalWabbitTextCollection) -> None:
         logger.info('Starting to search for optimum...')
 
@@ -50,8 +60,8 @@ class OptimizeScoreMethod(BaseSearchMethod):
             logger.info(f'Seed is {seed}')
 
             restart_result = dict()
-            restart_result['optimum'] = None
-            restart_result['score_values'] = list()
+            restart_result[self._key_optimum] = None
+            restart_result[self._key_score_values] = list()
 
             nums_topics = list(range(
                 self._min_num_topics,
@@ -74,6 +84,11 @@ class OptimizeScoreMethod(BaseSearchMethod):
 
                 model = TopicModel(artm_model)
 
+                # TODO: Find out, why in Renyi entropy test the score already in model here
+                logger.info(
+                    f'Model\'s custom scores before attaching: {list(model.custom_scores.keys())}'
+                )
+
                 self._score._attach(model)
 
                 model._fit(
@@ -82,38 +97,34 @@ class OptimizeScoreMethod(BaseSearchMethod):
                 )
 
                 # Assume score name won't change
-                perplexity_values = model.scores[self._score._name]
+                score_values = model.scores[self._score._name]
 
-                restart_result[OptimizeScoreMethod.SCORE_VALUES].append(
-                    perplexity_values[-1]
+                restart_result[self._key_score_values].append(
+                    score_values[-1]
                 )
 
-            restart_result[OptimizeScoreMethod.OPTIMUM] = nums_topics[
-                np.argmin(restart_result[OptimizeScoreMethod.SCORE_VALUES])
+            restart_result[self._key_optimum] = nums_topics[
+                np.argmin(restart_result[self._key_score_values])
             ]
             restart_results.append(restart_result)
 
         result = dict()
 
-        result[OptimizeScoreMethod.OPTIMUM] = int(np.mean([
-            r[OptimizeScoreMethod.OPTIMUM] for r in restart_results
+        result[self._key_optimum] = int(np.mean([
+            r[self._key_optimum] for r in restart_results
         ]))
-        result[OptimizeScoreMethod.OPTIMUM_STD] = np.std(
-            [r[OptimizeScoreMethod.OPTIMUM] for r in restart_results],
-            ddof=1
+        result[self._key_optimum_std] = np.std(
+            [r[self._key_optimum] for r in restart_results],
+            ddof=_DDOF
         ).tolist()
 
-        result[OptimizeScoreMethod.SCORE_VALUES] = np.mean(
-            np.stack(
-                [r[OptimizeScoreMethod.SCORE_VALUES] for r in restart_results]
-            ),
+        result[self._key_score_values] = np.mean(
+            np.stack([r[self._key_score_values] for r in restart_results]),
             axis=0
         ).tolist()
-        result[OptimizeScoreMethod.SCORE_VALUES_STD] = np.std(
-            np.stack(
-                [r[OptimizeScoreMethod.SCORE_VALUES] for r in restart_results]
-            ),
-            ddof=1,
+        result[self._key_score_values_std] = np.std(
+            np.stack([r[self._key_score_values] for r in restart_results]),
+            ddof=_DDOF,
             axis=0
         ).tolist()
 
