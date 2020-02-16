@@ -1,11 +1,15 @@
 import numpy as np
 import os
+import pytest
 import shutil
 import tempfile
 from typing import List
 
 from topnum.data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
-from topnum.scores.perplexity_score import PerplexityScore
+from topnum.scores import (
+    PerplexityScore,
+    RenyiEntropyScore
+)
 from topnum.search_methods.optimize_score_method import OptimizeScoreMethod
 
 
@@ -78,6 +82,20 @@ class TestSearchMethods:
             class_ids=[self.main_modality, self.other_modality]
         )
 
+        self._test_optimize_score(score)
+
+    @pytest.mark.parametrize('merge_method', ['entropy', 'random', 'kl'])
+    @pytest.mark.parametrize('threshold_factor', [1.0, 0.5, 1e-7, 1e7])
+    def test_optimize_renyi_entropy(self, merge_method, threshold_factor):
+        score = RenyiEntropyScore(
+            name='renyi_entropy',
+            merge_method=merge_method,
+            threshold_factor=threshold_factor
+        )
+
+        self._test_optimize_score(score)
+
+    def _test_optimize_score(self, score):
         min_num_topics = 1
         max_num_topics = 10
         num_topics_interval = 2
@@ -103,9 +121,8 @@ class TestSearchMethods:
         assert isinstance(result[optimizer._key_optimum_std], float)
 
         for result_key in [
-                optimizer._key_score_values,
-                optimizer._key_score_values_std]:
-
+            optimizer._key_score_values,
+            optimizer._key_score_values_std]:
             assert result_key in result
             assert len(result[result_key]) == num_points
             assert all(isinstance(v, float) for v in result[result_key])
