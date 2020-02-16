@@ -16,6 +16,13 @@ from topnum.search_methods import (
     OptimizeScoreMethod,
     RenormalizationMethod
 )
+from topnum.search_methods.renormalization_method import (
+    ENTROPY_MERGE_METHOD,
+    RANDOM_MERGE_METHOD,
+    KL_MERGE_METHOD,
+    PHI_RENORMALIZATION_MATRIX,
+    THETA_RENORMALIZATION_MATRIX,
+)
 
 
 @pytest.mark.filterwarnings(f'ignore:{W_DIFF_BATCHES_1}')
@@ -100,14 +107,25 @@ class TestSearchMethods:
 
         self._test_optimize_score(score)
 
-    @pytest.mark.parametrize('merge_method', ['entropy', 'random', 'kl'])
-    @pytest.mark.parametrize('threshold_factor', [1.0, 0.5, 1e-7, 1e7])
-    def test_renormalize(self, merge_method, threshold_factor):
+    @pytest.mark.parametrize(
+        'merge_method',
+        [ENTROPY_MERGE_METHOD, RANDOM_MERGE_METHOD, KL_MERGE_METHOD]
+    )
+    @pytest.mark.parametrize(
+        'threshold_factor',
+        [1.0, 0.5, 1e-7, 1e7]
+    )
+    @pytest.mark.parametrize(
+        'matrix_for_renormalization',
+        [PHI_RENORMALIZATION_MATRIX, THETA_RENORMALIZATION_MATRIX]
+    )
+    def test_renormalize(self, merge_method, threshold_factor, matrix_for_renormalization):
         max_num_topics = 10
         tiny = 1e-7
 
         optimizer = RenormalizationMethod(
             merge_method=merge_method,
+            matrix_for_renormalization=matrix_for_renormalization,
             threshold_factor=threshold_factor,
             max_num_topics=max_num_topics,
             num_collection_passes=10,
