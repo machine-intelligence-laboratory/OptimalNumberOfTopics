@@ -3,6 +3,7 @@ from topicnet.cooking_machine.models import (
     BaseScore as BaseTopicNetScore,
     TopicModel
 )
+
 from .base_score import BaseScore
 
 

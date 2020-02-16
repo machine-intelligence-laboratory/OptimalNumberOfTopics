@@ -13,8 +13,6 @@ class PerplexityScore(BaseDefaultScore):
         self._score = self._initialize()
 
     def _initialize(self) -> BaseArtmScore:
-        # self._score = artm.scores.<SCORE>(...)
-
         return ArtmPerplexityScore(
             name=self._name,
             class_ids=self._class_ids

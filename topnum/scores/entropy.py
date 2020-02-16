@@ -10,6 +10,7 @@ from .base_custom_score import BaseCustomScore
 
 
 TINY = 1e-9
+
 RENYI = 'renyi'
 SHANNON = 'shannon'
 
@@ -18,7 +19,12 @@ logger = logging.getLogger()
 
 
 class EntropyScore(BaseCustomScore):
-    def __init__(self, name: str, entropy: str = RENYI, threshold_factor: float = 1.0):
+    def __init__(
+            self,
+            name: str,
+            entropy: str = RENYI,
+            threshold_factor: float = 1.0):
+
         super().__init__(name)
 
         entropy = entropy.lower()

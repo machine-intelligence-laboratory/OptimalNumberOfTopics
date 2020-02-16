@@ -403,7 +403,6 @@ class RenormalizationMethod(BaseSearchMethod):
             if self._verbose is True:
                 print(message)
 
-            print('CURRENT TOPICS:', current_topics)
             if self._method == 'entropy':
                 topic_a, topic_b = self._select_topics_to_merge_by_entropy(
                     current_topics, current_entropies
