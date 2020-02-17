@@ -27,7 +27,7 @@ The method can be invoked like this:
 ```bash
 python run_search.py \
     optimize_score \            # search method
-    perlexity \                 # what score to optimize
+    perplexity \                 # what score to optimize
     vw.txt \                    # path to vowpal wabbit file
     @text:1 \                   # main modality and its weight
     result.json \               # output file path (the file may not exist)
