@@ -16,10 +16,7 @@ from ..data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
 from ..scores.base_score import BaseScore
 
 
-_DDOF = 1
-
-
-logger = logging.getLogger()
+_logger = logging.getLogger()
 
 
 class OptimizeScoreMethod(BaseSearchMethod):
@@ -49,7 +46,7 @@ class OptimizeScoreMethod(BaseSearchMethod):
             self._keys_std_many.append(key)
 
     def search_for_optimum(self, text_collection: VowpalWabbitTextCollection) -> None:
-        logger.info('Starting to search for optimum...')
+        _logger.info('Starting to search for optimum...')
 
         dataset = text_collection._to_dataset()
         restart_results = list()
@@ -58,7 +55,7 @@ class OptimizeScoreMethod(BaseSearchMethod):
             seed = i - 1  # so as to use also seed = -1 (whoever knows what this means in ARTM)
             need_set_seed = seed >= 0
 
-            logger.info(f'Seed is {seed}')
+            _logger.info(f'Seed is {seed}')
 
             restart_result = dict()
             restart_result[self._key_optimum] = None
@@ -88,7 +85,7 @@ class OptimizeScoreMethod(BaseSearchMethod):
                 model = TopicModel(artm_model)
 
                 # TODO: Find out, why in Renyi entropy test the score already in model here
-                logger.info(
+                _logger.info(
                     f'Model\'s custom scores before attaching: {list(model.custom_scores.keys())}'
                 )
 
@@ -120,4 +117,4 @@ class OptimizeScoreMethod(BaseSearchMethod):
 
         self._result = result
 
-        logger.info('Finished searching!')
+        _logger.info('Finished searching!')

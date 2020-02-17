@@ -27,9 +27,6 @@ from .constants import (
 from ..data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
 
 
-_DDOF = 1
-TINY = 1e-9
-
 ENTROPY_MERGE_METHOD = 'entropy'
 RANDOM_MERGE_METHOD = 'random'
 KL_MERGE_METHOD = 'kl'
@@ -37,8 +34,9 @@ KL_MERGE_METHOD = 'kl'
 PHI_RENORMALIZATION_MATRIX = 'phi'
 THETA_RENORMALIZATION_MATRIX = 'theta'
 
+_TINY = 1e-9
 
-logger = logging.getLogger()
+_logger = logging.getLogger()
 
 
 class RenormalizationMethod(BaseSearchMethod):
@@ -96,7 +94,7 @@ class RenormalizationMethod(BaseSearchMethod):
             self._keys_std_many.append(key)
 
     def search_for_optimum(self, text_collection: VowpalWabbitTextCollection) -> None:
-        logger.info('Starting to search for optimum...')
+        _logger.info('Starting to search for optimum...')
 
         dataset = text_collection._to_dataset()
         restart_results = list()
@@ -105,7 +103,7 @@ class RenormalizationMethod(BaseSearchMethod):
             seed = i - 1  # so as to use also seed = -1 (whoever knows what this means in ARTM)
             need_set_seed = seed >= 0
 
-            logger.info(f'Seed is {seed}')
+            _logger.info(f'Seed is {seed}')
 
             restart_result = dict()
             restart_result[self._key_optimum] = None
@@ -165,7 +163,7 @@ class RenormalizationMethod(BaseSearchMethod):
 
         self._result = result
 
-        logger.info('Finished searching!')
+        _logger.info('Finished searching!')
 
     @staticmethod
     def _get_matrices(model: TopicModel) -> Tuple[np.array, np.array]:
@@ -294,7 +292,7 @@ class RenormalizationMethod(BaseSearchMethod):
         num_words, original_num_topics = pwt.shape
 
         message = f'Original number of topics: {original_num_topics}'
-        logger.info(message)
+        _logger.info(message)
 
         if self._verbose:
             print(message)
@@ -332,15 +330,15 @@ class RenormalizationMethod(BaseSearchMethod):
                 current_probability_sum = current_probability_sum / num_topics
                 current_word_ratio = current_word_ratio / (num_topics * num_words)
 
-                current_probability_sum = max(TINY, current_probability_sum)
-                current_word_ratio = max(TINY, current_word_ratio)
+                current_probability_sum = max(_TINY, current_probability_sum)
+                current_word_ratio = max(_TINY, current_word_ratio)
 
                 current_energy = -1 * np.log(current_probability_sum)
                 current_shannon_entropy = np.log(current_word_ratio)
                 current_free_energy = (
                     current_energy - num_topics * current_shannon_entropy
                 )
-                current_renyi_entropy = -1 * current_free_energy / max(TINY, num_topics - 1)
+                current_renyi_entropy = -1 * current_free_energy / max(_TINY, num_topics - 1)
 
                 current_entropies.append(current_renyi_entropy)
                 current_topics.append(topic_index)
@@ -348,14 +346,14 @@ class RenormalizationMethod(BaseSearchMethod):
             probability_sum = probability_sum / num_topics
             word_ratio = word_ratio / (num_topics * num_words)
 
-            probability_sum = max(TINY, probability_sum)
-            word_ratio = max(TINY, word_ratio)
+            probability_sum = max(_TINY, probability_sum)
+            word_ratio = max(_TINY, word_ratio)
 
             # TODO: DRY
             energy = -1 * np.log(probability_sum)
             shannon_entropy = np.log(word_ratio)
             free_energy = energy - num_topics * shannon_entropy
-            renyi_entropy = free_energy / max(TINY, num_topics - 1)
+            renyi_entropy = free_energy / max(_TINY, num_topics - 1)
 
             entropies.append(renyi_entropy)
             densities.append(shannon_entropy)
@@ -367,7 +365,7 @@ class RenormalizationMethod(BaseSearchMethod):
 
             message = (f'Minimum Renyi entropy: {minimum_entropy}.' +
                        f' Number of clusters: {optimum_num_topics}')
-            logger.info(message)
+            _logger.info(message)
 
             if self._verbose is True:
                 print(message)
