@@ -40,6 +40,31 @@ python run_search.py \
     --threshold-factor 2.0      # previous score parameter
 ```
 
+And the result will look like this: (TODO: try on real data to get meaningful values)
+```json
+{
+    "score_results": {
+        "perplexity_score": {
+            "optimum": 9.0,
+            "optimum_std": 0.0,
+            "score_values": [1374.69, 654.64, 437.03, 343.46, 286.09],
+            "num_topics_values": [1.0, 3.0, 5.0, 7.0, 9.0],
+            "score_values_std": [0.0, 0.0, 0.0, 0.0, 0.0],
+            "num_topics_values_std": [0.0, 0.0, 0.0, 0.0, 0.0]
+        },
+        "renyi_entropy_score": {
+            "optimum": 7.0,
+            "optimum_std": 0.0,
+            "score_values": [3202736109.71, 3.18, 2.09, 1.87, 2.03],
+            "num_topics_values": [1.0, 3.0, 5.0, 7.0, 9.0],
+            "score_values_std": [4.94e-07, 4.60e-16, 0.0, 0.0, 4.60e-16],
+            "num_topics_values_std": [0.0, 0.0, 0.0, 0.0, 0.0]
+        }
+    }
+}
+```
+
+Here *optimum* means the optimal number of topics according to the score, *score_values* are the values of the score, each value corresponds to the number of topics in *num_topics_values* by the same index.
 
 ## Renormalization
 
