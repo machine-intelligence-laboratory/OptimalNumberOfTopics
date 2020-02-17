@@ -39,6 +39,8 @@ class BaseSearchMethod:
             intermediate_results: List[Dict],
             final_result: Dict) -> None:
 
+        assert len(intermediate_results) > 0
+
         for key in set(self._keys_mean_one).intersection(
                 set(intermediate_results[0].keys())):
 
@@ -50,6 +52,8 @@ class BaseSearchMethod:
             self,
             intermediate_results: List[Dict],
             final_result: Dict) -> None:
+
+        assert len(intermediate_results) > 0
 
         for key in set(self._keys_std_one).intersection(
                 set(intermediate_results[0].keys())):
@@ -64,6 +68,8 @@ class BaseSearchMethod:
             intermediate_results: List[Dict],
             final_result: Dict) -> None:
 
+        assert len(intermediate_results) > 0
+
         for key in set(self._keys_mean_many).intersection(
                 set(intermediate_results[0].keys())):
 
@@ -76,6 +82,8 @@ class BaseSearchMethod:
             self,
             intermediate_results: List[Dict],
             final_result: Dict) -> None:
+
+        assert len(intermediate_results) > 0
 
         for key in set(self._keys_std_many).intersection(
                 set(intermediate_results[0].keys())):

@@ -101,9 +101,11 @@ def _main():
         help='Perplexity -> min'
     )
 
+    # TODO: try to run with several identical scores
+
     parser_optimize_renyi_entropy = subparsers_optimize_scores.add_parser(
         'renyi_entropy',
-        help='Renyi_entropy -> min'
+        help='Renyi entropy -> min'
     )
     parser_optimize_renyi_entropy.add_argument(
         '-f', '--threshold-factor',
