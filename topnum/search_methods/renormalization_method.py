@@ -15,17 +15,17 @@ from typing import (
     Tuple
 )
 
-from .base_search_method import BaseSearchMethod
+from .base_search_method import (
+    BaseSearchMethod,
+    _KEY_VALUES
+)
 from .constants import (
     DEFAULT_MAX_NUM_TOPICS,
     DEFAULT_MIN_NUM_TOPICS,
-    DEFAULT_NUM_COLLECTION_PASSES
+    DEFAULT_NUM_FIT_ITERATIONS
 )
-from ..data.base_text_collection import BaseTextCollection
+from ..data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
 
-
-_DDOF = 1
-TINY = 1e-9
 
 ENTROPY_MERGE_METHOD = 'entropy'
 RANDOM_MERGE_METHOD = 'random'
@@ -34,14 +34,9 @@ KL_MERGE_METHOD = 'kl'
 PHI_RENORMALIZATION_MATRIX = 'phi'
 THETA_RENORMALIZATION_MATRIX = 'theta'
 
-_OPTIMUM = 'optimum'
-_OPTIMUM_STD = 'optimum_std'
-_NUM_TOPICS = 'num_topics'
-_VALUES = '{}_values'
-_VALUES_STD = '{}_values_std'
+_TINY = 1e-9
 
-
-logger = logging.getLogger()
+_logger = logging.getLogger()
 
 
 class RenormalizationMethod(BaseSearchMethod):
@@ -55,7 +50,7 @@ class RenormalizationMethod(BaseSearchMethod):
             num_topics_interval: int = 10,
             min_num_topics: int = DEFAULT_MIN_NUM_TOPICS,
             max_num_topics: int = DEFAULT_MAX_NUM_TOPICS,
-            num_collection_passes: int = DEFAULT_NUM_COLLECTION_PASSES):
+            num_collection_passes: int = DEFAULT_NUM_FIT_ITERATIONS):
 
         super().__init__(min_num_topics, max_num_topics, num_collection_passes)
 
@@ -80,22 +75,26 @@ class RenormalizationMethod(BaseSearchMethod):
 
         self._result = dict()
 
-        self._key_optimum = _OPTIMUM
-        self._key_optimum_std = _OPTIMUM_STD
+        self._key_num_topics_values = _KEY_VALUES.format('num_topics')
+        self._key_renyi_entropy_values = _KEY_VALUES.format('renyi_entropy')
+        self._key_shannon_entropy_values = _KEY_VALUES.format('snannon_entropy')
+        self._key_energy_values = _KEY_VALUES.format('energy')
 
-        self._key_nums_topics = _NUM_TOPICS
+        for key in [
+                self._key_num_topics_values,
+                self._key_renyi_entropy_values,
+                self._key_shannon_entropy_values,
+                self._key_energy_values]:
 
-        self._key_renyi_entropy_values = _VALUES.format('renyi_entropy')
-        self._key_renyi_entropy_values_std = _VALUES_STD.format('renyi_entropy')
+            # np.mean is not actually needed for _key_num_topics_values:
+            # all restarts must have the same number of topics
+            # TODO: add assert or int()
 
-        self._key_shannon_entropy_values = _VALUES.format('snannon_entropy')
-        self._key_shannon_entropy_values_std = _VALUES_STD.format('snannon_entropy')
+            self._keys_mean_many.append(key)
+            self._keys_std_many.append(key)
 
-        self._key_energy_values = _VALUES.format('energy')
-        self._key_energy_values_std = _VALUES_STD.format('energy')
-
-    def search_for_optimum(self, text_collection: BaseTextCollection) -> None:
-        logger.info('Starting to search for optimum...')
+    def search_for_optimum(self, text_collection: VowpalWabbitTextCollection) -> None:
+        _logger.info('Starting to search for optimum...')
 
         dataset = text_collection._to_dataset()
         restart_results = list()
@@ -104,11 +103,11 @@ class RenormalizationMethod(BaseSearchMethod):
             seed = i - 1  # so as to use also seed = -1 (whoever knows what this means in ARTM)
             need_set_seed = seed >= 0
 
-            logger.info(f'Seed is {seed}')
+            _logger.info(f'Seed is {seed}')
 
             restart_result = dict()
             restart_result[self._key_optimum] = None
-            restart_result[self._key_nums_topics] = list()
+            restart_result[self._key_num_topics_values] = list()
             restart_result[self._key_renyi_entropy_values] = list()
             restart_result[self._key_shannon_entropy_values] = list()
             restart_result[self._key_energy_values] = list()
@@ -141,8 +140,10 @@ class RenormalizationMethod(BaseSearchMethod):
                 (nums_topics, entropies, densities, energies) = (
                     self._renormalize_using_theta(pwt, nwt, dataset)
                 )
+            else:
+                raise ValueError(f'_matrix: {self._matrix}')
 
-            restart_result[self._key_nums_topics] = nums_topics
+            restart_result[self._key_num_topics_values] = nums_topics
             restart_result[self._key_renyi_entropy_values] = entropies
             restart_result[self._key_shannon_entropy_values] = densities
             restart_result[self._key_energy_values] = energies
@@ -155,48 +156,14 @@ class RenormalizationMethod(BaseSearchMethod):
 
         result = dict()
 
-        result[self._key_optimum] = int(np.mean([
-            r[self._key_optimum] for r in restart_results
-        ]))
-        result[self._key_optimum_std] = np.std(
-            [r[self._key_optimum] for r in restart_results],
-            ddof=_DDOF
-        ).tolist()
-
-        # np.mean is not actually needed: all restarts must have the same number of topics
-        # TODO: add assert or int()
-        result[self._key_nums_topics] = np.mean(
-            [r[self._key_nums_topics] for r in restart_results],
-            axis=0
-        ).tolist()
-
-        for values_key, values_std_key in [
-                (
-                    self._key_renyi_entropy_values,
-                    self._key_renyi_entropy_values_std
-                ),
-                (
-                    self._key_shannon_entropy_values,
-                    self._key_shannon_entropy_values_std
-                ),
-                (
-                    self._key_energy_values,
-                    self._key_energy_values_std
-                )]:
-
-            result[values_key] = np.mean(
-                np.stack([r[values_key] for r in restart_results]),
-                axis=0
-            ).tolist()
-            result[values_std_key] = np.std(
-                np.stack([r[values_key] for r in restart_results]),
-                ddof=_DDOF,
-                axis=0
-            ).tolist()
+        self._compute_mean_one(restart_results, result)
+        self._compute_std_one(restart_results, result)
+        self._compute_mean_many(restart_results, result)
+        self._compute_std_many(restart_results, result)
 
         self._result = result
 
-        logger.info('Finished searching!')
+        _logger.info('Finished searching!')
 
     @staticmethod
     def _get_matrices(model: TopicModel) -> Tuple[np.array, np.array]:
@@ -325,7 +292,7 @@ class RenormalizationMethod(BaseSearchMethod):
         num_words, original_num_topics = pwt.shape
 
         message = f'Original number of topics: {original_num_topics}'
-        logger.info(message)
+        _logger.info(message)
 
         if self._verbose:
             print(message)
@@ -363,15 +330,15 @@ class RenormalizationMethod(BaseSearchMethod):
                 current_probability_sum = current_probability_sum / num_topics
                 current_word_ratio = current_word_ratio / (num_topics * num_words)
 
-                current_probability_sum = max(TINY, current_probability_sum)
-                current_word_ratio = max(TINY, current_word_ratio)
+                current_probability_sum = max(_TINY, current_probability_sum)
+                current_word_ratio = max(_TINY, current_word_ratio)
 
                 current_energy = -1 * np.log(current_probability_sum)
                 current_shannon_entropy = np.log(current_word_ratio)
                 current_free_energy = (
                     current_energy - num_topics * current_shannon_entropy
                 )
-                current_renyi_entropy = -1 * current_free_energy / max(TINY, num_topics - 1)
+                current_renyi_entropy = -1 * current_free_energy / max(_TINY, num_topics - 1)
 
                 current_entropies.append(current_renyi_entropy)
                 current_topics.append(topic_index)
@@ -379,14 +346,14 @@ class RenormalizationMethod(BaseSearchMethod):
             probability_sum = probability_sum / num_topics
             word_ratio = word_ratio / (num_topics * num_words)
 
-            probability_sum = max(TINY, probability_sum)
-            word_ratio = max(TINY, word_ratio)
+            probability_sum = max(_TINY, probability_sum)
+            word_ratio = max(_TINY, word_ratio)
 
             # TODO: DRY
             energy = -1 * np.log(probability_sum)
             shannon_entropy = np.log(word_ratio)
             free_energy = energy - num_topics * shannon_entropy
-            renyi_entropy = free_energy / max(TINY, num_topics - 1)
+            renyi_entropy = free_energy / max(_TINY, num_topics - 1)
 
             entropies.append(renyi_entropy)
             densities.append(shannon_entropy)
@@ -398,7 +365,7 @@ class RenormalizationMethod(BaseSearchMethod):
 
             message = (f'Minimum Renyi entropy: {minimum_entropy}.' +
                        f' Number of clusters: {optimum_num_topics}')
-            logger.info(message)
+            _logger.info(message)
 
             if self._verbose is True:
                 print(message)

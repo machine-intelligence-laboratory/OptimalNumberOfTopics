@@ -1,2 +1,2 @@
 from .perplexity_score import PerplexityScore
-from .entropy import EntropyScore
+from .entropy_score import EntropyScore

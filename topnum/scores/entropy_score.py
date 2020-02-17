@@ -4,18 +4,21 @@ from topicnet.cooking_machine.models import (
     BaseScore as BaseTopicNetScore,
     TopicModel
 )
-from typing import Tuple
+from typing import (
+    List,
+    Tuple
+)
 
 from .base_custom_score import BaseCustomScore
 
-
-TINY = 1e-9
 
 RENYI = 'renyi'
 SHANNON = 'shannon'
 
 
-logger = logging.getLogger()
+_TINY = 1e-9
+
+_logger = logging.getLogger()
 
 
 class EntropyScore(BaseCustomScore):
@@ -23,7 +26,8 @@ class EntropyScore(BaseCustomScore):
             self,
             name: str,
             entropy: str = RENYI,
-            threshold_factor: float = 1.0):
+            threshold_factor: float = 1.0,
+            class_ids: List[str] = None):
 
         super().__init__(name)
 
@@ -37,19 +41,21 @@ class EntropyScore(BaseCustomScore):
 
         self._entropy = entropy
         self._threshold_factor = threshold_factor
+        self._class_ids = class_ids
 
         self._score = self._initialize()
 
     def _initialize(self) -> BaseTopicNetScore:
-        return _RenyiShannonEntropyScore(self._entropy, self._threshold_factor)
+        return _RenyiShannonEntropyScore(self._entropy, self._threshold_factor, self._class_ids)
 
 
 class _RenyiShannonEntropyScore(BaseTopicNetScore):
-    def __init__(self, entropy: str, threshold_factor: float):
+    def __init__(self, entropy: str, threshold_factor: float, class_ids: List[str] = None):
         super().__init__()
 
         self._entropy = entropy
         self._threshold_factor = threshold_factor
+        self._class_ids = class_ids
 
     def call(self, model: TopicModel):
         phi, _ = self._get_matrices(model)
@@ -57,14 +63,12 @@ class _RenyiShannonEntropyScore(BaseTopicNetScore):
         return self._calculate_entropy(phi)
 
     def _get_matrices(self, model: TopicModel) -> Tuple[np.array, np.array]:
-        pwt = model.get_phi().values
+        pwt = model.get_phi(class_ids=self._class_ids).values
         nwt = model._model.get_phi(model_name=model._model.model_nwt).values
 
         return pwt, nwt
 
     def _calculate_entropy(self, pwt: np.array) -> float:
-        minimum_entropy = None
-
         num_words, num_topics = pwt.shape
         threshold = self._threshold_factor * 1.0 / num_words
 
@@ -91,13 +95,13 @@ class _RenyiShannonEntropyScore(BaseTopicNetScore):
             current_probability_sum = current_probability_sum / num_topics
             current_word_ratio = current_word_ratio / (num_topics * num_words)
 
-            current_probability_sum = max(TINY, current_probability_sum)
-            current_word_ratio = max(TINY, current_word_ratio)
+            current_probability_sum = max(_TINY, current_probability_sum)
+            current_word_ratio = max(_TINY, current_word_ratio)
 
             current_energy = -1 * np.log(current_probability_sum)
             current_shannon_entropy = np.log(current_word_ratio)
             current_free_energy = current_energy - num_topics * current_shannon_entropy
-            current_renyi_entropy = -1 * current_free_energy / max(TINY, num_topics - 1)
+            current_renyi_entropy = -1 * current_free_energy / max(_TINY, num_topics - 1)
 
             current_entropies.append(current_renyi_entropy)
             current_topics.append(topic_index)
@@ -105,14 +109,14 @@ class _RenyiShannonEntropyScore(BaseTopicNetScore):
         probability_sum = probability_sum / num_topics
         word_ratio = word_ratio / (num_topics * num_words)
 
-        probability_sum = max(TINY, probability_sum)
-        word_ratio = max(TINY, word_ratio)
+        probability_sum = max(_TINY, probability_sum)
+        word_ratio = max(_TINY, word_ratio)
 
         # TODO: DRY
         energy = -1 * np.log(probability_sum)
         shannon_entropy = np.log(word_ratio)
         free_energy = energy - num_topics * shannon_entropy
-        renyi_entropy = free_energy / max(TINY, num_topics - 1)
+        renyi_entropy = free_energy / max(_TINY, num_topics - 1)
 
         if self._entropy == RENYI:
             return renyi_entropy
