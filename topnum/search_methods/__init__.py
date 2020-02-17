@@ -1,2 +1,2 @@
-from .optimize_score_method import OptimizeScoreMethod
+from .optimize_scores_method import OptimizeScoresMethod
 from .renormalization_method import RenormalizationMethod

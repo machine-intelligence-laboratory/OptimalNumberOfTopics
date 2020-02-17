@@ -39,7 +39,9 @@ class BaseSearchMethod:
             intermediate_results: List[Dict],
             final_result: Dict) -> None:
 
-        for key in self._keys_mean_one:
+        for key in set(self._keys_mean_one).intersection(
+                set(intermediate_results[0].keys())):
+
             final_result[key] = float(np.mean([
                 r[key] for r in intermediate_results
             ]))
@@ -49,7 +51,9 @@ class BaseSearchMethod:
             intermediate_results: List[Dict],
             final_result: Dict) -> None:
 
-        for key in self._keys_std_one:
+        for key in set(self._keys_std_one).intersection(
+                set(intermediate_results[0].keys())):
+
             final_result[key + _STD_KEY_SUFFIX] = np.std(
                 [r[key] for r in intermediate_results],
                 ddof=_DDOF
@@ -60,7 +64,9 @@ class BaseSearchMethod:
             intermediate_results: List[Dict],
             final_result: Dict) -> None:
 
-        for key in self._keys_mean_many:
+        for key in set(self._keys_mean_many).intersection(
+                set(intermediate_results[0].keys())):
+
             final_result[key] = np.mean(
                 np.stack([r[key] for r in intermediate_results]),
                 axis=0
@@ -71,7 +77,9 @@ class BaseSearchMethod:
             intermediate_results: List[Dict],
             final_result: Dict) -> None:
 
-        for key in self._keys_std_many:
+        for key in set(self._keys_std_many).intersection(
+                set(intermediate_results[0].keys())):
+
             final_result[key + _STD_KEY_SUFFIX] = np.std(
                 np.stack([r[key] for r in intermediate_results]),
                 ddof=_DDOF,

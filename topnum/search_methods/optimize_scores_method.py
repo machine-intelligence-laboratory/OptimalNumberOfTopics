@@ -2,6 +2,7 @@ import logging
 import numpy as np
 from topicnet.cooking_machine.models import TopicModel
 from topicnet.cooking_machine.model_constructor import init_simple_default_model
+from typing import List
 
 from .base_search_method import (
     BaseSearchMethod,
@@ -16,13 +17,16 @@ from ..data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
 from ..scores.base_score import BaseScore
 
 
+_KEY_SCORE_RESULTS = 'score_results'
+_KEY_SCORE_VALUES = 'score_values'
+
 _logger = logging.getLogger()
 
 
-class OptimizeScoreMethod(BaseSearchMethod):
+class OptimizeScoresMethod(BaseSearchMethod):
     def __init__(
             self,
-            score: BaseScore,
+            scores: List[BaseScore],
             num_restarts: int = 3,
             num_topics_interval: int = 10,
             min_num_topics: int = DEFAULT_MIN_NUM_TOPICS,
@@ -31,14 +35,14 @@ class OptimizeScoreMethod(BaseSearchMethod):
 
         super().__init__(min_num_topics, max_num_topics, num_collection_passes)
 
-        self._score = score
+        self._scores = scores
         self._num_restarts = num_restarts
         self._num_topics_interval = num_topics_interval
 
         self._result = dict()
 
         self._key_num_topics_values = _KEY_VALUES.format('num_topics')
-        self._key_score_values = _KEY_VALUES.format(self._score.name)
+        self._key_score_values = _KEY_SCORE_VALUES
 
         for key in [self._key_num_topics_values, self._key_score_values]:
             # TODO: no need to take mean for num_topics: it should be the same for all restarts
@@ -49,7 +53,10 @@ class OptimizeScoreMethod(BaseSearchMethod):
         _logger.info('Starting to search for optimum...')
 
         dataset = text_collection._to_dataset()
-        restart_results = list()
+        restart_results = [
+            list()
+            for _ in self._scores
+        ]
 
         for i in range(self._num_restarts):
             seed = i - 1  # so as to use also seed = -1 (whoever knows what this means in ARTM)
@@ -57,16 +64,20 @@ class OptimizeScoreMethod(BaseSearchMethod):
 
             _logger.info(f'Seed is {seed}')
 
-            restart_result = dict()
-            restart_result[self._key_optimum] = None
-            restart_result[self._key_score_values] = list()
-
             nums_topics = list(range(
                 self._min_num_topics,
                 self._max_num_topics + 1,
                 self._num_topics_interval))
 
-            restart_result[self._key_num_topics_values] = nums_topics
+            current_restart_results = list()
+
+            for _ in self._scores:
+                restart_result = dict()
+                restart_result[self._key_optimum] = None
+                restart_result[self._key_score_values] = list()
+                restart_result[self._key_num_topics_values] = nums_topics
+
+                current_restart_results.append(restart_result)
 
             for num_topics in nums_topics:
 
@@ -89,31 +100,43 @@ class OptimizeScoreMethod(BaseSearchMethod):
                     f'Model\'s custom scores before attaching: {list(model.custom_scores.keys())}'
                 )
 
-                self._score._attach(model)
+                for score in self._scores:
+                    score._attach(model)
 
                 model._fit(
                     dataset.get_batch_vectorizer(),
                     num_iterations=self._num_collection_passes
                 )
 
-                # Assume score name won't change
-                score_values = model.scores[self._score._name]
+                for score, current_restart_result in zip(
+                        self._scores, current_restart_results):
 
-                restart_result[self._key_score_values].append(
-                    score_values[-1]
-                )
+                    score_values = model.scores[score.name]
+                    current_restart_result[self._key_score_values].append(score_values[-1])
 
-            restart_result[self._key_optimum] = nums_topics[
-                np.argmin(restart_result[self._key_score_values])
-            ]
-            restart_results.append(restart_result)
+                for score, current_restart_result, restart_result in zip(
+                        self._scores,
+                        current_restart_results,
+                        restart_results):
+
+                    current_restart_result[self._key_optimum] = nums_topics[
+                        np.argmin(current_restart_result[self._key_score_values])
+                    ]
+
+                    restart_result.append(current_restart_result)
 
         result = dict()
+        result[_KEY_SCORE_RESULTS] = dict()
 
-        self._compute_mean_one(restart_results, result)
-        self._compute_std_one(restart_results, result)
-        self._compute_mean_many(restart_results, result)
-        self._compute_std_many(restart_results, result)
+        for score, score_restart_results in zip(self._scores, restart_results):
+            score_result = dict()
+
+            self._compute_mean_one(score_restart_results, score_result)
+            self._compute_std_one(score_restart_results, score_result)
+            self._compute_mean_many(score_restart_results, score_result)
+            self._compute_std_many(score_restart_results, score_result)
+
+            result[_KEY_SCORE_RESULTS][score.name] = score_result
 
         self._result = result
 

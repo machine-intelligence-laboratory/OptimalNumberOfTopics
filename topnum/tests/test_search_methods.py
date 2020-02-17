@@ -5,18 +5,22 @@ import shutil
 import tempfile
 import warnings
 from topicnet.cooking_machine.dataset import W_DIFF_BATCHES_1
-from typing import List
+from typing import (
+    Dict,
+    List
+)
 
 from topnum.data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
 from topnum.scores import (
     PerplexityScore,
     EntropyScore
 )
-from topnum.search_methods.base_search_method import BaseSearchMethod
 from topnum.search_methods import (
-    OptimizeScoreMethod,
+    OptimizeScoresMethod,
     RenormalizationMethod
 )
+from topnum.search_methods.base_search_method import BaseSearchMethod
+from topnum.search_methods.optimize_scores_method import _KEY_SCORE_RESULTS
 from topnum.search_methods.renormalization_method import (
     ENTROPY_MERGE_METHOD,
     RANDOM_MERGE_METHOD,
@@ -135,15 +139,15 @@ class TestSearchMethods:
 
         optimizer.search_for_optimum(self.text_collection)
 
-        self._check_search_result(optimizer, num_search_points)
+        self._check_search_result(optimizer._result, optimizer, num_search_points)
 
     def _test_optimize_score(self, score):
         min_num_topics = 1
         max_num_topics = 10
         num_topics_interval = 2
 
-        optimizer = OptimizeScoreMethod(
-            score=score,
+        optimizer = OptimizeScoresMethod(
+            scores=[score],
             min_num_topics=min_num_topics,
             max_num_topics=max_num_topics,
             num_topics_interval=num_topics_interval,
@@ -156,29 +160,37 @@ class TestSearchMethods:
 
         optimizer.search_for_optimum(self.text_collection)
 
-        self._check_search_result(optimizer, num_search_points)
+        assert len(optimizer._result) == 1
+        assert _KEY_SCORE_RESULTS in optimizer._result
+        assert len(optimizer._result[_KEY_SCORE_RESULTS]) == 1
+        assert score.name in optimizer._result[_KEY_SCORE_RESULTS]
+
+        self._check_search_result(
+            optimizer._result[_KEY_SCORE_RESULTS][score.name],
+            optimizer,
+            num_search_points
+        )
 
     def _check_search_result(
             self,
+            search_result: Dict,
             optimizer: BaseSearchMethod,
             num_search_points: int):
 
         tiny = 1e-7
 
-        result = optimizer._result
-
         for key in optimizer._keys_mean_one:
-            assert key in result
-            assert isinstance(result[key], float)
+            assert key in search_result
+            assert isinstance(search_result[key], float)
 
         for key in optimizer._keys_std_one:
-            assert key in result
-            assert isinstance(result[key], float)
+            assert key in search_result
+            assert isinstance(search_result[key], float)
 
         for key in optimizer._keys_mean_many:
-            assert key in result
-            assert len(result[key]) == num_search_points
-            assert all(isinstance(v, float) for v in result[key])
+            assert key in search_result
+            assert len(search_result[key]) == num_search_points
+            assert all(isinstance(v, float) for v in search_result[key])
 
             # TODO: remove this check when refactor computation inside optimizer
             if (hasattr(optimizer, '_key_num_topics_values')
@@ -186,13 +198,13 @@ class TestSearchMethods:
 
                 assert all(
                     abs(v - int(v)) == 0
-                    for v in result[optimizer._key_num_topics_values]
+                    for v in search_result[optimizer._key_num_topics_values]
                 )
 
-            if all(abs(v) <= tiny for v in result[key]):
+            if all(abs(v) <= tiny for v in search_result[key]):
                 warnings.warn(f'All score values "{key}" are zero!')
 
         for key in optimizer._keys_std_many:
-            assert key in result
-            assert len(result[key]) == num_search_points
-            assert all(isinstance(v, float) for v in result[key])
+            assert key in search_result
+            assert len(search_result[key]) == num_search_points
+            assert all(isinstance(v, float) for v in search_result[key])
