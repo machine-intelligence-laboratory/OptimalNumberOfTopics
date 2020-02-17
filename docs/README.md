@@ -43,8 +43,10 @@ python run_search.py \
 And the result will look like this: (TODO: try on real data to get meaningful values)
 ```json
 {
-    "score_results": {
-        "perplexity_score": {
+    "score_results":
+    {
+        "perplexity_score":
+        {
             "optimum": 9.0,
             "optimum_std": 0.0,
             "score_values": [1374.69, 654.64, 437.03, 343.46, 286.09],
@@ -52,7 +54,8 @@ And the result will look like this: (TODO: try on real data to get meaningful va
             "score_values_std": [0.0, 0.0, 0.0, 0.0, 0.0],
             "num_topics_values_std": [0.0, 0.0, 0.0, 0.0, 0.0]
         },
-        "renyi_entropy_score": {
+        "renyi_entropy_score":
+        {
             "optimum": 7.0,
             "optimum_std": 0.0,
             "score_values": [3202736109.71, 3.18, 2.09, 1.87, 2.03],
