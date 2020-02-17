@@ -138,38 +138,33 @@ class TestSearchMethods:
         optimizer.search_for_optimum(self.text_collection)
         result = optimizer._result
 
-        assert optimizer._key_optimum in result
-        assert isinstance(result[optimizer._key_optimum], int)
+        for key in optimizer._keys_mean_one:
+            assert key in result
+            assert isinstance(result[key], float)
 
-        assert optimizer._key_optimum_std in result
-        assert isinstance(result[optimizer._key_optimum_std], float)
+        for key in optimizer._keys_std_one:
+            assert key in result
+            assert isinstance(result[key], float)
 
-        assert optimizer._key_nums_topics in result
-        assert isinstance(result[optimizer._key_nums_topics], list)
-        assert all(
-            abs(v - int(v)) == 0
-            for v in result[optimizer._key_nums_topics]
-        )
+        for key in optimizer._keys_mean_many:
+            assert key in result
+            assert len(result[key]) == num_points
+            assert all(isinstance(v, float) for v in result[key])
 
-        for result_key in [
-                optimizer._key_renyi_entropy_values,
-                optimizer._key_renyi_entropy_values_std,
-                optimizer._key_shannon_entropy_values,
-                optimizer._key_shannon_entropy_values_std,
-                optimizer._key_energy_values,
-                optimizer._key_energy_values_std]:
+            # TODO: remove this check when refactor computation inside
+            if key == optimizer._key_num_topics_values:
+                assert all(
+                    abs(v - int(v)) == 0
+                    for v in result[optimizer._key_num_topics_values]
+                )
 
-            assert result_key in result
-            assert len(result[result_key]) == num_points
-            assert all(isinstance(v, float) for v in result[result_key])
+            if all(abs(v) <= tiny for v in result[key]):
+                warnings.warn(f'All score values "{key}" are zero!')
 
-        for result_key in [
-            optimizer._key_renyi_entropy_values,
-            optimizer._key_shannon_entropy_values,
-            optimizer._key_energy_values]:
-
-            if not any(abs(v) > tiny for v in result[result_key]):
-                warnings.warn(f'All score values "{result_key}" are zero!')
+        for key in optimizer._keys_std_many:
+            assert key in result
+            assert len(result[key]) == num_points
+            assert all(isinstance(v, float) for v in result[key])
 
     def _test_optimize_score(self, score):
         min_num_topics = 1
@@ -191,21 +186,31 @@ class TestSearchMethods:
         optimizer.search_for_optimum(self.text_collection)
         result = optimizer._result
 
-        assert optimizer._key_optimum in result
-        assert isinstance(result[optimizer._key_optimum], int)
+        # TODO: DRY
+        for key in optimizer._keys_mean_one:
+            assert key in result
+            assert isinstance(result[key], float)
 
-        assert optimizer._key_optimum_std in result
-        assert isinstance(result[optimizer._key_optimum_std], float)
+        for key in optimizer._keys_std_one:
+            assert key in result
+            assert isinstance(result[key], float)
 
-        for result_key in [
-                optimizer._key_score_values,
-                optimizer._key_score_values_std]:
+        for key in optimizer._keys_mean_many:
+            assert key in result
+            assert len(result[key]) == num_points
+            assert all(isinstance(v, float) for v in result[key])
 
-            assert result_key in result
-            assert len(result[result_key]) == num_points
-            assert all(isinstance(v, float) for v in result[result_key])
+            # TODO: remove this check when refactor computation inside
+            if key == optimizer._key_num_topics_values:
+                assert all(
+                    abs(v - int(v)) == 0
+                    for v in result[optimizer._key_num_topics_values]
+                )
 
-            if (result_key == optimizer._key_score_values
-                and not any(abs(v) > tiny for v in result[result_key])):
+            if all(abs(v) <= tiny for v in result[key]):
+                warnings.warn(f'All score values "{key}" are zero!')
 
-                warnings.warn(f'All score values "{result_key}" are zero!')
+        for key in optimizer._keys_std_many:
+            assert key in result
+            assert len(result[key]) == num_points
+            assert all(isinstance(v, float) for v in result[key])

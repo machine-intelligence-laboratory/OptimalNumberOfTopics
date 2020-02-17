@@ -3,7 +3,10 @@ import numpy as np
 from topicnet.cooking_machine.models import TopicModel
 from topicnet.cooking_machine.model_constructor import init_simple_default_model
 
-from .base_search_method import BaseSearchMethod
+from .base_search_method import (
+    BaseSearchMethod,
+    _KEY_VALUES
+)
 from .constants import (
     DEFAULT_MAX_NUM_TOPICS,
     DEFAULT_MIN_NUM_TOPICS,
@@ -14,11 +17,6 @@ from ..scores.base_score import BaseScore
 
 
 _DDOF = 1
-
-_OPTIMUM = 'optimum'
-_OPTIMUM_STD = 'optimum_std'
-_SCORE_VALUES = '{}_values'
-_SCORE_VALUES_STD = '{}_values_std'
 
 
 logger = logging.getLogger()
@@ -42,10 +40,13 @@ class OptimizeScoreMethod(BaseSearchMethod):
 
         self._result = dict()
 
-        self._key_optimum = _OPTIMUM
-        self._key_optimum_std = _OPTIMUM_STD
-        self._key_score_values = _SCORE_VALUES.format(self._score.name)
-        self._key_score_values_std = _SCORE_VALUES_STD.format(self._score.name)
+        self._key_num_topics_values = _KEY_VALUES.format('num_topics')
+        self._key_score_values = _KEY_VALUES.format(self._score.name)
+
+        for key in [self._key_num_topics_values, self._key_score_values]:
+            # TODO: no need to take mean for num_topics: it should be the same for all restarts
+            self._keys_mean_many.append(key)
+            self._keys_std_many.append(key)
 
     def search_for_optimum(self, text_collection: VowpalWabbitTextCollection) -> None:
         logger.info('Starting to search for optimum...')
@@ -67,6 +68,8 @@ class OptimizeScoreMethod(BaseSearchMethod):
                 self._min_num_topics,
                 self._max_num_topics + 1,
                 self._num_topics_interval))
+
+            restart_result[self._key_num_topics_values] = nums_topics
 
             for num_topics in nums_topics:
 
@@ -110,23 +113,10 @@ class OptimizeScoreMethod(BaseSearchMethod):
 
         result = dict()
 
-        result[self._key_optimum] = int(np.mean([
-            r[self._key_optimum] for r in restart_results
-        ]))
-        result[self._key_optimum_std] = np.std(
-            [r[self._key_optimum] for r in restart_results],
-            ddof=_DDOF
-        ).tolist()
-
-        result[self._key_score_values] = np.mean(
-            np.stack([r[self._key_score_values] for r in restart_results]),
-            axis=0
-        ).tolist()
-        result[self._key_score_values_std] = np.std(
-            np.stack([r[self._key_score_values] for r in restart_results]),
-            ddof=_DDOF,
-            axis=0
-        ).tolist()
+        self._compute_mean_one(restart_results, result)
+        self._compute_std_one(restart_results, result)
+        self._compute_mean_many(restart_results, result)
+        self._compute_std_many(restart_results, result)
 
         self._result = result
 

@@ -15,13 +15,16 @@ from typing import (
     Tuple
 )
 
-from .base_search_method import BaseSearchMethod
+from .base_search_method import (
+    BaseSearchMethod,
+    _KEY_VALUES
+)
 from .constants import (
     DEFAULT_MAX_NUM_TOPICS,
     DEFAULT_MIN_NUM_TOPICS,
     DEFAULT_NUM_COLLECTION_PASSES
 )
-from ..data.base_text_collection import BaseTextCollection
+from ..data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
 
 
 _DDOF = 1
@@ -33,12 +36,6 @@ KL_MERGE_METHOD = 'kl'
 
 PHI_RENORMALIZATION_MATRIX = 'phi'
 THETA_RENORMALIZATION_MATRIX = 'theta'
-
-_OPTIMUM = 'optimum'
-_OPTIMUM_STD = 'optimum_std'
-_NUM_TOPICS = 'num_topics'
-_VALUES = '{}_values'
-_VALUES_STD = '{}_values_std'
 
 
 logger = logging.getLogger()
@@ -80,21 +77,25 @@ class RenormalizationMethod(BaseSearchMethod):
 
         self._result = dict()
 
-        self._key_optimum = _OPTIMUM
-        self._key_optimum_std = _OPTIMUM_STD
+        self._key_num_topics_values = _KEY_VALUES.format('num_topics')
+        self._key_renyi_entropy_values = _KEY_VALUES.format('renyi_entropy')
+        self._key_shannon_entropy_values = _KEY_VALUES.format('snannon_entropy')
+        self._key_energy_values = _KEY_VALUES.format('energy')
 
-        self._key_nums_topics = _NUM_TOPICS
+        for key in [
+                self._key_num_topics_values,
+                self._key_renyi_entropy_values,
+                self._key_shannon_entropy_values,
+                self._key_energy_values]:
 
-        self._key_renyi_entropy_values = _VALUES.format('renyi_entropy')
-        self._key_renyi_entropy_values_std = _VALUES_STD.format('renyi_entropy')
+            # np.mean is not actually needed for _key_num_topics_values:
+            # all restarts must have the same number of topics
+            # TODO: add assert or int()
 
-        self._key_shannon_entropy_values = _VALUES.format('snannon_entropy')
-        self._key_shannon_entropy_values_std = _VALUES_STD.format('snannon_entropy')
+            self._keys_mean_many.append(key)
+            self._keys_std_many.append(key)
 
-        self._key_energy_values = _VALUES.format('energy')
-        self._key_energy_values_std = _VALUES_STD.format('energy')
-
-    def search_for_optimum(self, text_collection: BaseTextCollection) -> None:
+    def search_for_optimum(self, text_collection: VowpalWabbitTextCollection) -> None:
         logger.info('Starting to search for optimum...')
 
         dataset = text_collection._to_dataset()
@@ -108,7 +109,7 @@ class RenormalizationMethod(BaseSearchMethod):
 
             restart_result = dict()
             restart_result[self._key_optimum] = None
-            restart_result[self._key_nums_topics] = list()
+            restart_result[self._key_num_topics_values] = list()
             restart_result[self._key_renyi_entropy_values] = list()
             restart_result[self._key_shannon_entropy_values] = list()
             restart_result[self._key_energy_values] = list()
@@ -141,8 +142,10 @@ class RenormalizationMethod(BaseSearchMethod):
                 (nums_topics, entropies, densities, energies) = (
                     self._renormalize_using_theta(pwt, nwt, dataset)
                 )
+            else:
+                raise ValueError(f'_matrix: {self._matrix}')
 
-            restart_result[self._key_nums_topics] = nums_topics
+            restart_result[self._key_num_topics_values] = nums_topics
             restart_result[self._key_renyi_entropy_values] = entropies
             restart_result[self._key_shannon_entropy_values] = densities
             restart_result[self._key_energy_values] = energies
@@ -155,44 +158,10 @@ class RenormalizationMethod(BaseSearchMethod):
 
         result = dict()
 
-        result[self._key_optimum] = int(np.mean([
-            r[self._key_optimum] for r in restart_results
-        ]))
-        result[self._key_optimum_std] = np.std(
-            [r[self._key_optimum] for r in restart_results],
-            ddof=_DDOF
-        ).tolist()
-
-        # np.mean is not actually needed: all restarts must have the same number of topics
-        # TODO: add assert or int()
-        result[self._key_nums_topics] = np.mean(
-            [r[self._key_nums_topics] for r in restart_results],
-            axis=0
-        ).tolist()
-
-        for values_key, values_std_key in [
-                (
-                    self._key_renyi_entropy_values,
-                    self._key_renyi_entropy_values_std
-                ),
-                (
-                    self._key_shannon_entropy_values,
-                    self._key_shannon_entropy_values_std
-                ),
-                (
-                    self._key_energy_values,
-                    self._key_energy_values_std
-                )]:
-
-            result[values_key] = np.mean(
-                np.stack([r[values_key] for r in restart_results]),
-                axis=0
-            ).tolist()
-            result[values_std_key] = np.std(
-                np.stack([r[values_key] for r in restart_results]),
-                ddof=_DDOF,
-                axis=0
-            ).tolist()
+        self._compute_mean_one(restart_results, result)
+        self._compute_std_one(restart_results, result)
+        self._compute_mean_many(restart_results, result)
+        self._compute_std_many(restart_results, result)
 
         self._result = result
 
