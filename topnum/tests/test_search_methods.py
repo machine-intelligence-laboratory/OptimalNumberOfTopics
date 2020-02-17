@@ -151,7 +151,7 @@ class TestSearchMethods:
             min_num_topics=min_num_topics,
             max_num_topics=max_num_topics,
             num_topics_interval=num_topics_interval,
-            num_collection_passes=10,
+            num_fit_iterations=10,
             num_restarts=3
         )
         num_search_points = len(

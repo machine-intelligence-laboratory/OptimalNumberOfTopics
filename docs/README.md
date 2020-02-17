@@ -26,18 +26,20 @@ This one was shown to be a good indicator of some kind of model stability: the m
 The method can be invoked like this:
 ```bash
 python run_search.py \
-    vw.txt \                    # path to vowpal wabbit file
-    @text:1 \                   # main modality and its weight
-    result.json \               # output file path (the file may not exist)
-    -m @publisher:5 \           # other modality and its weight
-    --modality @author:10 \     # other modality and its weight
-    optimize_scores \           # search method
-    --max-num-topics 1000 \     # maximum number of topics in the text collection
-    --min-num-topics 100 \      # minimum number of topics in the text collection
-    --num-topics-interval 50    # search step in number of topics
-    perplexity \                # what score to optimize
-    renyi_entropy \             # another score to optimize
-    --threshold-factor 2.0      # previous score parameter
+    vw.txt \                       # path to vowpal wabbit file
+    @text:1 \                      # main modality and its weight
+    result.json \                  # output file path (the file may not exist)
+    -m @publisher:5 \              # other modality and its weight
+    --modality @author:10 \        # other modality and its weight
+    optimize_scores \              # search method
+    --max-num-topics 1000 \        # maximum number of topics in the text collection
+    --min-num-topics 100 \         # minimum number of topics in the text collection
+    --num-topics-interval 50 \     # search step in number of topics
+    --num-collection-passes 100 \  # number of fit iterations for each model training
+    --num-restarts 10 \            # number of training restarts that differ in seed
+    perplexity \                   # what score to optimize
+    renyi_entropy \                # another score to optimize
+    --threshold-factor 2.0         # previous score parameter
 ```
 
 And the result will look like this: (TODO: try on real data to get meaningful values)

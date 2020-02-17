@@ -75,6 +75,22 @@ def _main():
         type=int,
         default=10
     )
+    parser_optimize_scores.add_argument(
+        '--num-fit-iterations',
+        help='Number of fit iterations for model training',
+        type=int,
+        default=100
+    )
+    parser_optimize_scores.add_argument(
+        '--num-restarts',
+        help='Number of models to train,'
+             ' each of which differs from the others by random seed'
+             ' used for initialization.'
+             ' Search results will be averaged over models '
+             ' (suffix _std means standard deviation for restarts).',  # TODO: check English
+        type=int,
+        default=3
+    )
     subparsers_optimize_scores = parser_optimize_scores.add_subparsers(
         help='Method for searching an appropriate number of topics',
         dest='score_name'
@@ -109,6 +125,8 @@ def _main():
         min_num_topics = args.min_num_topics
         max_num_topics = args.max_num_topics
         num_topics_interval = args.num_topics_interval
+        num_fit_iterations = args.num_fit_iterations
+        num_restarts = args.num_restarts
 
         scores = list()
 
@@ -128,7 +146,9 @@ def _main():
             output_file_path,
             min_num_topics=min_num_topics,
             max_num_topics=max_num_topics,
-            num_topics_interval=num_topics_interval
+            num_topics_interval=num_topics_interval,
+            num_fit_iterations=num_fit_iterations,
+            num_restarts=num_restarts
         )
     else:
         raise ValueError(args.search_method)
@@ -175,7 +195,6 @@ def _parse_modalities(
 
 
 def _build_score(args: argparse.Namespace, modality_names: List[str]) -> BaseScore:
-    print(args)
     if args.score_name == 'perplexity':
         return _build_perplexity_score(modality_names)
     elif args.score_name == 'renyi_entropy':
@@ -208,7 +227,9 @@ def _optimize_scores(
         output_file_path: str,
         min_num_topics: int,
         max_num_topics: int,
-        num_topics_interval: int) -> None:
+        num_topics_interval: int,
+        num_fit_iterations: int,
+        num_restarts: int) -> None:
 
     text_collection = VowpalWabbitTextCollection(
         vw_file_path,
@@ -221,8 +242,8 @@ def _optimize_scores(
         min_num_topics=min_num_topics,
         max_num_topics=max_num_topics,
         num_topics_interval=num_topics_interval,
-        num_collection_passes=10,
-        num_restarts=3
+        num_fit_iterations=num_fit_iterations,
+        num_restarts=num_restarts
     )
 
     optimizer.search_for_optimum(text_collection)

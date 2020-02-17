@@ -22,7 +22,7 @@ from .base_search_method import (
 from .constants import (
     DEFAULT_MAX_NUM_TOPICS,
     DEFAULT_MIN_NUM_TOPICS,
-    DEFAULT_NUM_COLLECTION_PASSES
+    DEFAULT_NUM_FIT_ITERATIONS
 )
 from ..data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
 
@@ -50,7 +50,7 @@ class RenormalizationMethod(BaseSearchMethod):
             num_topics_interval: int = 10,
             min_num_topics: int = DEFAULT_MIN_NUM_TOPICS,
             max_num_topics: int = DEFAULT_MAX_NUM_TOPICS,
-            num_collection_passes: int = DEFAULT_NUM_COLLECTION_PASSES):
+            num_collection_passes: int = DEFAULT_NUM_FIT_ITERATIONS):
 
         super().__init__(min_num_topics, max_num_topics, num_collection_passes)
 
