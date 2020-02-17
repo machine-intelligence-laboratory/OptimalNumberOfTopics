@@ -32,9 +32,9 @@ python run_search.py \
     -m @publisher:5 \           # other modality and its weight
     --modality @author:10 \     # other modality and its weight
     optimize_scores \           # search method
-    --max-num-topics 1000 \     # maximum number of topics in the text collection
-    --min-num-topics 100 \      # minimum number of topics in the text collection
-    --num-topics-interval 50 \  # search step in number of topics
+    --min-num-topics 1 \        # minimum number of topics in the text collection
+    --max-num-topics 10 \       # maximum number of topics in the text collection
+    --num-topics-interval 2 \   # search step in number of topics
     --num-fit-iterations 100 \  # number of fit iterations for each model training
     --num-restarts 10 \         # number of training restarts that differ in seed
     perplexity \                # what score to optimize
