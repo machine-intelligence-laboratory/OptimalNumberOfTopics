@@ -20,6 +20,7 @@ from ..scores.base_score import BaseScore
 from topicnet.cooking_machine.cubes import CubeCreator
 from topicnet.cooking_machine import Experiment
 import pandas as pd
+import uuid
 
 _KEY_SCORE_RESULTS = 'score_results'
 _KEY_SCORE_VALUES = 'score_values'
@@ -35,8 +36,9 @@ class OptimizeScoresMethod(BaseSearchMethod):
             num_topics_interval: int = 10,
             min_num_topics: int = DEFAULT_MIN_NUM_TOPICS,
             max_num_topics: int = DEFAULT_MAX_NUM_TOPICS,
-            num_fit_iterations: int = DEFAULT_NUM_FIT_ITERATIONS):
-            experiment_dir: str = DEFAULT_DIR):
+            num_fit_iterations: int = DEFAULT_NUM_FIT_ITERATIONS,
+            experiment_name: str or None = None,
+            experiment_directory: str = DEFAULT_DIR):
 
         super().__init__(min_num_topics, max_num_topics, num_fit_iterations)
 
@@ -45,7 +47,10 @@ class OptimizeScoresMethod(BaseSearchMethod):
         self._num_topics_interval = num_topics_interval
 
         self._result = dict()
-        self._experiment_dir = experiment_dir
+        if experiment_name is None:
+            experiment_name = uuid.uuid4()[:8] + '_experiment'
+        self._experiment_name = experiment_name
+        self._experiment_directory = experiment_directory
 
         self._key_num_topics_values = _KEY_VALUES.format('num_topics')
         self._key_score_values = _KEY_SCORE_VALUES
@@ -78,6 +83,8 @@ class OptimizeScoresMethod(BaseSearchMethod):
             background_topics=n_bcg_topics
         )
 
+        # remove regularizers created by default
+        # ifregularizers are needed, we will add them explicitly
         if n_bcg_topics:
             del artm_model.regularizers._data['smooth_theta_bcg']
             del artm_model.regularizers._data['smooth_phi_bcg']
@@ -101,7 +108,7 @@ class OptimizeScoresMethod(BaseSearchMethod):
             },
             verbose=False
         )
-        exp = Experiment(model, "num_topics_search", self._experiment_dir)
+        exp = Experiment(model, self._experiment_directory, self._experiment_name)
         cube(model, dataset)
 
         result_models = exp.select()
