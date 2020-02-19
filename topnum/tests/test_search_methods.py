@@ -140,8 +140,7 @@ class TestSearchMethods:
             name='simple_toptokens_coherence',
             cooccurrence_values={('play__m', 'boy__m'): 2},
             dataset=self.dataset,
-            modality=self.main_modality,
-            topics=['topic_0']
+            modality=self.main_modality
         )
 
         self._test_optimize_score(score)

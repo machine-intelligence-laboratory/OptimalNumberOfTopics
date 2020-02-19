@@ -28,7 +28,7 @@ class SimpleTopTokensCoherenceScore(BaseCustomScore):
             cooccurrence_values: Dict[Tuple[str, str], float],
             dataset: Dataset,
             modality: str,
-            topics: List[str],
+            topics: List[str] = None,
             num_top_tokens: int = 10,
             kernel: bool = False,
             average: str = AVERAGE_TYPE_MEAN,
@@ -73,7 +73,7 @@ class _TopTokensCoherenceScore(BaseTopicNetScore):
             cooccurrence_values: Dict[Tuple[str, str], float],
             dataset: Dataset,
             modality: str,
-            topics: List[str],
+            topics: List[str] = None,
             num_top_tokens: int = 10,
             kernel: bool = False,
             average: str = AVERAGE_TYPE_MEAN,
@@ -91,20 +91,27 @@ class _TopTokensCoherenceScore(BaseTopicNetScore):
         self._active_topic_threshold = active_topic_threshold
 
     def call(self, model: TopicModel) -> float:
-        subphi = model.get_phi().loc[self._modality, self._topics]
+        phi = model.get_phi()
+
+        if self._topics is not None:
+            topics = self._topics
+        else:
+            topics = list(phi.columns)
+
+        subphi = model.get_phi().loc[self._modality, topics]
         vocabulary_size = subphi.shape[0]
 
         topic_coherences = list()
 
         if self._active_topic_threshold is None:
-            topics = self._topics
+            pass
         else:
             # TODO: can't do without transform here, cache theta didn't help
             theta = model._model.transform(self._dataset.get_batch_vectorizer())
-            subtheta_values = theta.loc[self._topics, :].values
+            subtheta_values = theta.loc[topics, :].values
             max_probs = np.max(subtheta_values, axis=1)
             active_topic_indices = np.where(max_probs > self._active_topic_threshold)[0]
-            topics = [t for i, t in enumerate(self._topics) if i in active_topic_indices]
+            topics = [t for i, t in enumerate(topics) if i in active_topic_indices]
 
         for topic in topics:
             topic_column = subphi.loc[:, topic]
