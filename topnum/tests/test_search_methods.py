@@ -12,8 +12,11 @@ from typing import (
 
 from topnum.data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
 from topnum.scores import (
+    EntropyScore,
+    IntratextCoherenceScore,
     PerplexityScore,
-    EntropyScore
+    SimpleTopTokensCoherenceScore,
+    SophisticatedTopTokensCoherenceScore
 )
 from topnum.search_methods import (
     OptimizeScoresMethod,
@@ -55,6 +58,8 @@ class TestSearchMethods:
             main_modality=cls.main_modality,
             modalities=[cls.main_modality, cls.other_modality]
         )
+
+        cls.dataset = cls.text_collection._to_dataset()
 
     @classmethod
     def teardown_class(cls):
@@ -108,6 +113,35 @@ class TestSearchMethods:
             name='renyi_entropy',
             entropy=entropy,
             threshold_factor=threshold_factor
+        )
+
+        self._test_optimize_score(score)
+
+    def test_optimize_intratext(self):
+        score = IntratextCoherenceScore(
+            name='intratext_coherence',
+            dataset=self.dataset,
+            documents=self.dataset._data.index[:2]
+        )
+
+        self._test_optimize_score(score)
+
+    def test_optimize_sophisticated_toptokens(self):
+        score = SophisticatedTopTokensCoherenceScore(
+            name='sophisticated_toptokens_coherence',
+            dataset=self.dataset,
+            documents=self.dataset._data.index[:2]
+        )
+
+        self._test_optimize_score(score)
+
+    def test_optimize_simple_toptokens(self):
+        score = SimpleTopTokensCoherenceScore(
+            name='simple_toptokens_coherence',
+            cooccurrence_values={('play__m', 'boy__m'): 2},
+            dataset=self.dataset,
+            modality=self.main_modality,
+            topics=['topic_0']
         )
 
         self._test_optimize_score(score)
