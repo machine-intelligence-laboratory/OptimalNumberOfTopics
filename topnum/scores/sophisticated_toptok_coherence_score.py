@@ -22,7 +22,7 @@ from ._base_coherence_score import (
 )
 
 
-class TopTokensCoherenceScore(BaseCustomScore):
+class SophisticatedTopTokensCoherenceScore(BaseCustomScore):
     """
     Newman's PMI-based coherence.
     It estimates the measure of nonrandomness of a joint occurrence of
@@ -30,6 +30,8 @@ class TopTokensCoherenceScore(BaseCustomScore):
     For details one may see the paper
       Newman D. et al. "Automatic evaluation of topic coherence"
     """
+
+    # TODO: ability to specify modalities in the constructor
     def __init__(
             self,
             name: str,

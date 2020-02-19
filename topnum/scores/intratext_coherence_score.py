@@ -56,6 +56,8 @@ class IntratextCoherenceScore(BaseCustomScore):
 
     For more details one may see the article http://www.dialog-21.ru/media/4281/alekseevva.pdf
     """
+
+    # TODO: ability to specify modalities in the constructor
     def __init__(
             self,
             name: str,

@@ -23,7 +23,7 @@ from ..scores.intratext_coherence_score import (
     _IntratextCoherenceScore,
     ComputationMethod,
 )
-from ..scores.top_tokens_coherence_score import _TopTokensCoherenceScore
+from ..scores.sophisticated_toptok_coherence_score import _TopTokensCoherenceScore
 from ..scores._base_coherence_score import (
     _BaseCoherenceScore,
     TextType,
