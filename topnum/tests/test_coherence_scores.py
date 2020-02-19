@@ -42,10 +42,10 @@ DATASET_FILE_NAME = 'dataset.csv'
 
 
 class _MockModel(BaseModel):
-    def __init__(self, phi):
+    def __init__(self, phi: pd.DataFrame):
         self._phi = phi
 
-    def get_phi(self):
+    def get_phi(self) -> pd.DataFrame:
         return self._phi.copy()
 
 
@@ -181,8 +181,7 @@ class TestIntratextCoherenceScore:
         return segments
 
     @classmethod
-    def create_dataset_table(
-            cls, document_words: Dict[str, List[str]]) -> pd.DataFrame:
+    def create_dataset_table(cls, document_words: Dict[str, List[str]]) -> pd.DataFrame:
 
         return pd.DataFrame(
             index=cls.documents,
@@ -310,7 +309,10 @@ class TestIntratextCoherenceScore:
         ))
     )
     def test_compute_toptokens(
-            self, text_type, word_topic_relatedness, specificity_estimation):
+            self,
+            text_type: TextType,
+            word_topic_relatedness: WordTopicRelatednessType,
+            specificity_estimation: SpecificityEstimationMethod):
 
         score = _TopTokensCoherenceScore(
             self.dataset,
@@ -331,7 +333,10 @@ class TestIntratextCoherenceScore:
         ))
     )
     def test_call_toptokens(
-            self, text_type, word_topic_relatedness, specificity_estimation):
+            self,
+            text_type: TextType,
+            word_topic_relatedness: WordTopicRelatednessType,
+            specificity_estimation: SpecificityEstimationMethod) -> None:
 
         score = _TopTokensCoherenceScore(
             self.dataset,
@@ -356,8 +361,11 @@ class TestIntratextCoherenceScore:
         ['first', 'all', 'none']
     )
     def test_call_toptokens_with_specified_documents(
-            self, text_type, word_topic_relatedness, specificity_estimation,
-            what_documents):
+            self,
+            text_type: TextType,
+            word_topic_relatedness: WordTopicRelatednessType,
+            specificity_estimation: SpecificityEstimationMethod,
+            what_documents: str) -> None:
 
         if what_documents == 'first':
             documents = [self.documents[0]]

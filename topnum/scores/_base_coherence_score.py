@@ -34,6 +34,9 @@ _logger = logging.getLogger()
 # The score as long as IntratextCoherenceScore inherits from the BaseCoherenceScore defined here
 
 
+WordType = Tuple[str, str]  # modality + word
+
+
 class TextType(Enum):
     VW_TEXT = VW_TEXT_COL
     RAW_TEXT = RAW_TEXT_COL

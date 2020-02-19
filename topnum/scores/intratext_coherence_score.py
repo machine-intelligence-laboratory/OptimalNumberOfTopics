@@ -15,9 +15,10 @@ from typing import (
 from .base_custom_score import BaseCustomScore
 from ._base_coherence_score import (
     _BaseCoherenceScore,
+    SpecificityEstimationMethod,
     TextType,
     WordTopicRelatednessType,
-    SpecificityEstimationMethod
+    WordType
 )
 
 
@@ -201,7 +202,7 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
     def _compute_segment_characteristics(
             self,
             topic: str,
-            words: List[Tuple[str, str]],
+            words: List[WordType],
             word_topic_relatednesses: pd.DataFrame
     ) -> Tuple[Union[float, None], Union[float, None]]:
 
@@ -267,13 +268,13 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
     def _sum_relatednesses_over_window(
             self,
             topic: str,
-            words: List[Tuple[str, str]],
+            words: List[WordType],
             word_topic_relatednesses: pd.DataFrame) -> Union[float, None]:
 
         topic_index = word_topic_relatednesses.columns.get_loc(topic)
         word_topic_indices = np.argmax(word_topic_relatednesses.values, axis=1)
 
-        def get_word_topic_index(word: Tuple[str, str]) -> int:
+        def get_word_topic_index(word: WordType) -> int:
             if word not in word_topic_relatednesses.index:
                 return -1
             else:
