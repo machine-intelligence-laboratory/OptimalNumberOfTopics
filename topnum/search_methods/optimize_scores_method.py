@@ -21,11 +21,14 @@ from topicnet.cooking_machine.cubes import CubeCreator
 from topicnet.cooking_machine import Experiment
 import pandas as pd
 import uuid
+import os
+
 
 _KEY_SCORE_RESULTS = 'score_results'
 _KEY_SCORE_VALUES = 'score_values'
 
 _logger = logging.getLogger()
+
 
 
 class OptimizeScoresMethod(BaseSearchMethod):
@@ -47,8 +50,9 @@ class OptimizeScoresMethod(BaseSearchMethod):
         self._num_topics_interval = num_topics_interval
 
         self._result = dict()
+        self._detailed_result = dict()
         if experiment_name is None:
-            experiment_name = uuid.uuid4()[:8] + '_experiment'
+            experiment_name = str(uuid.uuid4())[:8] + '_experiment'
         self._experiment_name = experiment_name
         self._experiment_directory = experiment_directory
 
@@ -106,7 +110,8 @@ class OptimizeScoresMethod(BaseSearchMethod):
                 "seed": seeds,
                 "num_topics": nums_topics
             },
-            verbose=False
+            verbose=False,
+            separate_thread=False
         )
         exp = Experiment(model, self._experiment_directory, self._experiment_name)
         cube(model, dataset)
@@ -114,31 +119,62 @@ class OptimizeScoresMethod(BaseSearchMethod):
         result_models = exp.select()
         restarts = "seed=" + pd.Series(seeds, name="restart_id").astype(str)
 
-        detailed_resut = dict()
-        result = {}
-        result[_KEY_SCORE_RESULTS] = dict()
-        for score in self._scores:
-            score_df = pd.DataFrame(index=restarts, columns=nums_topics)
-            for model in result_models:
-                score_values = model.scores[score.name][-1]
-                score_df.loc[f"seed={model.seed}", len(model.topic_names)] = score_values
-            detailed_resut[score.name] = score_df.astype(float)
-
+        result, detailed_resut = summarize_models(
+            result_models,
+            [s.name for s in self._scores],
+            restarts
+        )
         self._detailed_result = detailed_resut
-
-        for score in self._scores:
-            score_df = detailed_resut[score.name]
-            score_result = {}
-            optimum_series = score_df.idxmin(axis=1)
-            score_result['optimum'] = optimum_series.median()
-            score_result['optimum_std'] = optimum_series.std()
-            score_result['num_topics_values'] = list(score_df.columns)
-
-            score_result['score_values'] = score_df.mean(axis=0)
-            score_result['score_values_std'] = score_df.std(axis=0)
-
-            result[_KEY_SCORE_RESULTS][score.name] = score_result
-
         self._result = result
 
         _logger.info('Finished searching!')
+
+def summarize_models(result_models, score_names=None, restarts=None):
+    detailed_resut = dict()
+    result = {}
+    result[_KEY_SCORE_RESULTS] = dict()
+    if score_names is None:
+        any_model = result_models[-1]
+        score_names = any_model.describe_scores().reset_index().score_name.values
+
+    nums_topics = sorted(list({len(tm.topic_names) for tm in result_models}))
+    if restarts is None:
+        seeds = list({tm.seed for tm in result_models})
+        restarts = "seed=" + pd.Series(seeds, name="restart_id").astype(str)
+
+    for score in score_names:
+        score_df = pd.DataFrame(index=restarts, columns=nums_topics)
+        for model in result_models:
+            score_values = model.scores[score][-1]
+            if isinstance(score_values, dict):
+                continue
+            score_df.loc[f"seed={model.seed}", len(model.topic_names)] = score_values
+        detailed_resut[score] = score_df.astype(float)
+
+
+    for score in score_names:
+        score_df = detailed_resut[score]
+        score_result = {}
+        optimum_series = score_df.idxmin(axis=1)
+        score_result['optimum'] = float(optimum_series.median())
+        score_result['optimum_std'] = float(optimum_series.std())
+        score_result['num_topics_values'] = list(score_df.columns)
+
+        score_result['score_values'] = score_df.mean(axis=0).tolist()
+        score_result['score_values_std'] = score_df.std(axis=0).tolist()
+
+        result[_KEY_SCORE_RESULTS][score] = score_result
+    return result, detailed_resut
+
+
+def restore_failed_experiment(experiment_directory, experiment_name, scores=None):
+    from topicnet.cooking_machine.experiment import START
+
+    folder = os.path.join(experiment_directory, experiment_name)
+    model_pathes = [
+        f.path for f in os.scandir(folder)
+        if f.is_dir() and f.name != START
+    ]
+    result_models = [TopicModel.load(path) for path in model_pathes]
+
+    return summarize_models(result_models)
