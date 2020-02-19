@@ -93,6 +93,7 @@ class _TopTokensCoherenceScore(_BaseCoherenceScore):
             text_type: TextType = TextType.VW_TEXT,
             word_topic_relatedness: WordTopicRelatednessType = WordTopicRelatednessType.PWT,
             specificity_estimation: SpecificityEstimationMethod = SpecificityEstimationMethod.NONE,
+            word_cooccurrences: Dict[Tuple[WordType, WordType], float] = None,
             num_top_words=10,
             window=10):
 
@@ -104,6 +105,41 @@ class _TopTokensCoherenceScore(_BaseCoherenceScore):
             specificity_estimation=specificity_estimation
         )
 
+        if word_cooccurrences is not None and not isinstance(word_cooccurrences, dict):
+            raise TypeError(
+                f'Wrong "word_cooccurrences": \"{word_cooccurrences}\". '
+                f'Expect to be \"dict\" or None')
+
+        if word_cooccurrences is None:
+            pass
+        elif len(word_cooccurrences) == 0:
+            word_cooccurrences = None
+        else:
+            first_key, first_value = next(iter(word_cooccurrences.items()))
+
+            if not isinstance(first_value, int) or not isinstance(first_value, float):
+                raise TypeError(
+                    f'Expect int or float as values in cooccurrences dictionary,'
+                    f' got "{first_value}"'
+                )
+            if not isinstance(first_key, tuple):
+                raise TypeError(
+                    f'Expect tuples as keys in cooccurrences dictionary,'
+                    f' got "{first_key}"'
+                )
+            if not isinstance(first_key[0], tuple) or not isinstance(first_key[1], tuple):
+                raise TypeError(
+                    f'Expect modality-word tuples as elements of'
+                    f' cooccurrence dictionary keys,'
+                    f' got "{first_key}"'
+                )
+            if not all(isinstance(v, str) for v in [*first_key[0]] + [*first_key[1]]):
+                raise TypeError(
+                    f'Expect string modality and word in'
+                    f' each element of cooccurrence dictionary keys,'
+                    f' got "{first_key}"'
+                )
+
         if not isinstance(num_top_words, int):
             raise TypeError(
                 f'Wrong "num_top_words": \"{num_top_words}\". '
@@ -114,6 +150,7 @@ class _TopTokensCoherenceScore(_BaseCoherenceScore):
                 f'Wrong "window": \"{window}\". '
                 f'Expect to be \"int\"')
 
+        self._word_cooccurrences = word_cooccurrences
         self._num_top_words = num_top_words
         self._window = window
 
@@ -128,13 +165,15 @@ class _TopTokensCoherenceScore(_BaseCoherenceScore):
         top_words_cooccurrences = self._get_top_words_cooccurrences(top_words, document_words)
 
         return self._compute_newman_coherence(
-            top_words, top_words_cooccurrences, len(document_words) - self._window + 1
+            top_words,
+            top_words_cooccurrences,
+            len(document_words) - self._window + 1
         )
 
     def _compute_newman_coherence(
             self,
             top_words: List[WordType],
-            top_words_cooccurrences: Dict[WordType, int],
+            top_words_cooccurrences: Dict[Tuple[WordType, WordType], float],
             num_windows: int) -> Union[float, None]:
 
         pair_estimates = np.array([
@@ -175,9 +214,16 @@ class _TopTokensCoherenceScore(_BaseCoherenceScore):
     def _get_top_words_cooccurrences(
             self,
             top_words: List[WordType],
-            document_words: List[WordType]) -> Dict[WordType, int]:
+            document_words: List[WordType]) -> Dict[Tuple[WordType, WordType], float]:
 
         cooccurrences = defaultdict(int)
+
+        if self._word_cooccurrences is not None:
+            cooccurrences = self._word_cooccurrences
+            self._remove_discrepancies_for_reversed_pairs(cooccurrences, top_words)
+
+            return cooccurrences
+
         start_window = document_words[:self._window]
         words_num_appearances_in_window = defaultdict(int)
 
@@ -197,30 +243,31 @@ class _TopTokensCoherenceScore(_BaseCoherenceScore):
 
             self._update_cooccurrences(cooccurrences, top_words, words_num_appearances_in_window)
 
+        # TODO: this is not always needed?
         self._remove_discrepancies_for_reversed_pairs(cooccurrences, top_words)
 
         return cooccurrences
 
     @staticmethod
     def _update_cooccurrences(
-            cooccurrences: Dict[Tuple[WordType, WordType], int],
+            cooccurrences: Dict[Tuple[WordType, WordType], float],
             top_words: List[WordType],
             words_num_appearances_in_window: Dict[WordType, int]) -> None:
 
         for w, u in itertools.combinations(top_words, 2):
-            cooccurrences[(w, u)] += 1 * (
+            cooccurrences[(w, u)] += 1.0 * (
                 words_num_appearances_in_window[w] > 0 and
                 words_num_appearances_in_window[u] > 0
             )
 
         for w in top_words:
-            cooccurrences[(w, w)] += 1 * (
+            cooccurrences[(w, w)] += 1.0 * (
                 words_num_appearances_in_window[w] > 0
             )
 
     @staticmethod
     def _remove_discrepancies_for_reversed_pairs(
-            cooccurrences: Dict[Tuple[WordType, WordType], int],
+            cooccurrences: Dict[Tuple[WordType, WordType], float],
             top_words: List[WordType]) -> None:
 
         for w, u in itertools.combinations(top_words, 2):
