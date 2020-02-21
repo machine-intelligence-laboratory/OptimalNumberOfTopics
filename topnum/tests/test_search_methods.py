@@ -10,6 +10,7 @@ from typing import (
     List
 )
 from numbers import Number
+from time import sleep
 
 from topnum.data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
 from topnum.scores import (
@@ -105,6 +106,7 @@ class TestSearchMethods:
     @pytest.mark.parametrize('entropy', ['renyi', 'shannon'])
     @pytest.mark.parametrize('threshold_factor', [1.0, 0.5, 1e-7, 1e7])
     def test_optimize_entropy(self, entropy, threshold_factor):
+        sleep(3)
         score = EntropyScore(
             name='renyi_entropy',
             entropy=entropy,

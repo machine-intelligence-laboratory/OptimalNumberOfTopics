@@ -22,6 +22,7 @@ from topicnet.cooking_machine import Experiment
 import pandas as pd
 import uuid
 import os
+from tqdm import tqdm
 
 
 _KEY_SCORE_RESULTS = 'score_results'
@@ -69,7 +70,9 @@ class OptimizeScoresMethod(BaseSearchMethod):
 
         dataset = text_collection._to_dataset()
 
-        seeds = [i-1 for i in range(self._num_restarts)]
+        # seed == -1 is too similar to seed == 0
+        seeds = [-1] + list(range(1, self._num_restarts))
+
         nums_topics = list(range(
             self._min_num_topics,
             self._max_num_topics + 1,
@@ -92,7 +95,7 @@ class OptimizeScoresMethod(BaseSearchMethod):
         if n_bcg_topics:
             del artm_model.regularizers._data['smooth_theta_bcg']
             del artm_model.regularizers._data['smooth_phi_bcg']
-        artm_model.num_processors = 5
+        artm_model.num_processors = 3
 
         model = TopicModel(artm_model)
 
@@ -104,27 +107,32 @@ class OptimizeScoresMethod(BaseSearchMethod):
         for score in self._scores:
             score._attach(model)
 
-        cube = CubeCreator(
-            num_iter=self._num_collection_passes,
-            parameters={
-                "seed": seeds,
-                "num_topics": nums_topics
-            },
-            verbose=False,
-            separate_thread=False
-        )
-        exp = Experiment(model, self._experiment_directory, self._experiment_name)
-        cube(model, dataset)
+        result_models = []
+        for seed in tqdm(seeds):  # dirty workaround for 'too many models' issue
+            exp_model = model.clone()
+            cube = CubeCreator(
+                num_iter=self._num_collection_passes,
+                parameters={
+                    "seed": [seed],
+                    "num_topics": nums_topics
+                },
+                verbose=False,
+                separate_thread=True
+            )
+            exp = Experiment(exp_model, f"{self._experiment_name}_{seed}", self._experiment_directory)
+            print(exp.save_path)
+            cube(exp_model, dataset)
 
-        result_models = exp.select()
+            result_models += exp.select()
+            del exp
+
         restarts = "seed=" + pd.Series(seeds, name="restart_id").astype(str)
-
-        result, detailed_resut = summarize_models(
+        result, detailed_result = summarize_models(
             result_models,
             [s.name for s in self._scores],
             restarts
         )
-        self._detailed_result = detailed_resut
+        self._detailed_result = detailed_result
         self._result = result
 
         _logger.info('Finished searching!')
