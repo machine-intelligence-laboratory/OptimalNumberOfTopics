@@ -8,10 +8,12 @@ from topicnet.cooking_machine.models.base_score import BaseScore as BaseTopicNet
 from typing import (
     Dict,
     List,
-    Tuple
+    Tuple,
+    Union
 )
 
 from .base_custom_score import BaseCustomScore
+from ..data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
 
 
 AVERAGE_TYPE_MEAN = 'mean'
@@ -26,8 +28,8 @@ class SimpleTopTokensCoherenceScore(BaseCustomScore):
             self,
             name: str,
             cooccurrence_values: Dict[Tuple[str, str], float],
-            dataset: Dataset,
-            modality: str,
+            data: Union[Dataset, VowpalWabbitTextCollection],
+            modalities: Union[str, List[str], None] = None,
             topics: List[str] = None,
             num_top_tokens: int = 10,
             kernel: bool = False,
@@ -35,9 +37,28 @@ class SimpleTopTokensCoherenceScore(BaseCustomScore):
             active_topic_threshold: bool = None):
         # TODO: expand docstring
         """
-        kernel — use only tokens from topic kernel
-        active_topic_threshold — if defined, non active topics won't be considered
-
+        Parameters
+        ----------
+        cooccurrence_values
+            Word cooccurence values:
+            the bigger the number corresponding to words (w1, w2),
+            the more the confidence that the occurrence of these words
+            together in text is non-random
+        data
+            Text document collection
+        modalities
+            Modalities for which words the coherence is to be calculated
+            If not specified (value None), all the modalities will be used
+        topics
+            Topics to calculate coherence for
+        num_top_tokens
+            Number of top tokens for coherence calculation
+        kernel
+            If true, only tokens from topic kernel will be used
+        active_topic_threshold
+            If defined, non-active topics won't be considered
+        average
+            How to average coherences over topics to get the final score result
         """
         super().__init__(name)
 
@@ -45,8 +66,18 @@ class SimpleTopTokensCoherenceScore(BaseCustomScore):
             raise ValueError(f'average: {average}')
 
         self._cooc_values = cooccurrence_values
-        self._dataset = dataset
-        self._modality = modality
+        self._data = data
+
+        if modalities is None:
+            pass
+        elif isinstance(modalities, str):
+            modalities = [modalities]
+        elif isinstance(modalities, list) and len(modalities) == 0:
+            modalities = None
+        elif not isinstance(modalities, list):
+            raise TypeError(f'modalities: {modalities}')
+
+        self._modalities = modalities
         self._topics = topics
         self._num_top_tokens = num_top_tokens
         self._kernel = kernel
@@ -56,10 +87,15 @@ class SimpleTopTokensCoherenceScore(BaseCustomScore):
         self._score = self._initialize()
 
     def _initialize(self) -> BaseTopicNetScore:
+        if isinstance(self._data, Dataset):
+            dataset = self._data
+        else:
+            dataset = self._data._to_dataset()
+
         return _TopTokensCoherenceScore(
             cooccurrence_values=self._cooc_values,
-            dataset=self._dataset,
-            modality=self._modality,
+            dataset=dataset,
+            modalities=self._modalities,
             topics=self._topics,
             kernel=self._kernel,
             average=self._average,
@@ -72,7 +108,7 @@ class _TopTokensCoherenceScore(BaseTopicNetScore):
             self,
             cooccurrence_values: Dict[Tuple[str, str], float],
             dataset: Dataset,
-            modality: str,
+            modalities: Union[str, List[str], None] = None,
             topics: List[str] = None,
             num_top_tokens: int = 10,
             kernel: bool = False,
@@ -83,7 +119,7 @@ class _TopTokensCoherenceScore(BaseTopicNetScore):
 
         self._cooc_values = cooccurrence_values
         self._dataset = dataset
-        self._modality = modality
+        self._modalities = modalities
         self._topics = topics
         self._num_top_tokens = num_top_tokens
         self._kernel = kernel
@@ -98,7 +134,12 @@ class _TopTokensCoherenceScore(BaseTopicNetScore):
         else:
             topics = list(phi.columns)
 
-        subphi = model.get_phi().loc[self._modality, topics]
+        if self._modalities is not None:
+            # As self._modalities is list, here always will be df with multiIndex
+            subphi = model.get_phi().loc[self._modalities, topics]
+        else:
+            subphi = model.get_phi().loc[:, topics]
+
         vocabulary_size = subphi.shape[0]
 
         topic_coherences = list()
@@ -117,12 +158,17 @@ class _TopTokensCoherenceScore(BaseTopicNetScore):
             topic_column = subphi.loc[:, topic]
 
             if not self._kernel:
-                tokens = topic_column.sort_values(ascending=False)[
-                         :self._num_top_tokens].index.to_list()
+                tokens = topic_column\
+                    .sort_values(ascending=False)[:self._num_top_tokens]\
+                    .index\
+                    .get_level_values(1)\
+                    .to_list()
             else:
                 # if self._num_top_tokens is None — also Ok
-                tokens = topic_column[topic_column > 1.0 / vocabulary_size][
-                         :self._num_top_tokens].index.to_list()
+                tokens = topic_column[topic_column > 1.0 / vocabulary_size][:self._num_top_tokens]\
+                    .index\
+                    .get_level_values(1)\
+                    .to_list()
 
             current_cooc_values = list()
 

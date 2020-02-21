@@ -10,6 +10,7 @@ from typing import (
     List
 )
 
+from itertools import combinations
 from topnum.data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
 from topnum.scores import (
     EntropyScore,
@@ -41,6 +42,7 @@ class TestSearchMethods:
     other_modality = '@other'
     num_documents = 10
     num_words_in_document = 100
+    vocabulary = None
     text_collection = None
 
     @classmethod
@@ -78,6 +80,8 @@ class TestSearchMethods:
 
         texts = list()
 
+        cls.vocabulary = list()
+
         for document_index in range(cls.num_documents):
             text = ''
             text = text + f'doc_{document_index}'
@@ -92,7 +96,11 @@ class TestSearchMethods:
                 for _ in range(num_words):
                     word = np.random.choice(words)
                     frequency = np.random.choice(frequencies)
-                    text = text + f' {word}__{modality_suffix}:{frequency}'
+                    token = f'{word}__{modality_suffix}'
+
+                    cls.vocabulary.append(token)
+
+                    text = text + f' {token}:{frequency}'
 
             texts.append(text)
 
@@ -120,27 +128,49 @@ class TestSearchMethods:
     def test_optimize_intratext(self):
         score = IntratextCoherenceScore(
             name='intratext_coherence',
-            dataset=self.dataset,
-            documents=self.dataset._data.index[:2]
+            data=self.dataset,
+            documents=self.dataset._data.index[:1],
+            window=2
         )
 
-        self._test_optimize_score(score)
+        # a bit slow -> just 2 restarts
+        self._test_optimize_score(score, num_restarts=2)
 
     def test_optimize_sophisticated_toptokens(self):
         score = SophisticatedTopTokensCoherenceScore(
             name='sophisticated_toptokens_coherence',
-            dataset=self.dataset,
-            documents=self.dataset._data.index[:2]
+            data=self.dataset,
+            documents=self.dataset._data.index[:1]
         )
 
-        self._test_optimize_score(score)
+        self._test_optimize_score(score, num_restarts=2)
 
-    def test_optimize_simple_toptokens(self):
+    @pytest.mark.parametrize('what_modalities', ['None', 'one', 'many'])
+    def test_optimize_simple_toptokens(self, what_modalities):
+        if what_modalities == 'None':
+            modalities = None
+        elif what_modalities == 'one':
+            modalities = self.main_modality
+        elif what_modalities == 'many':
+            modalities = [self.main_modality]
+        else:
+            assert False
+
+        cooccurrence_values = dict()
+        cooccurrence_values[('play__m', 'boy__m')] = 2
+
+        num_unique_words = 5
+
+        for i, (w1, w2) in enumerate(
+                combinations(self.vocabulary[:num_unique_words], 2)):
+
+            cooccurrence_values[(w1, w2)] = i
+
         score = SimpleTopTokensCoherenceScore(
             name='simple_toptokens_coherence',
-            cooccurrence_values={('play__m', 'boy__m'): 2},
-            dataset=self.dataset,
-            modality=self.main_modality
+            cooccurrence_values=cooccurrence_values,
+            data=self.dataset,
+            modalities=modalities
         )
 
         self._test_optimize_score(score)
@@ -174,18 +204,19 @@ class TestSearchMethods:
 
         self._check_search_result(optimizer._result, optimizer, num_search_points)
 
-    def _test_optimize_score(self, score):
+    def _test_optimize_score(self, score, num_restarts: int = 3) -> None:
         min_num_topics = 1
-        max_num_topics = 10
+        max_num_topics = 5
         num_topics_interval = 2
+        num_fit_iterations = 3
 
         optimizer = OptimizeScoresMethod(
             scores=[score],
             min_num_topics=min_num_topics,
             max_num_topics=max_num_topics,
             num_topics_interval=num_topics_interval,
-            num_fit_iterations=10,
-            num_restarts=3
+            num_fit_iterations=num_fit_iterations,
+            num_restarts=num_restarts
         )
         num_search_points = len(
             list(range(min_num_topics, max_num_topics + 1, num_topics_interval))

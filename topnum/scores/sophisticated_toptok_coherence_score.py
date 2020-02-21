@@ -20,6 +20,7 @@ from ._base_coherence_score import (
     WordType,
     WordTopicRelatednessType
 )
+from ..data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
 
 
 class SophisticatedTopTokensCoherenceScore(BaseCustomScore):
@@ -30,12 +31,11 @@ class SophisticatedTopTokensCoherenceScore(BaseCustomScore):
     For details one may see the paper
       Newman D. et al. "Automatic evaluation of topic coherence"
     """
-
     # TODO: ability to specify modalities in the constructor
     def __init__(
             self,
             name: str,
-            dataset: Dataset,
+            data: Union[Dataset, VowpalWabbitTextCollection],
             documents: List[str] = None,
             text_type: TextType = TextType.VW_TEXT,
             word_topic_relatedness: WordTopicRelatednessType = WordTopicRelatednessType.PWT,
@@ -44,8 +44,8 @@ class SophisticatedTopTokensCoherenceScore(BaseCustomScore):
         """
         Parameters
         ----------
-        dataset
-            Dataset with document collection
+        data
+            Document collection
             (any model passed to `call()` is supposed to be trained on it)
         documents
             Which documents from the dataset are to be used for computing coherence
@@ -67,7 +67,7 @@ class SophisticatedTopTokensCoherenceScore(BaseCustomScore):
         """
         super().__init__(name)
 
-        self._dataset = dataset
+        self._data = data
         self._documents = documents
         self._text_type = text_type
         self._word_topic_relatedness = word_topic_relatedness
@@ -77,8 +77,13 @@ class SophisticatedTopTokensCoherenceScore(BaseCustomScore):
         self._score = self._initialize()
 
     def _initialize(self) -> _BaseCoherenceScore:
+        if isinstance(self._data, Dataset):
+            dataset = self._data
+        else:
+            dataset = self._data._to_dataset()
+
         return _TopTokensCoherenceScore(
-            dataset=self._dataset,
+            dataset=dataset,
             documents=self._documents,
             text_type=self._text_type,
             word_topic_relatedness=self._word_topic_relatedness,
