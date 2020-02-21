@@ -23,7 +23,7 @@ This one was shown to be a good indicator of some kind of model stability: the m
     * [Koltcov, Sergei. "Application of Rényi and Tsallis entropies to topic modeling optimization." Physica A: Statistical Mechanics and its Applications 512 (2018): 1192-1204.](https://www.sciencedirect.com/science/article/pii/S0378437118309907)
     * [Koltcov, Sergei, Vera Ignatenko, and Olessia Koltsova. "Estimating Topic Modeling Performance with Sharma–Mittal Entropy." Entropy 21.7 (2019): 660.](https://www.mdpi.com/1099-4300/21/7/660)
 
-Let's say, one have our text collection in a vowpal wabbit file *vw.txt*:
+Let's say, one have her text collection as a vowpal wabbit file *vw.txt*:
 ```text
 doc_1 |@publisher mann_ivanov_ferber |@title atlas_obscura |@text earth:8 travel:10 baobab:1 ...
 doc_2 |@publisher chook_and_geek |@title black_hammer |@text hero:10 whiskey:2 barbalien:5 ...
@@ -51,7 +51,7 @@ python run_search.py \
     --threshold-factor 2.0      # previous score parameter
 ```
 
-And the result will look like this: (TODO: try on real data to get meaningful values)
+And the *result.json* file will look like this: (TODO: try on real data to get meaningful values)
 ```json
 {
     "score_results":
