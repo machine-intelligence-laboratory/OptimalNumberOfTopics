@@ -10,7 +10,9 @@ from topnum.data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
 from topnum.scores import (
     PerplexityScore,
     EntropyScore,
-    DiversityScore
+    DiversityScore,
+    SilhouetteScore,
+    CalinskiHarabazScore
 )
 from topnum.scores.diversity_score import L2
 from topnum.scores.entropy_score import RENYI as RENYI_ENTROPY_NAME
@@ -212,6 +214,11 @@ def _build_perplexity_score(modalities: List[str]) -> PerplexityScore:
         'perplexity_score',
         class_ids=modalities
     )
+
+
+# TODO:
+# _build_silhouette_score(dataset)
+# _build_ch_score(dataset)
 
 
 def _build_diversity_score(modalities: List[str]) -> DiversityScore:
