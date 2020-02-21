@@ -120,7 +120,6 @@ class OptimizeScoresMethod(BaseSearchMethod):
                 separate_thread=True
             )
             exp = Experiment(exp_model, f"{self._experiment_name}_{seed}", self._experiment_directory)
-            print(exp.save_path)
             cube(exp_model, dataset)
 
             result_models += exp.select()
@@ -175,14 +174,19 @@ def summarize_models(result_models, score_names=None, restarts=None):
     return result, detailed_resut
 
 
-def restore_failed_experiment(experiment_directory, experiment_name, scores=None):
+def restore_failed_experiment(experiment_directory, base_experiment_name, scores=None):
     from topicnet.cooking_machine.experiment import START
+    import glob
 
-    folder = os.path.join(experiment_directory, experiment_name)
-    model_pathes = [
-        f.path for f in os.scandir(folder)
-        if f.is_dir() and f.name != START
-    ]
-    result_models = [TopicModel.load(path) for path in model_pathes]
+    result_models = []
+
+    for folder in glob.glob(f"{experiment_directory}/{base_experiment_name}_*"):
+
+        folder = os.path.join(experiment_directory, experiment_name)
+        model_pathes = [
+            f.path for f in os.scandir(folder)
+            if f.is_dir() and f.name != START
+        ]
+        result_models += [TopicModel.load(path) for path in model_pathes]
 
     return summarize_models(result_models)
