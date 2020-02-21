@@ -26,7 +26,7 @@ This one was shown to be a good indicator of some kind of model stability: the m
 Let's say, one have her text collection as a vowpal wabbit file *vw.txt*:
 ```text
 doc_1 |@publisher mann_ivanov_ferber |@title atlas_obscura |@text earth:8 travel:10 baobab:1 ...
-doc_2 |@publisher chook_and_geek |@title black_hammer |@text hero:10 whiskey:2 barbalien:5 ...
+doc_2 |@publisher chook_and_geek |@title black_hammer |@text hero:10 whiskey:2 barbalien:4 ...
 ...
 ```
 
@@ -48,7 +48,9 @@ python run_search.py \
     --num-restarts 10 \         # number of training restarts that differ in seed
     perplexity \                # what score to optimize
     renyi_entropy \             # another score to optimize
-    --threshold-factor 2.0      # previous score parameter
+    --threshold-factor 2.0 \    # previous score parameter
+    intratext_coherence \       # one more score
+    top_tokens_coherence \      # and yet another one
 ```
 
 And the *result.json* file will look like this: (TODO: try on real data to get meaningful values)
@@ -60,19 +62,37 @@ And the *result.json* file will look like this: (TODO: try on real data to get m
         {
             "optimum": 9.0,
             "optimum_std": 0.0,
-            "score_values": [1374.69, 654.64, 437.03, 343.46, 286.09],
             "num_topics_values": [1.0, 3.0, 5.0, 7.0, 9.0],
-            "score_values_std": [0.0, 0.0, 0.0, 0.0, 0.0],
-            "num_topics_values_std": [0.0, 0.0, 0.0, 0.0, 0.0]
+            "score_values": [1374.69, 685.37, 494.05, 377.24, 313.09],
+            "num_topics_values_std": [0.0, 0.0, 0.0, 0.0, 0.0],
+            "score_values_std": [0.0, 0.0, 0.0, 0.0, 0.0]
         },
         "renyi_entropy_score":
         {
-            "optimum": 7.0,
+            "optimum": 3.0,
             "optimum_std": 0.0,
-            "score_values": [3202736109.71, 3.18, 2.09, 1.87, 2.03],
             "num_topics_values": [1.0, 3.0, 5.0, 7.0, 9.0],
-            "score_values_std": [4.94e-07, 4.60e-16, 0.0, 0.0, 4.60e-16],
-            "num_topics_values_std": [0.0, 0.0, 0.0, 0.0, 0.0]
+            "score_values": [1983797813.52, 1.37, 1.63, 1.84, 2.00],
+            "num_topics_values_std": [0.0, 0.0, 0.0, 0.0, 0.0],
+            "score_values_std": [9.87e-07, 2.30e-16, 2.30e-16, 4.60e-16, 6.90e-16]
+        },
+        "intratext_coherence_score":
+        {
+            "optimum": 9.0,
+            "optimum_std": 0.0,
+            "num_topics_values": [1.0, 3.0, 5.0, 7.0, 9.0],
+            "score_values": [72.90, 21.92, 12.73, 9.21, 6.88],
+            "num_topics_values_std": [0.0, 0.0, 0.0, 0.0, 0.0],
+            "score_values_std": [1.47e-14, 0.0, 3.68e-15, 1.84e-15, 2.76e-15]
+        },
+        "top_tokens_coherence_score":
+        {
+            "optimum": 3.0,
+            "optimum_std": 0.0,
+            "num_topics_values": [1.0, 3.0, 5.0, 7.0, 9.0],
+            "score_values": [0.834, 0.42, 0.76, 0.79, 0.53],
+            "num_topics_values_std": [0.0, 0.0, 0.0, 0.0, 0.0],
+            "score_values_std": [3.45e-16, 1.15e-16, 1.15e-16, 2.30e-16, 1.15e-16]
         }
     }
 }

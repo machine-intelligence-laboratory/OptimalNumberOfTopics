@@ -10,8 +10,11 @@ from typing import (
 
 from topnum.data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
 from topnum.scores import (
+    EntropyScore,
+    IntratextCoherenceScore,
+    SimpleTopTokensCoherenceScore,
+    SophisticatedTopTokensCoherenceScore,
     PerplexityScore,
-    EntropyScore
 )
 from topnum.scores.entropy_score import RENYI as RENYI_ENTROPY_NAME
 from topnum.scores.base_score import BaseScore
@@ -120,6 +123,19 @@ def _main():
         'renyi_entropy',
         help='Renyi entropy -> min'
     )
+    parser_optimize_intratext = subparsers_optimize_scores.add_parser(
+        'intratext_coherence',
+        help='Intratext coherence -> max'
+    )
+    parser_optimize_toptokens = subparsers_optimize_scores.add_parser(
+        'top_tokens_coherence',
+        help='Top tokens coherence -> max'
+    )
+    # parser_optimize_toptokens2 = subparsers_optimize_scores.add_parser(
+    #     'top_tokens_coherence2',
+    #     help='Top tokens coherence -> max'
+    # )
+
     parser_optimize_renyi_entropy.add_argument(
         '-f', '--threshold-factor',
         help='A greater than zero factor'
@@ -127,6 +143,8 @@ def _main():
         type=float,
         default=1.0
     )
+    # TODO: add args for parser_optimize_intratext
+    # TODO: add args for parser_optimize_toptokens
 
     parser_renormalize.add_argument(
         '--matrix',
@@ -174,6 +192,12 @@ def _main():
     vw_file_path = args.vw_file_path
     output_file_path = args.output_file_path
 
+    text_collection = VowpalWabbitTextCollection(
+        vw_file_path,
+        main_modality=main_modality_name,
+        modalities=modalities
+    )
+
     if not os.path.isfile(vw_file_path):
         raise ValueError(
             f'File not found on path vw_file_path: "{vw_file_path}"!'
@@ -194,19 +218,17 @@ def _main():
         num_restarts = args.num_restarts
 
         scores = list()
-        scores.append(_build_score(args, modality_names))
+        scores.append(_build_score(args, text_collection, modality_names))
 
         while len(unparsed_args) > 0:
             current_args, unparsed_args = parser_optimize_scores.parse_known_args(
                 unparsed_args
             )
-            scores.append(_build_score(current_args, modality_names))
+            scores.append(_build_score(current_args, text_collection, modality_names))
 
         _optimize_scores(
             scores,
-            vw_file_path,
-            main_modality_name,
-            modalities,
+            text_collection,
             output_file_path,
             min_num_topics=min_num_topics,
             max_num_topics=max_num_topics,
@@ -221,9 +243,7 @@ def _main():
         num_restarts = args.num_restarts
 
         _renormalize(
-            vw_file_path,
-            main_modality_name,
-            modalities,
+            text_collection,
             output_file_path,
             min_num_topics=min_num_topics,
             max_num_topics=max_num_topics,
@@ -274,48 +294,48 @@ def _parse_modalities(
     return main_modality_name, modalities
 
 
-def _build_score(args: argparse.Namespace, modality_names: List[str]) -> BaseScore:
+def _build_score(
+        args: argparse.Namespace,
+        text_collection: VowpalWabbitTextCollection,
+        modality_names: List[str]) -> BaseScore:
+
+    # TODO: modality_names should be available via text_collection
+
     if args.score_name == 'perplexity':
-        return _build_perplexity_score(modality_names)
+        return PerplexityScore(
+            'perplexity_score',
+            class_ids=modality_names
+        )
     elif args.score_name == 'renyi_entropy':
-        return _build_renyi_entropy_score(args.threshold_factor, modality_names)
+        return EntropyScore(
+            'renyi_entropy_score',
+            entropy=RENYI_ENTROPY_NAME,
+            threshold_factor=args.threshold_factor,
+            class_ids=modality_names
+        )
+    elif args.score_name == 'intratext_coherence':
+        return IntratextCoherenceScore(
+            'intratext_coherence_score',
+            data=text_collection
+        )
+    elif args.score_name == 'top_tokens_coherence':
+        return SophisticatedTopTokensCoherenceScore(
+            'top_tokens_coherence_score',
+            data=text_collection
+        )
     else:
         raise ValueError(f'Unknown score name "{args.score_name}"!')
 
 
-def _build_perplexity_score(modalities: List[str]) -> PerplexityScore:
-    return PerplexityScore(
-        'perplexity_score',
-        class_ids=modalities
-    )
-
-
-def _build_renyi_entropy_score(threshold_factor: float, modalities: List[str]) -> EntropyScore:
-    return EntropyScore(
-        'renyi_entropy_score',
-        entropy=RENYI_ENTROPY_NAME,
-        threshold_factor=threshold_factor,
-        class_ids=modalities
-    )
-
-
 def _optimize_scores(
         scores: List[BaseScore],
-        vw_file_path: str,
-        main_modality_name: str,
-        modalities: Dict[str, float],
+        text_collection: VowpalWabbitTextCollection,
         output_file_path: str,
         min_num_topics: int,
         max_num_topics: int,
         num_topics_interval: int,
         num_fit_iterations: int,
         num_restarts: int) -> None:
-
-    text_collection = VowpalWabbitTextCollection(
-        vw_file_path,
-        main_modality=main_modality_name,
-        modalities=modalities
-    )
 
     optimizer = OptimizeScoresMethod(
         scores=scores,
@@ -333,20 +353,12 @@ def _optimize_scores(
 
 
 def _renormalize(
-        vw_file_path: str,
-        main_modality_name: str,
-        modalities: Dict[str, float],
+        text_collection: VowpalWabbitTextCollection,
         output_file_path: str,
         min_num_topics: int,
         max_num_topics: int,
         num_fit_iterations: int,
         num_restarts: int) -> None:
-
-    text_collection = VowpalWabbitTextCollection(
-        vw_file_path,
-        main_modality=main_modality_name,
-        modalities=modalities
-    )
 
     optimizer = RenormalizationMethod(
         min_num_topics=min_num_topics,
