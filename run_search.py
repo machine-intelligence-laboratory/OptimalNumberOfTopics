@@ -1,5 +1,7 @@
 import argparse
 import json
+import os
+
 from typing import (
     Dict,
     List,
@@ -18,7 +20,11 @@ from topnum.search_methods.constants import (
     DEFAULT_MIN_NUM_TOPICS
 )
 from topnum.search_methods.optimize_scores_method import OptimizeScoresMethod
-
+from topnum.search_methods.renormalization_method import (
+    RenormalizationMethod,
+    PHI_RENORMALIZATION_MATRIX,
+    THETA_RENORMALIZATION_MATRIX
+)
 
 MESSAGE_MODALITY_FORMAT = (
     'Format: <modality name>, or <modality name>:<modality weight>.'
@@ -47,6 +53,7 @@ def _main():
         action='append',
         dest='modalities'
     )
+
     subparsers = parser.add_subparsers(
         help='Method for searching an appropriate number of topics',
         dest='search_method'
@@ -57,6 +64,12 @@ def _main():
         help='Find the number of topics which optimizes the score'
              ' (gives it max or min depending on the score)'
     )
+    parser_renormalize = subparsers.add_parser(
+        'renormalize',
+        help='Fulfil topic matrix renormalization'
+             ' to find the best number of topics relative to Renyi entropy'
+    )
+
     parser_optimize_scores.add_argument(
         '--max-num-topics',
         help='Maximum number of topics',
@@ -115,15 +128,65 @@ def _main():
         default=1.0
     )
 
+    parser_renormalize.add_argument(
+        '--matrix',
+        help='Matrix to be used for renormalization',
+        type=str,
+        default='phi',
+        choices=['phi', 'theta']
+    )
+    # TODO: think about it: maybe these args better make general for all methods?
+    parser_renormalize.add_argument(
+        '--max-num-topics',
+        help='Maximum number of topics',
+        type=int,
+        default=DEFAULT_MAX_NUM_TOPICS
+    )
+    parser_renormalize.add_argument(
+        '--min-num-topics',
+        help='Minimum number of topics',
+        type=int,
+        default=DEFAULT_MIN_NUM_TOPICS
+    )
+    parser_renormalize.add_argument(
+        '--num-fit-iterations',
+        help='Number of fit iterations for model training',
+        type=int,
+        default=100
+    )
+    parser_renormalize.add_argument(
+        '--num-restarts',
+        help='Number of models to train,'
+             ' each of which differs from the others by random seed'
+             ' used for initialization.'
+             ' Search results will be averaged over models '
+             ' (suffix _std means standard deviation for restarts).',  # TODO: check English
+        type=int,
+        default=3
+    )
+
     # parser_some_other = subparsers.add_parser('other', help='some help')
 
     args, unparsed_args = parser.parse_known_args()
 
+    main_modality_name, modalities = _parse_modalities(args.main_modality, args.modalities)
+    modality_names = list(modalities.keys())
+    vw_file_path = args.vw_file_path
+    output_file_path = args.output_file_path
+
+    if not os.path.isfile(vw_file_path):
+        raise ValueError(
+            f'File not found on path vw_file_path: "{vw_file_path}"!'
+        )
+
+    if not os.path.isdir(os.path.dirname(output_file_path))\
+            and len(os.path.dirname(output_file_path)) > 0:
+
+        raise ValueError(
+            f'Directory not found for output file output_file_path: "{output_file_path}"!'
+        )
+
     if args.search_method == 'optimize_scores':
-        main_modality_name, modalities = _parse_modalities(args.main_modality, args.modalities)
-        modality_names = list(modalities.keys())
-        vw_file_path = args.vw_file_path
-        output_file_path = args.output_file_path
         min_num_topics = args.min_num_topics
         max_num_topics = args.max_num_topics
         num_topics_interval = args.num_topics_interval
@@ -131,7 +194,6 @@ def _main():
         num_restarts = args.num_restarts
 
         scores = list()
-
         scores.append(_build_score(args, modality_names))
 
         while len(unparsed_args) > 0:
@@ -149,6 +211,22 @@ def _main():
             min_num_topics=min_num_topics,
             max_num_topics=max_num_topics,
             num_topics_interval=num_topics_interval,
+            num_fit_iterations=num_fit_iterations,
+            num_restarts=num_restarts
+        )
+    elif args.search_method == 'renormalize':
+        min_num_topics = args.min_num_topics
+        max_num_topics = args.max_num_topics
+        num_fit_iterations = args.num_fit_iterations
+        num_restarts = args.num_restarts
+
+        _renormalize(
+            vw_file_path,
+            main_modality_name,
+            modalities,
+            output_file_path,
+            min_num_topics=min_num_topics,
+            max_num_topics=max_num_topics,
             num_fit_iterations=num_fit_iterations,
             num_restarts=num_restarts
         )
@@ -250,7 +328,35 @@ def _optimize_scores(
 
     optimizer.search_for_optimum(text_collection)
 
-    # TODO: check if folder exists
+    with open(output_file_path, 'w') as f:
+        f.write(json.dumps(optimizer._result))
+
+
+def _renormalize(
+        vw_file_path: str,
+        main_modality_name: str,
+        modalities: Dict[str, float],
+        output_file_path: str,
+        min_num_topics: int,
+        max_num_topics: int,
+        num_fit_iterations: int,
+        num_restarts: int) -> None:
+
+    text_collection = VowpalWabbitTextCollection(
+        vw_file_path,
+        main_modality=main_modality_name,
+        modalities=modalities
+    )
+
+    optimizer = RenormalizationMethod(
+        min_num_topics=min_num_topics,
+        max_num_topics=max_num_topics,
+        num_fit_iterations=num_fit_iterations,
+        num_restarts=num_restarts
+    )
+
+    optimizer.search_for_optimum(text_collection)
+
     with open(output_file_path, 'w') as f:
         f.write(json.dumps(optimizer._result))
 

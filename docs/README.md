@@ -23,14 +23,23 @@ This one was shown to be a good indicator of some kind of model stability: the m
     * [Koltcov, Sergei. "Application of Rényi and Tsallis entropies to topic modeling optimization." Physica A: Statistical Mechanics and its Applications 512 (2018): 1192-1204.](https://www.sciencedirect.com/science/article/pii/S0378437118309907)
     * [Koltcov, Sergei, Vera Ignatenko, and Olessia Koltsova. "Estimating Topic Modeling Performance with Sharma–Mittal Entropy." Entropy 21.7 (2019): 660.](https://www.mdpi.com/1099-4300/21/7/660)
 
-The method can be invoked like this:
+Let's say, one have our text collection in a vowpal wabbit file *vw.txt*:
+```text
+    doc_1 |@publisher mann_ivanov_ferber |@title atlas_obscura |@text earth:10 travel:10 baobab:1 lenin:2 ...
+    doc_2 |@publisher chook_and_geek |@title black_hammer |@text hero:10 whiskey:2 barbalien:5 ...
+    ...
+```
+
+Then it is possible to find an optimal number of topics for this collection by looking at some topic model's characteristics (*scores*) and choosing the number of topics which corresponds to the best model.
+
+The searching process can be started like this:
 ```bash
 python run_search.py \
     vw.txt \                    # path to vowpal wabbit file
     @text:1 \                   # main modality and its weight
     result.json \               # output file path (the file may not exist)
     -m @publisher:5 \           # other modality and its weight
-    --modality @author:10 \     # other modality and its weight
+    --modality @title:2 \       # other modality and its weight
     optimize_scores \           # search method
     --min-num-topics 1 \        # minimum number of topics in the text collection
     --max-num-topics 10 \       # maximum number of topics in the text collection
@@ -80,6 +89,20 @@ Briefly, one model with a big number of topics is trained.
 Then, the number of topics is gradually reduced to one single topic: on each iteration two topics are selected by some criterion and merged into one.
 Minimum value of entropy is supposed to show the best, optimal, number of topics, when the model is most stable.
 
+The method can be invoked like this:
+```bash
+python run_search.py \
+    vw.txt \                    # path to vowpal wabbit file
+    @text:1 \                   # main modality and its weight
+    result.json \               # output file path (the file may not exist)
+    -m @publisher:5 \           # other modality and its weight
+    --modality @title:2 \       # other modality and its weight
+    renormalize \               # search method
+    --max-num-topics 100 \      # maximum number of topics in the text collection
+    --num-fit-iterations 100 \  # number of fit iterations for each model training
+    --num-restarts 10 \         # number of training restarts that differ in seed
+    --matrix phi                # matrix to use for renormalization
+```
 
 ## Structure
 

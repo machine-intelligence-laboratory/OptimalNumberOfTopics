@@ -40,6 +40,7 @@ _logger = logging.getLogger()
 
 
 class RenormalizationMethod(BaseSearchMethod):
+    # TODO: add modalities as parameter?
     def __init__(
             self,
             merge_method: str = ENTROPY_MERGE_METHOD,
@@ -47,12 +48,11 @@ class RenormalizationMethod(BaseSearchMethod):
             threshold_factor: float = 1,
             verbose: bool = False,
             num_restarts: int = 3,
-            num_topics_interval: int = 10,
             min_num_topics: int = DEFAULT_MIN_NUM_TOPICS,
             max_num_topics: int = DEFAULT_MAX_NUM_TOPICS,
-            num_collection_passes: int = DEFAULT_NUM_FIT_ITERATIONS):
+            num_fit_iterations: int = DEFAULT_NUM_FIT_ITERATIONS):
 
-        super().__init__(min_num_topics, max_num_topics, num_collection_passes)
+        super().__init__(min_num_topics, max_num_topics, num_fit_iterations)
 
         merge_method = merge_method.lower()
         matrix_for_renormalization = matrix_for_renormalization.lower()
@@ -71,7 +71,6 @@ class RenormalizationMethod(BaseSearchMethod):
         self._threshold_factor = threshold_factor
         self._verbose = verbose
         self._num_restarts = num_restarts
-        self._num_topics_interval = num_topics_interval
 
         self._result = dict()
 

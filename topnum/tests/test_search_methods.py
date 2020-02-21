@@ -195,7 +195,7 @@ class TestSearchMethods:
             matrix_for_renormalization=matrix_for_renormalization,
             threshold_factor=threshold_factor,
             max_num_topics=max_num_topics,
-            num_collection_passes=10,
+            num_fit_iterations=10,
             num_restarts=3
         )
         num_search_points = len(list(range(1, max_num_topics)))
