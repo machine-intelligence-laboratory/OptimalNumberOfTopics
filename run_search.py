@@ -9,8 +9,10 @@ from typing import (
 from topnum.data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
 from topnum.scores import (
     PerplexityScore,
-    EntropyScore
+    EntropyScore,
+    DiversityScore
 )
+from topnum.scores.diversity_score import L2
 from topnum.scores.entropy_score import RENYI as RENYI_ENTROPY_NAME
 from topnum.scores.base_score import BaseScore
 from topnum.search_methods.constants import (
@@ -208,6 +210,14 @@ def _build_score(args: argparse.Namespace, modality_names: List[str]) -> BaseSco
 def _build_perplexity_score(modalities: List[str]) -> PerplexityScore:
     return PerplexityScore(
         'perplexity_score',
+        class_ids=modalities
+    )
+
+
+def _build_diversity_score(modalities: List[str]) -> DiversityScore:
+    return DiversityScore(
+        'l2_diversity_score',
+        metric=L2,
         class_ids=modalities
     )
 
