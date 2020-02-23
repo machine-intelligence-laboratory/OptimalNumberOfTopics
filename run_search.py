@@ -10,12 +10,14 @@ from typing import (
 
 from topnum.data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
 from topnum.scores import (
+    DiversityScore,
     EntropyScore,
     IntratextCoherenceScore,
     SimpleTopTokensCoherenceScore,
     SophisticatedTopTokensCoherenceScore,
-    PerplexityScore,
+    PerplexityScore
 )
+from topnum.scores.diversity_score import L2
 from topnum.scores.entropy_score import RENYI as RENYI_ENTROPY_NAME
 from topnum.scores.base_score import BaseScore
 from topnum.search_methods.constants import (
@@ -122,6 +124,10 @@ def _main():
     parser_optimize_renyi_entropy = subparsers_optimize_scores.add_parser(
         'renyi_entropy',
         help='Renyi entropy -> min'
+    )
+    parser_optimize_diversity = subparsers_optimize_scores.add_parser(
+        'diversity_score',
+        help='Diversity -> max'  # TODO: right?
     )
     parser_optimize_intratext = subparsers_optimize_scores.add_parser(
         'intratext_coherence',
@@ -311,6 +317,12 @@ def _build_score(
             'renyi_entropy_score',
             entropy=RENYI_ENTROPY_NAME,
             threshold_factor=args.threshold_factor,
+            class_ids=modality_names
+        )
+    elif args.score_name == 'diversity_score':
+        return DiversityScore(
+            'l2_diversity_score',
+            metric=L2,
             class_ids=modality_names
         )
     elif args.score_name == 'intratext_coherence':

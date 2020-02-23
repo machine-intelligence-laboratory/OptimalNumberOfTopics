@@ -9,6 +9,8 @@ from typing import (
     Dict,
     List
 )
+from numbers import Number
+from time import sleep
 
 from itertools import combinations
 from topnum.data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
@@ -117,6 +119,7 @@ class TestSearchMethods:
     @pytest.mark.parametrize('entropy', ['renyi', 'shannon'])
     @pytest.mark.parametrize('threshold_factor', [1.0, 0.5, 1e-7, 1e7])
     def test_optimize_entropy(self, entropy, threshold_factor):
+        sleep(3)
         score = EntropyScore(
             name='renyi_entropy',
             entropy=entropy,
@@ -245,16 +248,16 @@ class TestSearchMethods:
 
         for key in optimizer._keys_mean_one:
             assert key in search_result
-            assert isinstance(search_result[key], float)
+            assert isinstance(search_result[key], Number)
 
         for key in optimizer._keys_std_one:
             assert key in search_result
-            assert isinstance(search_result[key], float)
+            assert isinstance(search_result[key], Number)
 
         for key in optimizer._keys_mean_many:
             assert key in search_result
             assert len(search_result[key]) == num_search_points
-            assert all(isinstance(v, float) for v in search_result[key])
+            assert all(isinstance(v, Number) for v in search_result[key])
 
             # TODO: remove this check when refactor computation inside optimizer
             if (hasattr(optimizer, '_key_num_topics_values')
@@ -271,4 +274,4 @@ class TestSearchMethods:
         for key in optimizer._keys_std_many:
             assert key in search_result
             assert len(search_result[key]) == num_search_points
-            assert all(isinstance(v, float) for v in search_result[key])
+            assert all(isinstance(v, Number) for v in search_result[key])
