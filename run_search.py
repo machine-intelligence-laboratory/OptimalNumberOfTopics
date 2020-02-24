@@ -1,6 +1,7 @@
 import argparse
 import json
 import os
+import traceback
 
 from typing import (
     Dict,
@@ -137,10 +138,6 @@ def _main():
         'top_tokens_coherence',
         help='Top tokens coherence -> max'
     )
-    # parser_optimize_toptokens2 = subparsers_optimize_scores.add_parser(
-    #     'top_tokens_coherence2',
-    #     help='Top tokens coherence -> max'
-    # )
 
     parser_optimize_renyi_entropy.add_argument(
         '-f', '--threshold-factor',
@@ -151,6 +148,15 @@ def _main():
     )
     # TODO: add args for parser_optimize_intratext
     # TODO: add args for parser_optimize_toptokens
+    parser_optimize_toptokens.add_argument(
+        '--cooc-file',
+        help='File with word cooccurrence values in the format'
+             ' [[["word_1", "word_2"], 6.27], [["word_1", "word_3"], 1.32], ...],'
+             ' i.e. there should be a list, where each item is another list:'
+             ' word pair as yet another list and a numeric value corresponding to this word pair',
+        type=str,
+        default=None
+    )
 
     parser_renormalize.add_argument(
         '--matrix',
@@ -330,10 +336,35 @@ def _build_score(
             'intratext_coherence_score',
             data=text_collection
         )
-    elif args.score_name == 'top_tokens_coherence':
+    elif args.score_name == 'top_tokens_coherence' and args.cooc_file is None:
+        # Actually, this one also can tame custom coocs, but in a bit different format:
+        # with modalities, like ((@m, w1), (@m, w2)): 17.5, ...
         return SophisticatedTopTokensCoherenceScore(
             'top_tokens_coherence_score',
             data=text_collection
+        )
+    elif args.score_name == 'top_tokens_coherence' and args.cooc_file is not None:
+        cooc_file = args.cooc_file
+
+        if not os.path.isfile(cooc_file):
+            raise ValueError(f'Coocs file not fould on path "{cooc_file}"!')
+
+        try:
+            raw_coocs_values = json.loads(open(cooc_file, 'r').read())
+        except json.JSONDecodeError:
+            raise ValueError(
+                f'Coocs file "{cooc_file}" doesn\'t seem like valid JSON!'
+                f' Error: {traceback.format_exc()}'
+            )
+
+        cooc_values = {
+            tuple(d[0]): d[1] for d in raw_coocs_values
+        }
+
+        return SimpleTopTokensCoherenceScore(
+            'top_tokens_coherence_score',
+            cooccurrence_values=cooc_values,
+            data=text_collection,
         )
     else:
         raise ValueError(f'Unknown score name "{args.score_name}"!')
