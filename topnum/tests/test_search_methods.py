@@ -228,6 +228,7 @@ class TestSearchMethods:
             num_fit_iterations=num_fit_iterations,
             num_restarts=num_restarts,
             one_model_num_processors=num_processors,
+            separate_thread=False,
             experiment_directory=DEFAULT_EXPERIMENT_DIR
         )
         num_search_points = len(

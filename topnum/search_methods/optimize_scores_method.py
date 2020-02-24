@@ -42,6 +42,7 @@ class OptimizeScoresMethod(BaseSearchMethod):
             max_num_topics: int = DEFAULT_MAX_NUM_TOPICS,
             num_fit_iterations: int = DEFAULT_NUM_FIT_ITERATIONS,
             one_model_num_processors: int = 3,
+            separate_thread: bool = True,
             experiment_name: str or None = None,
             save_experiment: bool = False,
             experiment_directory: str = DEFAULT_EXPERIMENT_DIR):
@@ -59,6 +60,7 @@ class OptimizeScoresMethod(BaseSearchMethod):
             experiment_name = str(uuid.uuid4())[:8] + '_experiment'
 
         self._one_model_num_processors = one_model_num_processors
+        self._separate_thread = separate_thread
 
         self._experiment_name = experiment_name
         self._save_experiment = save_experiment
@@ -127,7 +129,7 @@ class OptimizeScoresMethod(BaseSearchMethod):
                     "num_topics": nums_topics
                 },
                 verbose=False,
-                separate_thread=False
+                separate_thread=self._separate_thread
             )
             exp = Experiment(
                 exp_model,
