@@ -5,11 +5,11 @@ Here are the scores available for using for finding an appropriate number of top
     .
     └── base_score.py                                       # Base score class. If a score is used anywhere in the module, it inherits from BaseScore
         ├── base_default_score.py                           # ARTM score wrapped in BaseScore
+            └── perplexity_score.py
         └── base_custom_score.py                            # TopicNet score wrapped in BaseScore
             ├── diversity_score.py
             ├── entropy_score.py
             ├── intratext_coherence_score.py                # Coherence score (intratext)
-            ├── perplexity_score.py
             ├── simple_toptok_coherence_score.py            # Coherence score (top tokens, #1)
             └── sophisticated_toptok_coherence_score.py     # Coherence score (top tokens, #2)
 
