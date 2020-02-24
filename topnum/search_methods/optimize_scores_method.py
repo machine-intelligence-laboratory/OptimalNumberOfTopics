@@ -20,7 +20,7 @@ from .constants import (
     DEFAULT_MAX_NUM_TOPICS,
     DEFAULT_MIN_NUM_TOPICS,
     DEFAULT_NUM_FIT_ITERATIONS,
-    DEFAULT_DIR
+    DEFAULT_EXPERIMENT_DIR
 )
 from ..data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
 from ..scores.base_score import BaseScore
@@ -44,7 +44,7 @@ class OptimizeScoresMethod(BaseSearchMethod):
             one_model_num_processors: int = 3,
             experiment_name: str or None = None,
             save_experiment: bool = False,
-            experiment_directory: str = DEFAULT_DIR):
+            experiment_directory: str = DEFAULT_EXPERIMENT_DIR):
 
         super().__init__(min_num_topics, max_num_topics, num_fit_iterations)
 

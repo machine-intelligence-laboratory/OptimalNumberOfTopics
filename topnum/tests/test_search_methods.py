@@ -4,15 +4,16 @@ import pytest
 import shutil
 import tempfile
 import warnings
+
+from itertools import combinations
+from numbers import Number
+from time import sleep
 from topicnet.cooking_machine.dataset import W_DIFF_BATCHES_1
 from typing import (
     Dict,
     List
 )
-from numbers import Number
-from time import sleep
 
-from itertools import combinations
 from topnum.data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
 from topnum.scores import (
     EntropyScore,
@@ -26,6 +27,7 @@ from topnum.search_methods import (
     RenormalizationMethod
 )
 from topnum.search_methods.base_search_method import BaseSearchMethod
+from topnum.search_methods.constants import DEFAULT_EXPERIMENT_DIR
 from topnum.search_methods.optimize_scores_method import _KEY_SCORE_RESULTS
 from topnum.search_methods.renormalization_method import (
     ENTROPY_MERGE_METHOD,
@@ -69,6 +71,9 @@ class TestSearchMethods:
     def teardown_class(cls):
         cls.text_collection._remove_dataset()
         shutil.rmtree(cls.text_collection_folder)
+
+        if os.path.isdir(DEFAULT_EXPERIMENT_DIR):
+            shutil.rmtree(DEFAULT_EXPERIMENT_DIR)
 
     @classmethod
     def generate_vowpal_wabbit_texts(cls) -> List[str]:
@@ -209,8 +214,8 @@ class TestSearchMethods:
 
     def _test_optimize_score(self, score, num_restarts: int = 3) -> None:
         min_num_topics = 1
-        max_num_topics = 5
-        num_topics_interval = 2
+        max_num_topics = 2
+        num_topics_interval = 1
 
         num_fit_iterations = 3
         num_processors = 1
@@ -222,7 +227,8 @@ class TestSearchMethods:
             num_topics_interval=num_topics_interval,
             num_fit_iterations=num_fit_iterations,
             num_restarts=num_restarts,
-            one_model_num_processors=num_processors
+            one_model_num_processors=num_processors,
+            experiment_directory=DEFAULT_EXPERIMENT_DIR
         )
         num_search_points = len(
             list(range(min_num_topics, max_num_topics + 1, num_topics_interval))
