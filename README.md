@@ -23,7 +23,7 @@ This one was shown to be a good indicator of some kind of model stability: the m
     * [Sergei Koltcov. "Application of Rényi and Tsallis entropies to topic modeling optimization.", 2018](https://www.sciencedirect.com/science/article/pii/S0378437118309907)
     * [Sergei Koltcov, Vera Ignatenko, and Olessia Koltsova. "Estimating Topic Modeling Performance with Sharma–Mittal Entropy.", 2019](https://www.mdpi.com/1099-4300/21/7/660)
 
-Let's say, one have her text collection as a vowpal wabbit file [*vw.txt*](../sample/vw.txt):
+Let's say, one have her text collection as a vowpal wabbit file [*vw.txt*](./sample/vw.txt):
 ```text
 doc_1 |@publisher mann_ivanov_ferber |@title atlas obscura |@text earth:8 travel:10 baobab:1 ...
 doc_2 |@publisher chook_and_geek |@title black hammer |@text hero:10 whiskey:2 barbalien:4 ...
@@ -101,7 +101,7 @@ And the *result.json* file will look like this: (TODO: try on real data to get m
 
 Here *optimum* means the optimal number of topics according to the score, *score_values* are the values of the score, each value corresponds to the number of topics in *num_topics_values* by the same index.
 
-Another way to run the process may be via [bash script](../sample/optimize_scores.sh)
+Another way to run the process may be via [bash script](./sample/optimize_scores.sh)
 ```bash
 #!/bin/bash
 
