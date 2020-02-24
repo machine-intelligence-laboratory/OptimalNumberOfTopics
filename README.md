@@ -20,13 +20,13 @@ Scores, available for optimizing:
 Definitely, this is not the best choice (TODO: links, why).
 * [*Rényi entropy*](https://en.wikipedia.org/wiki/R%C3%A9nyi_entropy).
 This one was shown to be a good indicator of some kind of model stability: the more stable the model, the less its entropy.
-    * [Koltcov, Sergei. "Application of Rényi and Tsallis entropies to topic modeling optimization." Physica A: Statistical Mechanics and its Applications 512 (2018): 1192-1204.](https://www.sciencedirect.com/science/article/pii/S0378437118309907)
-    * [Koltcov, Sergei, Vera Ignatenko, and Olessia Koltsova. "Estimating Topic Modeling Performance with Sharma–Mittal Entropy." Entropy 21.7 (2019): 660.](https://www.mdpi.com/1099-4300/21/7/660)
+    * [Sergei Koltcov. "Application of Rényi and Tsallis entropies to topic modeling optimization.", 2018](https://www.sciencedirect.com/science/article/pii/S0378437118309907)
+    * [Sergei Koltcov, Vera Ignatenko, and Olessia Koltsova. "Estimating Topic Modeling Performance with Sharma–Mittal Entropy.", 2019](https://www.mdpi.com/1099-4300/21/7/660)
 
-Let's say, one have her text collection as a vowpal wabbit file *vw.txt*:
+Let's say, one have her text collection as a vowpal wabbit file [vw.txt](./sample/vw.txt):
 ```text
-doc_1 |@publisher mann_ivanov_ferber |@title atlas_obscura |@text earth:8 travel:10 baobab:1 ...
-doc_2 |@publisher chook_and_geek |@title black_hammer |@text hero:10 whiskey:2 barbalien:4 ...
+doc_1 |@publisher mann_ivanov_ferber |@title atlas obscura |@text earth:8 travel:10 baobab:1 ...
+doc_2 |@publisher chook_and_geek |@title black hammer |@text hero:10 whiskey:2 barbalien:4 ...
 doc_3 |@publisher eksmo |@title dune |@text sand:7 arrakis:6 spice:12 destiny:2 ...
 ...
 ```
@@ -101,7 +101,98 @@ And the *result.json* file will look like this: (TODO: try on real data to get m
 
 Here *optimum* means the optimal number of topics according to the score, *score_values* are the values of the score, each value corresponds to the number of topics in *num_topics_values* by the same index.
 
-Scores, currenly available:
+Another way to run the process may be via [bash script](./sample/optimize_scores.sh)
+```bash
+#!/bin/bash
+
+general_args=(
+    ./sample/vw.txt
+    @text:1
+    result.json
+    -m @title:3
+    --modality @publisher:2
+)
+
+search_method_args=(
+    optimize_scores
+    --max-num-topics 10
+    --min-num-topics 1
+    --num-topics-interval 2
+    --num-fit-iterations 2
+    --num-restarts 3
+    perplexity
+    renyi_entropy
+    intratext_coherence
+    top_tokens_coherence
+    --cooc-file ./sample/cooc_values.json
+)
+
+python run_search.py "${general_args[@]}" "${search_method_args[@]}"
+```
+
+Or sitting in a .py file or a Jupyter Notebook:
+```python
+from topnum.data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
+from topnum.scores import (
+    DiversityScore,
+    EntropyScore,
+    IntratextCoherenceScore,
+    PerplexityScore,
+    SophisticatedTopTokensCoherenceScore
+)
+from topnum.scores.diversity_score import L2
+from topnum.scores.entropy_score import RENYI as RENYI_ENTROPY_NAME
+from topnum.search_methods.optimize_scores_method import OptimizeScoresMethod
+
+
+text_collection = VowpalWabbitTextCollection(
+    'sample/vw.txt',
+    main_modality='@text',
+    modalities={'@text': 1, '@title': 3, '@publisher': 2}
+)
+modality_names = list(modalities.keys())
+
+scores = [
+    PerplexityScore(
+        'perplexity_score',
+        class_ids=modality_names
+    ),
+    EntropyScore(
+        'renyi_entropy_score',
+        entropy=RENYI_ENTROPY_NAME,
+        class_ids=modality_names
+    ),
+    DiversityScore(
+        'l2_diversity_score',
+        metric=L2,
+        class_ids=modality_names
+    ),
+    IntratextCoherenceScore(
+        'intratext_coherence_score',
+        data=text_collection
+    ),
+    SophisticatedTopTokensCoherenceScore(
+        'top_tokens_coherence_score',
+        data=text_collection
+    )
+]
+
+optimizer = OptimizeScoresMethod(
+    scores=scores,
+    min_num_topics=1,
+    max_num_topics=10,
+    num_topics_interval=2,
+    num_fit_iterations=2,
+    num_restarts=3
+)
+
+optimizer.search_for_optimum(text_collection)
+
+with open('result.json', 'w') as f:
+    f.write(json.dumps(optimizer._result))
+```
+
+Scores currenly available are:
 * perplexity
 * renyi_entropy
 * diversity_score
@@ -114,7 +205,7 @@ More about scores one can find [here](https://github.com/machine-intelligence-la
 ## Renormalization
 
 The approach is described in the following paper:  
-[Koltcov, Sergei, Vera Ignatenko, and Sergei Pashakhin. "Fast tuning of topic models: an application of Rényi entropy and renormalization theory." Conference Proceedings Paper. Vol. 18. No. 30. 2019.](https://www.researchgate.net/profile/Sergei_Koltsov2/publication/337427975_5th_International_Electronic_Conference_on_Entropy_and_Its_Applications_Fast_tuning_of_topic_models_an_application_of_Renyi_entropy_and_renormalization_theory/links/5dd6d6bf458515dc2f41e248/5th-International-Electronic-Conference-on-Entropy-and-Its-Applications-Fast-tuning-of-topic-models-an-application-of-Renyi-entropy-and-renormalization-theory.pdf).
+[Sergei Koltcov, Vera Ignatenko, and Sergei Pashakhin. "Fast tuning of topic models: an application of Rényi entropy and renormalization theory.", 2019](https://www.researchgate.net/profile/Sergei_Koltsov2/publication/337427975_5th_International_Electronic_Conference_on_Entropy_and_Its_Applications_Fast_tuning_of_topic_models_an_application_of_Renyi_entropy_and_renormalization_theory/links/5dd6d6bf458515dc2f41e248/5th-International-Electronic-Conference-on-Entropy-and-Its-Applications-Fast-tuning-of-topic-models-an-application-of-Renyi-entropy-and-renormalization-theory.pdf).
 
 Briefly, one model with a big number of topics is trained.
 Then, the number of topics is gradually reduced to one single topic: on each iteration two topics are selected by some criterion and merged into one.

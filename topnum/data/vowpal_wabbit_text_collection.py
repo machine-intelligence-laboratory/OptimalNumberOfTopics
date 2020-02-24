@@ -18,6 +18,8 @@ class VowpalWabbitTextCollection(BaseTextCollection):
             main_modality: str,
             modalities: Union[None, List[str], Dict[str, float]]):
 
+        super().__init__()
+
         self._file_path = file_path
 
         if not os.path.isfile(self._file_path):
@@ -55,10 +57,13 @@ class VowpalWabbitTextCollection(BaseTextCollection):
         dataset_table['raw_text'] = [None for _ in vw_texts]  # TODO: check if this OK
         dataset_table['vw_text'] = vw_texts
 
-        self._dataset_folder = tempfile.mkdtemp(
-            prefix='_dataset_',
-            dir=os.path.dirname(self._file_path)
-        )
+        if self._dataset_folder is None:
+            self._dataset_folder = tempfile.mkdtemp(
+                prefix='_dataset_',
+                dir=os.path.dirname(self._file_path)
+            )
+        else:
+            assert os.path.isdir(self._dataset_folder)
 
         dataset_table_path = os.path.join(self._dataset_folder, 'dataset.csv')
         dataset_table.to_csv(

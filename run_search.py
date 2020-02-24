@@ -14,9 +14,9 @@ from topnum.scores import (
     DiversityScore,
     EntropyScore,
     IntratextCoherenceScore,
+    PerplexityScore,
     SimpleTopTokensCoherenceScore,
-    SophisticatedTopTokensCoherenceScore,
-    PerplexityScore
+    SophisticatedTopTokensCoherenceScore
 )
 from topnum.scores.diversity_score import L2
 from topnum.scores.entropy_score import RENYI as RENYI_ENTROPY_NAME
@@ -254,9 +254,17 @@ def _main():
         num_fit_iterations = args.num_fit_iterations
         num_restarts = args.num_restarts
 
+        if args.matrix == 'phi':
+            matrix = PHI_RENORMALIZATION_MATRIX
+        elif args.matrix == 'theta':
+            matrix = THETA_RENORMALIZATION_MATRIX
+        else:
+            raise ValueError(f'matrix: {args.matrix}')  # ideally never happens
+
         _renormalize(
             text_collection,
             output_file_path,
+            matrix=matrix,
             min_num_topics=min_num_topics,
             max_num_topics=max_num_topics,
             num_fit_iterations=num_fit_iterations,
@@ -264,6 +272,8 @@ def _main():
         )
     else:
         raise ValueError(args.search_method)
+
+    text_collection._remove_dataset()
 
 
 # TODO: test
@@ -398,12 +408,14 @@ def _optimize_scores(
 def _renormalize(
         text_collection: VowpalWabbitTextCollection,
         output_file_path: str,
+        matrix: str,
         min_num_topics: int,
         max_num_topics: int,
         num_fit_iterations: int,
         num_restarts: int) -> None:
 
     optimizer = RenormalizationMethod(
+        matrix_for_renormalization=matrix,
         min_num_topics=min_num_topics,
         max_num_topics=max_num_topics,
         num_fit_iterations=num_fit_iterations,
