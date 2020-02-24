@@ -1,5 +1,13 @@
 #!/bin/bash
 
+main_file="../run_search.py"
+
+if [ ! -f "$main_file" ]
+then
+    echo "$main_file file not found! Change working directory to the one where the script resides"
+    exit 1
+fi
+
 general_args=(
     ./vw.txt
     @text:1
@@ -24,4 +32,4 @@ search_method_args=(
 
 echo "Arguments: ${general_args[@]} ${search_method_args[@]}"
 
-python ../run_search.py "${general_args[@]}" "${search_method_args[@]}"
+python "$main_file" "${general_args[@]}" "${search_method_args[@]}"
