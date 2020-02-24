@@ -3,7 +3,7 @@
 Here are the scores available for using for finding an appropriate number of topics in a text collection:
 
     .
-    └── base_score.py                                       # Base score class. If a score in used anywhere in the module, it should inherit from BaseScore
+    └── base_score.py                                       # Base score class. If a score is used anywhere in the module, it inherits from BaseScore
         ├── base_default_score.py                           # ARTM score wrapped in BaseScore
         └── base_custom_score.py                            # TopicNet score wrapped in BaseScore
             ├── diversity_score.py
@@ -20,7 +20,7 @@ Worth noting, that there are several types of topic coherence scores available: 
 Each has various parameters which define the exact way of coherence computation.
 What's more, things happened that way, that there are even two different classes for top tokens based coherence (so called [sophisticated](sophisticated_toptok_coherence_score.py) and [simple](simple_toptok_coherence_score.py)).
 They differ a bit from one another and it seems for now that both are worth to be kept in the module.
-The main differences currently seem the following: the simple implementation requires token *cooccurrence values* for initialization, can take modalities as input to look for tokens only from specified modalities, plus the simple coherence provides an ability to take into account only *active* topics and only tokens from *topic kernels*.
+The main differences currently seem the following: the simple implementation requires token *cooccurrence values* for initialization, can take modalities as input to look for tokens only from specified modalities, plus the simple coherence provides an ability to take into account only *active topics* and only tokens from *topic kernels*.
 On the other hand, the sophisticated implementation provides more ways for computing coherence, and estimating word-to-topic relatedness values.
 The sophisticated top tokens coherence can deal without the precomputed word cooccurence values, however, if one still wants to use custom cooccurrence values (for faster computing for example), she needs to provide it in a different format than for the simple top tokens coherence (examples are in the classes' docstrings).
 

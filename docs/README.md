@@ -108,6 +108,8 @@ Scores, currenly available:
 * intratext_coherence
 * top_tokens_coherence
 
+More about scores one can find [here](https://github.com/machine-intelligence-laboratory/OptimalNumberOfTopics/tree/feature/coherences/topnum/scores) in the module.
+
 
 ## Renormalization
 
