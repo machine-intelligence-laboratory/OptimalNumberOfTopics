@@ -132,7 +132,7 @@ python run_search.py "${general_args[@]}" "${search_method_args[@]}"
 
 Or sitting in a .py file or a Jupyter Notebook:
 ```python
-from topnum.data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
+from topnum.data import VowpalWabbitTextCollection
 from topnum.scores import (
     DiversityScore,
     EntropyScore,
@@ -140,15 +140,17 @@ from topnum.scores import (
     PerplexityScore,
     SophisticatedTopTokensCoherenceScore
 )
-from topnum.scores.diversity_score import L2
-from topnum.scores.entropy_score import RENYI as RENYI_ENTROPY_NAME
-from topnum.search_methods.optimize_scores_method import OptimizeScoresMethod
+from topnum.search_methods import OptimizeScoresMethod
 
-
+modalities={
+    '@text': 1,
+    '@title': 3,
+    '@publisher': 2
+}
 text_collection = VowpalWabbitTextCollection(
     'sample/vw.txt',
     main_modality='@text',
-    modalities={'@text': 1, '@title': 3, '@publisher': 2}
+    modalities=modalities
 )
 modality_names = list(modalities.keys())
 
@@ -159,12 +161,10 @@ scores = [
     ),
     EntropyScore(
         'renyi_entropy_score',
-        entropy=RENYI_ENTROPY_NAME,
         class_ids=modality_names
     ),
     DiversityScore(
-        'l2_diversity_score',
-        metric=L2,
+        'diversity_score',
         class_ids=modality_names
     ),
     IntratextCoherenceScore(
