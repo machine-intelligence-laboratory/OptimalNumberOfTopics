@@ -23,7 +23,7 @@ This one was shown to be a good indicator of some kind of model stability: the m
     * [Sergei Koltcov. "Application of Rényi and Tsallis entropies to topic modeling optimization.", 2018](https://www.sciencedirect.com/science/article/pii/S0378437118309907)
     * [Sergei Koltcov, Vera Ignatenko, and Olessia Koltsova. "Estimating Topic Modeling Performance with Sharma–Mittal Entropy.", 2019](https://www.mdpi.com/1099-4300/21/7/660)
 
-Let's say, one have her text collection as a vowpal wabbit file [*vw.txt*](./sample/vw.txt):
+Let's say, one have her text collection as a vowpal wabbit file [vw.txt](./sample/vw.txt):
 ```text
 doc_1 |@publisher mann_ivanov_ferber |@title atlas obscura |@text earth:8 travel:10 baobab:1 ...
 doc_2 |@publisher chook_and_geek |@title black hammer |@text hero:10 whiskey:2 barbalien:4 ...
@@ -205,7 +205,7 @@ More about scores one can find [here](https://github.com/machine-intelligence-la
 ## Renormalization
 
 The approach is described in the following paper:  
-[Sergei Koltcov, Vera Ignatenko, and Sergei Pashakhin. "Fast tuning of topic models: an application of Rényi entropy and renormalization theory.", 2019.](https://www.researchgate.net/profile/Sergei_Koltsov2/publication/337427975_5th_International_Electronic_Conference_on_Entropy_and_Its_Applications_Fast_tuning_of_topic_models_an_application_of_Renyi_entropy_and_renormalization_theory/links/5dd6d6bf458515dc2f41e248/5th-International-Electronic-Conference-on-Entropy-and-Its-Applications-Fast-tuning-of-topic-models-an-application-of-Renyi-entropy-and-renormalization-theory.pdf).
+[Sergei Koltcov, Vera Ignatenko, and Sergei Pashakhin. "Fast tuning of topic models: an application of Rényi entropy and renormalization theory.", 2019](https://www.researchgate.net/profile/Sergei_Koltsov2/publication/337427975_5th_International_Electronic_Conference_on_Entropy_and_Its_Applications_Fast_tuning_of_topic_models_an_application_of_Renyi_entropy_and_renormalization_theory/links/5dd6d6bf458515dc2f41e248/5th-International-Electronic-Conference-on-Entropy-and-Its-Applications-Fast-tuning-of-topic-models-an-application-of-Renyi-entropy-and-renormalization-theory.pdf).
 
 Briefly, one model with a big number of topics is trained.
 Then, the number of topics is gradually reduced to one single topic: on each iteration two topics are selected by some criterion and merged into one.
