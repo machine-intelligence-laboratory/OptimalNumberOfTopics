@@ -43,7 +43,13 @@ class SimpleTopTokensCoherenceScore(BaseCustomScore):
             Word cooccurence values:
             the bigger the number corresponding to words (w1, w2),
             the more the confidence that the occurrence of these words
-            together in text is non-random
+            together in text is non-random.
+            The cooc values should be in a certain format, for example:
+            >>> {
+            >>>     ('dipper', 'mabel'): 112.7,
+            >>>     ('mabel', 'monotony'): 0.2,
+            >>>     ...
+            >>> }
         data
             Text document collection
         modalities

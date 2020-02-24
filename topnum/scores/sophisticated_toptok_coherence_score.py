@@ -40,6 +40,7 @@ class SophisticatedTopTokensCoherenceScore(BaseCustomScore):
             text_type: TextType = TextType.VW_TEXT,
             word_topic_relatedness: WordTopicRelatednessType = WordTopicRelatednessType.PWT,
             specificity_estimation: SpecificityEstimationMethod = SpecificityEstimationMethod.NONE,
+            word_cooccurrences: Dict[Tuple[WordType, WordType], float] = None,
             window=10):
         """
         Parameters
@@ -60,6 +61,14 @@ class SophisticatedTopTokensCoherenceScore(BaseCustomScore):
             How to estimate word relevance to topic: using p(w | t) or p(t | w)
         specificity_estimation
             How to estimate specificity of word to topic
+        word_cooccurrences
+            Word cooccurrences to use for coherence computation.
+            For example (the values are random and not related to reality):
+            >>> {
+            >>>     (('@director', 'guy_ritchie'), ('@title', 'the_gentlemen')): 17.5,
+            >>>     (('@text', 'dandelion'), ('@text', 'wine')): 10.3,
+            >>>     ...
+            >>> }
         window
             In case computation_method = ComputationMethod.SUM_OVER_WINDOW:
             Window width. So the window will be the words with positions

@@ -27,6 +27,7 @@ Let's say, one have her text collection as a vowpal wabbit file *vw.txt*:
 ```text
 doc_1 |@publisher mann_ivanov_ferber |@title atlas_obscura |@text earth:8 travel:10 baobab:1 ...
 doc_2 |@publisher chook_and_geek |@title black_hammer |@text hero:10 whiskey:2 barbalien:4 ...
+doc_3 |@publisher eksmo |@title dune |@text sand:7 arrakis:6 spice:12 destiny:2 ...
 ...
 ```
 
@@ -78,7 +79,7 @@ And the *result.json* file will look like this: (TODO: try on real data to get m
         },
         "intratext_coherence_score":
         {
-            "optimum": 9.0,
+            "optimum": 1.0,
             "optimum_std": 0.0,
             "num_topics_values": [1.0, 3.0, 5.0, 7.0, 9.0],
             "score_values": [72.90, 21.92, 12.73, 9.21, 6.88],
@@ -87,7 +88,7 @@ And the *result.json* file will look like this: (TODO: try on real data to get m
         },
         "top_tokens_coherence_score":
         {
-            "optimum": 3.0,
+            "optimum": 1.0,
             "optimum_std": 0.0,
             "num_topics_values": [1.0, 3.0, 5.0, 7.0, 9.0],
             "score_values": [0.834, 0.42, 0.76, 0.79, 0.53],
@@ -99,6 +100,14 @@ And the *result.json* file will look like this: (TODO: try on real data to get m
 ```
 
 Here *optimum* means the optimal number of topics according to the score, *score_values* are the values of the score, each value corresponds to the number of topics in *num_topics_values* by the same index.
+
+Scores, currenly available:
+* perplexity
+* renyi_entropy
+* diversity_score
+* intratext_coherence
+* top_tokens_coherence
+
 
 ## Renormalization
 
