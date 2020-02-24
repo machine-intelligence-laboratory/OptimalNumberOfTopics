@@ -211,7 +211,9 @@ class TestSearchMethods:
         min_num_topics = 1
         max_num_topics = 5
         num_topics_interval = 2
+
         num_fit_iterations = 3
+        num_processors = 1
 
         optimizer = OptimizeScoresMethod(
             scores=[score],
@@ -219,7 +221,8 @@ class TestSearchMethods:
             max_num_topics=max_num_topics,
             num_topics_interval=num_topics_interval,
             num_fit_iterations=num_fit_iterations,
-            num_restarts=num_restarts
+            num_restarts=num_restarts,
+            one_model_num_processors=num_processors
         )
         num_search_points = len(
             list(range(min_num_topics, max_num_topics + 1, num_topics_interval))

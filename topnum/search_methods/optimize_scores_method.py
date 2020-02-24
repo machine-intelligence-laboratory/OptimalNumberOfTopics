@@ -1,12 +1,20 @@
 import logging
-import numpy as np
+import os
+import pandas as pd
+import uuid
+
+from topicnet.cooking_machine import Experiment
+from topicnet.cooking_machine.cubes import CubeCreator
 from topicnet.cooking_machine.models import TopicModel
 from topicnet.cooking_machine.model_constructor import init_simple_default_model
+from tqdm import tqdm
 from typing import List
 
 from .base_search_method import (
     BaseSearchMethod,
-    _KEY_VALUES
+    _KEY_OPTIMUM,
+    _KEY_VALUES,
+    _STD_KEY_SUFFIX
 )
 from .constants import (
     DEFAULT_MAX_NUM_TOPICS,
@@ -17,19 +25,11 @@ from .constants import (
 from ..data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
 from ..scores.base_score import BaseScore
 
-from topicnet.cooking_machine.cubes import CubeCreator
-from topicnet.cooking_machine import Experiment
-import pandas as pd
-import uuid
-import os
-from tqdm import tqdm
-
 
 _KEY_SCORE_RESULTS = 'score_results'
 _KEY_SCORE_VALUES = 'score_values'
 
 _logger = logging.getLogger()
-
 
 
 class OptimizeScoresMethod(BaseSearchMethod):
@@ -41,7 +41,9 @@ class OptimizeScoresMethod(BaseSearchMethod):
             min_num_topics: int = DEFAULT_MIN_NUM_TOPICS,
             max_num_topics: int = DEFAULT_MAX_NUM_TOPICS,
             num_fit_iterations: int = DEFAULT_NUM_FIT_ITERATIONS,
+            one_model_num_processors: int = 3,
             experiment_name: str or None = None,
+            save_experiment: bool = False,
             experiment_directory: str = DEFAULT_DIR):
 
         super().__init__(min_num_topics, max_num_topics, num_fit_iterations)
@@ -52,9 +54,14 @@ class OptimizeScoresMethod(BaseSearchMethod):
 
         self._result = dict()
         self._detailed_result = dict()
+
         if experiment_name is None:
             experiment_name = str(uuid.uuid4())[:8] + '_experiment'
+
+        self._one_model_num_processors = one_model_num_processors
+
         self._experiment_name = experiment_name
+        self._save_experiment = save_experiment
         self._experiment_directory = experiment_directory
 
         self._key_num_topics_values = _KEY_VALUES.format('num_topics')
@@ -79,23 +86,24 @@ class OptimizeScoresMethod(BaseSearchMethod):
             self._num_topics_interval)
         )
 
-        
         n_bcg_topics = 0  # TODO: or better add ability to specify?
         artm_model = init_simple_default_model(
             dataset,
             modalities_to_use=list(text_collection._modalities.keys()),
             modalities_weights=text_collection._modalities,  # TODO: remove after release
             main_modality=text_collection._main_modality,
-            specific_topics=nums_topics[0],   # doesn't matter, will be overwritten in experiment
+            specific_topics=nums_topics[0],  # doesn't matter, will be overwritten in experiment
             background_topics=n_bcg_topics
         )
 
         # remove regularizers created by default
-        # ifregularizers are needed, we will add them explicitly
+        # if regularizers are needed, we will add them explicitly
+        # TODO: refine
         if n_bcg_topics:
             del artm_model.regularizers._data['smooth_theta_bcg']
             del artm_model.regularizers._data['smooth_phi_bcg']
-        artm_model.num_processors = 3
+
+        artm_model.num_processors = self._one_model_num_processors
 
         model = TopicModel(artm_model)
 
@@ -108,8 +116,10 @@ class OptimizeScoresMethod(BaseSearchMethod):
             score._attach(model)
 
         result_models = []
+
         for seed in tqdm(seeds):  # dirty workaround for 'too many models' issue
             exp_model = model.clone()
+
             cube = CubeCreator(
                 num_iter=self._num_collection_passes,
                 parameters={
@@ -117,16 +127,22 @@ class OptimizeScoresMethod(BaseSearchMethod):
                     "num_topics": nums_topics
                 },
                 verbose=False,
-                separate_thread=True
+                separate_thread=False
             )
-            exp = Experiment(exp_model, f"{self._experiment_name}_{seed}", self._experiment_directory)
+            exp = Experiment(
+                exp_model,
+                experiment_id=f"{self._experiment_name}_{seed}",
+                save_path=self._experiment_directory,
+                save_experiment=self._save_experiment  # TODO: save_experiment=False actually not working
+            )
             cube(exp_model, dataset)
 
             result_models += exp.select()
+
             del exp
 
         restarts = "seed=" + pd.Series(seeds, name="restart_id").astype(str)
-        result, detailed_result = summarize_models(
+        result, detailed_result = _summarize_models(
             result_models,
             [s.name for s in self._scores],
             restarts
@@ -136,44 +152,57 @@ class OptimizeScoresMethod(BaseSearchMethod):
 
         _logger.info('Finished searching!')
 
-def summarize_models(result_models, score_names=None, restarts=None):
-    detailed_resut = dict()
-    result = {}
+
+def _summarize_models(result_models, score_names=None, restarts=None):
+    detailed_result = dict()
+    result = dict()
     result[_KEY_SCORE_RESULTS] = dict()
+
     if score_names is None:
         any_model = result_models[-1]
         score_names = any_model.describe_scores().reset_index().score_name.values
 
     nums_topics = sorted(list({len(tm.topic_names) for tm in result_models}))
+
     if restarts is None:
         seeds = list({tm.seed for tm in result_models})
         restarts = "seed=" + pd.Series(seeds, name="restart_id").astype(str)
 
     for score in score_names:
         score_df = pd.DataFrame(index=restarts, columns=nums_topics)
+
         for model in result_models:
             score_values = model.scores[score][-1]
-            if isinstance(score_values, dict):
-                continue
-            score_df.loc[f"seed={model.seed}", len(model.topic_names)] = score_values
-        detailed_resut[score] = score_df.astype(float)
 
+            if isinstance(score_values, dict):
+                _logger.warning(
+                    f'Score "{score}" has values as dict. Skipping the score'
+                )
+
+                continue
+
+            score_df.loc[f"seed={model.seed}", len(model.topic_names)] = score_values
+
+        detailed_result[score] = score_df.astype(float)
 
     for score in score_names:
-        score_df = detailed_resut[score]
-        score_result = {}
+        score_df = detailed_result[score]
         optimum_series = score_df.idxmin(axis=1)  # TODO: some scores need to be minimized, some - maximized
-        score_result['optimum'] = float(optimum_series.median())
-        score_result['optimum_std'] = float(optimum_series.std())
-        score_result['num_topics_values'] = list(score_df.columns)
 
-        score_result['score_values'] = score_df.mean(axis=0).tolist()
-        score_result['score_values_std'] = score_df.std(axis=0).tolist()
+        score_result = dict()
+
+        score_result[_KEY_OPTIMUM] = float(optimum_series.median())
+        score_result[_KEY_OPTIMUM + _STD_KEY_SUFFIX] = float(optimum_series.std())
+        score_result[_KEY_VALUES.format('num_topics')] = list(score_df.columns)
+        score_result[_KEY_VALUES.format('score')] = score_df.mean(axis=0).tolist()
+        score_result[_KEY_VALUES.format('score') + _STD_KEY_SUFFIX] = score_df.std(axis=0).tolist()
 
         result[_KEY_SCORE_RESULTS][score] = score_result
-    return result, detailed_resut
+
+    return result, detailed_result
 
 
+# TODO: is this needed?
 def restore_failed_experiment(experiment_directory, base_experiment_name, scores=None):
     from topicnet.cooking_machine.experiment import START
     import glob
@@ -181,12 +210,11 @@ def restore_failed_experiment(experiment_directory, base_experiment_name, scores
     result_models = []
 
     for folder in glob.glob(f"{experiment_directory}/{base_experiment_name}_*"):
-
-        folder = os.path.join(experiment_directory, experiment_name)
+        folder = os.path.join(experiment_directory, experiment_name)  # TODO: indefined name experiment_name
         model_pathes = [
             f.path for f in os.scandir(folder)
             if f.is_dir() and f.name != START
         ]
         result_models += [TopicModel.load(path) for path in model_pathes]
 
-    return summarize_models(result_models)
+    return _summarize_models(result_models)
