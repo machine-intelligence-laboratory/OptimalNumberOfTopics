@@ -1,0 +1,7 @@
+doc_1 |@author joshua_foer |@publisher mann_ivanov_ferber |@title atlas obscura |@text earth:8 travel:10 baobab:1
+doc_2 |@author jeff_lemire dean_ormston |@publisher chook_and_geek |@title black hammer |@text hero:10 whiskey:2 barbalien:4
+doc_3 |@author frank_herbert |@publisher eksmo |@title dune |@text sand:7 arrakis:6 spice:12 destiny:2
+doc_4 |@author thomas_bernhard |@publisher symposium |@title der frost |@text death:10 loneliness:12 cold:8 despair:9
+doc_5 |@author tennessee_williams |@publisher |@title cat on a hot tin roof |@text alcohol:2 love:3 lie:4 hatred:3
+doc_6 |@author joanne_rowling |@publisher bloomsbury |@title harry potter and the philosopher_s stone |@text magic:10 hogwarts:6 friend:4 danger:5
+doc_7 |@author fyodor_dostoevsky |@publisher eksmo |@title idiot |@text nastasya_filippovna:5 money:3 love:7 rogozhin:5 dacha:3
