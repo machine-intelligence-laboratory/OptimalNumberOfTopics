@@ -20,10 +20,10 @@ Scores, available for optimizing:
 Definitely, this is not the best choice (TODO: links, why).
 * [*Rényi entropy*](https://en.wikipedia.org/wiki/R%C3%A9nyi_entropy).
 This one was shown to be a good indicator of some kind of model stability: the more stable the model, the less its entropy.
-    * [Koltcov, Sergei. "Application of Rényi and Tsallis entropies to topic modeling optimization." Physica A: Statistical Mechanics and its Applications 512 (2018): 1192-1204.](https://www.sciencedirect.com/science/article/pii/S0378437118309907)
-    * [Koltcov, Sergei, Vera Ignatenko, and Olessia Koltsova. "Estimating Topic Modeling Performance with Sharma–Mittal Entropy." Entropy 21.7 (2019): 660.](https://www.mdpi.com/1099-4300/21/7/660)
+    * [Sergei Koltcov. "Application of Rényi and Tsallis entropies to topic modeling optimization.", 2018](https://www.sciencedirect.com/science/article/pii/S0378437118309907)
+    * [Sergei Koltcov, Vera Ignatenko, and Olessia Koltsova. "Estimating Topic Modeling Performance with Sharma–Mittal Entropy.", 2019](https://www.mdpi.com/1099-4300/21/7/660)
 
-Let's say, one have her text collection as a vowpal wabbit file [*vw.txt*](sample/vw.txt):
+Let's say, one have her text collection as a vowpal wabbit file [*vw.txt*](../sample/vw.txt):
 ```text
 doc_1 |@publisher mann_ivanov_ferber |@title atlas obscura |@text earth:8 travel:10 baobab:1 ...
 doc_2 |@publisher chook_and_geek |@title black hammer |@text hero:10 whiskey:2 barbalien:4 ...
@@ -101,7 +101,7 @@ And the *result.json* file will look like this: (TODO: try on real data to get m
 
 Here *optimum* means the optimal number of topics according to the score, *score_values* are the values of the score, each value corresponds to the number of topics in *num_topics_values* by the same index.
 
-Another way to run the process may be via [bash script](sample/optimize_scores.sh)
+Another way to run the process may be via [bash script](../sample/optimize_scores.sh)
 ```bash
 #!/bin/bash
 
@@ -205,7 +205,7 @@ More about scores one can find [here](https://github.com/machine-intelligence-la
 ## Renormalization
 
 The approach is described in the following paper:  
-[Koltcov, Sergei, Vera Ignatenko, and Sergei Pashakhin. "Fast tuning of topic models: an application of Rényi entropy and renormalization theory." Conference Proceedings Paper. Vol. 18. No. 30. 2019.](https://www.researchgate.net/profile/Sergei_Koltsov2/publication/337427975_5th_International_Electronic_Conference_on_Entropy_and_Its_Applications_Fast_tuning_of_topic_models_an_application_of_Renyi_entropy_and_renormalization_theory/links/5dd6d6bf458515dc2f41e248/5th-International-Electronic-Conference-on-Entropy-and-Its-Applications-Fast-tuning-of-topic-models-an-application-of-Renyi-entropy-and-renormalization-theory.pdf).
+[Sergei Koltcov, Vera Ignatenko, and Sergei Pashakhin. "Fast tuning of topic models: an application of Rényi entropy and renormalization theory.", 2019.](https://www.researchgate.net/profile/Sergei_Koltsov2/publication/337427975_5th_International_Electronic_Conference_on_Entropy_and_Its_Applications_Fast_tuning_of_topic_models_an_application_of_Renyi_entropy_and_renormalization_theory/links/5dd6d6bf458515dc2f41e248/5th-International-Electronic-Conference-on-Entropy-and-Its-Applications-Fast-tuning-of-topic-models-an-application-of-Renyi-entropy-and-renormalization-theory.pdf).
 
 Briefly, one model with a big number of topics is trained.
 Then, the number of topics is gradually reduced to one single topic: on each iteration two topics are selected by some criterion and merged into one.
