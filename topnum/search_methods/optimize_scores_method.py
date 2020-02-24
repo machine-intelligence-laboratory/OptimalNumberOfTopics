@@ -162,7 +162,7 @@ def summarize_models(result_models, score_names=None, restarts=None):
     for score in score_names:
         score_df = detailed_resut[score]
         score_result = {}
-        optimum_series = score_df.idxmin(axis=1)
+        optimum_series = score_df.idxmin(axis=1)  # TODO: some scores need to be minimized, some - maximized
         score_result['optimum'] = float(optimum_series.median())
         score_result['optimum_std'] = float(optimum_series.std())
         score_result['num_topics_values'] = list(score_df.columns)

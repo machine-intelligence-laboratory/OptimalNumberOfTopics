@@ -1,5 +1,8 @@
 import argparse
 import json
+import os
+import traceback
+
 from typing import (
     Dict,
     List,
@@ -8,9 +11,12 @@ from typing import (
 
 from topnum.data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
 from topnum.scores import (
-    PerplexityScore,
+    DiversityScore,
     EntropyScore,
-    DiversityScore
+    IntratextCoherenceScore,
+    SimpleTopTokensCoherenceScore,
+    SophisticatedTopTokensCoherenceScore,
+    PerplexityScore
 )
 from topnum.scores.diversity_score import L2
 from topnum.scores.entropy_score import RENYI as RENYI_ENTROPY_NAME
@@ -20,7 +26,11 @@ from topnum.search_methods.constants import (
     DEFAULT_MIN_NUM_TOPICS
 )
 from topnum.search_methods.optimize_scores_method import OptimizeScoresMethod
-
+from topnum.search_methods.renormalization_method import (
+    RenormalizationMethod,
+    PHI_RENORMALIZATION_MATRIX,
+    THETA_RENORMALIZATION_MATRIX
+)
 
 MESSAGE_MODALITY_FORMAT = (
     'Format: <modality name>, or <modality name>:<modality weight>.'
@@ -49,6 +59,7 @@ def _main():
         action='append',
         dest='modalities'
     )
+
     subparsers = parser.add_subparsers(
         help='Method for searching an appropriate number of topics',
         dest='search_method'
@@ -59,6 +70,12 @@ def _main():
         help='Find the number of topics which optimizes the score'
              ' (gives it max or min depending on the score)'
     )
+    parser_renormalize = subparsers.add_parser(
+        'renormalize',
+        help='Fulfil topic matrix renormalization'
+             ' to find the best number of topics relative to Renyi entropy'
+    )
+
     parser_optimize_scores.add_argument(
         '--max-num-topics',
         help='Maximum number of topics',
@@ -109,6 +126,19 @@ def _main():
         'renyi_entropy',
         help='Renyi entropy -> min'
     )
+    parser_optimize_diversity = subparsers_optimize_scores.add_parser(
+        'diversity_score',
+        help='Diversity -> max'  # TODO: right?
+    )
+    parser_optimize_intratext = subparsers_optimize_scores.add_parser(
+        'intratext_coherence',
+        help='Intratext coherence -> max'
+    )
+    parser_optimize_toptokens = subparsers_optimize_scores.add_parser(
+        'top_tokens_coherence',
+        help='Top tokens coherence -> max'
+    )
+
     parser_optimize_renyi_entropy.add_argument(
         '-f', '--threshold-factor',
         help='A greater than zero factor'
@@ -116,16 +146,83 @@ def _main():
         type=float,
         default=1.0
     )
+    # TODO: add args for parser_optimize_intratext
+    # TODO: add args for parser_optimize_toptokens
+    parser_optimize_toptokens.add_argument(
+        '--cooc-file',
+        help='File with word cooccurrence values in the format'
+             ' [[["word_1", "word_2"], 6.27], [["word_1", "word_3"], 1.32], ...],'
+             ' i.e. there should be a list, where each item is another list:'
+             ' word pair as yet another list and a numeric value corresponding to this word pair',
+        type=str,
+        default=None
+    )
+
+    parser_renormalize.add_argument(
+        '--matrix',
+        help='Matrix to be used for renormalization',
+        type=str,
+        default='phi',
+        choices=['phi', 'theta']
+    )
+    # TODO: think about it: maybe these args better make general for all methods?
+    parser_renormalize.add_argument(
+        '--max-num-topics',
+        help='Maximum number of topics',
+        type=int,
+        default=DEFAULT_MAX_NUM_TOPICS
+    )
+    parser_renormalize.add_argument(
+        '--min-num-topics',
+        help='Minimum number of topics',
+        type=int,
+        default=DEFAULT_MIN_NUM_TOPICS
+    )
+    parser_renormalize.add_argument(
+        '--num-fit-iterations',
+        help='Number of fit iterations for model training',
+        type=int,
+        default=100
+    )
+    parser_renormalize.add_argument(
+        '--num-restarts',
+        help='Number of models to train,'
+             ' each of which differs from the others by random seed'
+             ' used for initialization.'
+             ' Search results will be averaged over models '
+             ' (suffix _std means standard deviation for restarts).',  # TODO: check English
+        type=int,
+        default=3
+    )
 
     # parser_some_other = subparsers.add_parser('other', help='some help')
 
     args, unparsed_args = parser.parse_known_args()
 
+    main_modality_name, modalities = _parse_modalities(args.main_modality, args.modalities)
+    modality_names = list(modalities.keys())
+    vw_file_path = args.vw_file_path
+    output_file_path = args.output_file_path
+
+    text_collection = VowpalWabbitTextCollection(
+        vw_file_path,
+        main_modality=main_modality_name,
+        modalities=modalities
+    )
+
+    if not os.path.isfile(vw_file_path):
+        raise ValueError(
+            f'File not found on path vw_file_path: "{vw_file_path}"!'
+        )
+
+    if not os.path.isdir(os.path.dirname(output_file_path))\
+            and len(os.path.dirname(output_file_path)) > 0:
+
+        raise ValueError(
+            f'Directory not found for output file output_file_path: "{output_file_path}"!'
+        )
+
     if args.search_method == 'optimize_scores':
-        main_modality_name, modalities = _parse_modalities(args.main_modality, args.modalities)
-        modality_names = list(modalities.keys())
-        vw_file_path = args.vw_file_path
-        output_file_path = args.output_file_path
         min_num_topics = args.min_num_topics
         max_num_topics = args.max_num_topics
         num_topics_interval = args.num_topics_interval
@@ -133,24 +230,35 @@ def _main():
         num_restarts = args.num_restarts
 
         scores = list()
-
-        scores.append(_build_score(args, modality_names))
+        scores.append(_build_score(args, text_collection, modality_names))
 
         while len(unparsed_args) > 0:
             current_args, unparsed_args = parser_optimize_scores.parse_known_args(
                 unparsed_args
             )
-            scores.append(_build_score(current_args, modality_names))
+            scores.append(_build_score(current_args, text_collection, modality_names))
 
         _optimize_scores(
             scores,
-            vw_file_path,
-            main_modality_name,
-            modalities,
+            text_collection,
             output_file_path,
             min_num_topics=min_num_topics,
             max_num_topics=max_num_topics,
             num_topics_interval=num_topics_interval,
+            num_fit_iterations=num_fit_iterations,
+            num_restarts=num_restarts
+        )
+    elif args.search_method == 'renormalize':
+        min_num_topics = args.min_num_topics
+        max_num_topics = args.max_num_topics
+        num_fit_iterations = args.num_fit_iterations
+        num_restarts = args.num_restarts
+
+        _renormalize(
+            text_collection,
+            output_file_path,
+            min_num_topics=min_num_topics,
+            max_num_topics=max_num_topics,
             num_fit_iterations=num_fit_iterations,
             num_restarts=num_restarts
         )
@@ -198,56 +306,79 @@ def _parse_modalities(
     return main_modality_name, modalities
 
 
-def _build_score(args: argparse.Namespace, modality_names: List[str]) -> BaseScore:
+def _build_score(
+        args: argparse.Namespace,
+        text_collection: VowpalWabbitTextCollection,
+        modality_names: List[str]) -> BaseScore:
+
+    # TODO: modality_names should be available via text_collection
+
     if args.score_name == 'perplexity':
-        return _build_perplexity_score(modality_names)
+        return PerplexityScore(
+            'perplexity_score',
+            class_ids=modality_names
+        )
     elif args.score_name == 'renyi_entropy':
-        return _build_renyi_entropy_score(args.threshold_factor, modality_names)
+        return EntropyScore(
+            'renyi_entropy_score',
+            entropy=RENYI_ENTROPY_NAME,
+            threshold_factor=args.threshold_factor,
+            class_ids=modality_names
+        )
+    elif args.score_name == 'diversity_score':
+        return DiversityScore(
+            'l2_diversity_score',
+            metric=L2,
+            class_ids=modality_names
+        )
+    elif args.score_name == 'intratext_coherence':
+        return IntratextCoherenceScore(
+            'intratext_coherence_score',
+            data=text_collection
+        )
+    elif args.score_name == 'top_tokens_coherence' and args.cooc_file is None:
+        # Actually, this one also can tame custom coocs, but in a bit different format:
+        # with modalities, like ((@m, w1), (@m, w2)): 17.5, ...
+        return SophisticatedTopTokensCoherenceScore(
+            'top_tokens_coherence_score',
+            data=text_collection
+        )
+    elif args.score_name == 'top_tokens_coherence' and args.cooc_file is not None:
+        cooc_file = args.cooc_file
+
+        if not os.path.isfile(cooc_file):
+            raise ValueError(f'Coocs file not fould on path "{cooc_file}"!')
+
+        try:
+            raw_coocs_values = json.loads(open(cooc_file, 'r').read())
+        except json.JSONDecodeError:
+            raise ValueError(
+                f'Coocs file "{cooc_file}" doesn\'t seem like valid JSON!'
+                f' Error: {traceback.format_exc()}'
+            )
+
+        cooc_values = {
+            tuple(d[0]): d[1] for d in raw_coocs_values
+        }
+
+        return SimpleTopTokensCoherenceScore(
+            'top_tokens_coherence_score',
+            cooccurrence_values=cooc_values,
+            data=text_collection,
+        )
     else:
         raise ValueError(f'Unknown score name "{args.score_name}"!')
 
 
-def _build_perplexity_score(modalities: List[str]) -> PerplexityScore:
-    return PerplexityScore(
-        'perplexity_score',
-        class_ids=modalities
-    )
-
-
-def _build_diversity_score(modalities: List[str]) -> DiversityScore:
-    return DiversityScore(
-        'l2_diversity_score',
-        metric=L2,
-        class_ids=modalities
-    )
-
-
-def _build_renyi_entropy_score(threshold_factor: float, modalities: List[str]) -> EntropyScore:
-    return EntropyScore(
-        'renyi_entropy_score',
-        entropy=RENYI_ENTROPY_NAME,
-        threshold_factor=threshold_factor,
-        class_ids=modalities
-    )
-
-
 def _optimize_scores(
         scores: List[BaseScore],
-        vw_file_path: str,
-        main_modality_name: str,
-        modalities: Dict[str, float],
+        text_collection: VowpalWabbitTextCollection,
         output_file_path: str,
         min_num_topics: int,
         max_num_topics: int,
         num_topics_interval: int,
         num_fit_iterations: int,
         num_restarts: int) -> None:
-
-    text_collection = VowpalWabbitTextCollection(
-        vw_file_path,
-        main_modality=main_modality_name,
-        modalities=modalities
-    )
 
     optimizer = OptimizeScoresMethod(
         scores=scores,
@@ -260,7 +391,27 @@ def _optimize_scores(
 
     optimizer.search_for_optimum(text_collection)
 
-    # TODO: check if folder exists
+    with open(output_file_path, 'w') as f:
+        f.write(json.dumps(optimizer._result))
+
+
+def _renormalize(
+        text_collection: VowpalWabbitTextCollection,
+        output_file_path: str,
+        min_num_topics: int,
+        max_num_topics: int,
+        num_fit_iterations: int,
+        num_restarts: int) -> None:
+
+    optimizer = RenormalizationMethod(
+        min_num_topics=min_num_topics,
+        max_num_topics=max_num_topics,
+        num_fit_iterations=num_fit_iterations,
+        num_restarts=num_restarts
+    )
+
+    optimizer.search_for_optimum(text_collection)
+
     with open(output_file_path, 'w') as f:
         f.write(json.dumps(optimizer._result))
 

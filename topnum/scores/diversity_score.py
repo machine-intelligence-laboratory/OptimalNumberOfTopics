@@ -41,7 +41,7 @@ sensitive to the top-ranked words.
 Intuitively, if the number of topics is small, the learned topics
 tend to be close to the background language model and thus do not
 distinguish well between each other. When the number of topics grows,
-the granularity of topics becomes ﬁner and the topics become more distinguishable,
+the granularity of topics becomes finer and the topics become more distinguishable,
 thus increasing the diversity. However, when the number of topics
 becomes too large, we start to obtain many small topics which may
 be too close to each other, which decreases the topic diversity.

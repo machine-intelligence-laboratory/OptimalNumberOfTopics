@@ -12,10 +12,14 @@ from typing import (
 from numbers import Number
 from time import sleep
 
+from itertools import combinations
 from topnum.data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
 from topnum.scores import (
+    EntropyScore,
+    IntratextCoherenceScore,
     PerplexityScore,
-    EntropyScore
+    SimpleTopTokensCoherenceScore,
+    SophisticatedTopTokensCoherenceScore
 )
 from topnum.search_methods import (
     OptimizeScoresMethod,
@@ -40,6 +44,7 @@ class TestSearchMethods:
     other_modality = '@other'
     num_documents = 10
     num_words_in_document = 100
+    vocabulary = None
     text_collection = None
 
     @classmethod
@@ -58,6 +63,8 @@ class TestSearchMethods:
             modalities=[cls.main_modality, cls.other_modality]
         )
 
+        cls.dataset = cls.text_collection._to_dataset()
+
     @classmethod
     def teardown_class(cls):
         cls.text_collection._remove_dataset()
@@ -75,6 +82,8 @@ class TestSearchMethods:
 
         texts = list()
 
+        cls.vocabulary = list()
+
         for document_index in range(cls.num_documents):
             text = ''
             text = text + f'doc_{document_index}'
@@ -89,7 +98,11 @@ class TestSearchMethods:
                 for _ in range(num_words):
                     word = np.random.choice(words)
                     frequency = np.random.choice(frequencies)
-                    text = text + f' {word}__{modality_suffix}:{frequency}'
+                    token = f'{word}__{modality_suffix}'
+
+                    cls.vocabulary.append(token)
+
+                    text = text + f' {token}:{frequency}'
 
             texts.append(text)
 
@@ -115,6 +128,56 @@ class TestSearchMethods:
 
         self._test_optimize_score(score)
 
+    def test_optimize_intratext(self):
+        score = IntratextCoherenceScore(
+            name='intratext_coherence',
+            data=self.dataset,
+            documents=self.dataset._data.index[:1],
+            window=2
+        )
+
+        # a bit slow -> just 2 restarts
+        self._test_optimize_score(score, num_restarts=2)
+
+    def test_optimize_sophisticated_toptokens(self):
+        score = SophisticatedTopTokensCoherenceScore(
+            name='sophisticated_toptokens_coherence',
+            data=self.dataset,
+            documents=self.dataset._data.index[:1]
+        )
+
+        self._test_optimize_score(score, num_restarts=2)
+
+    @pytest.mark.parametrize('what_modalities', ['None', 'one', 'many'])
+    def test_optimize_simple_toptokens(self, what_modalities):
+        if what_modalities == 'None':
+            modalities = None
+        elif what_modalities == 'one':
+            modalities = self.main_modality
+        elif what_modalities == 'many':
+            modalities = [self.main_modality]
+        else:
+            assert False
+
+        cooccurrence_values = dict()
+        cooccurrence_values[('play__m', 'boy__m')] = 2
+
+        num_unique_words = 5
+
+        for i, (w1, w2) in enumerate(
+                combinations(self.vocabulary[:num_unique_words], 2)):
+
+            cooccurrence_values[(w1, w2)] = i
+
+        score = SimpleTopTokensCoherenceScore(
+            name='simple_toptokens_coherence',
+            cooccurrence_values=cooccurrence_values,
+            data=self.dataset,
+            modalities=modalities
+        )
+
+        self._test_optimize_score(score)
+
     @pytest.mark.parametrize(
         'merge_method',
         [ENTROPY_MERGE_METHOD, RANDOM_MERGE_METHOD, KL_MERGE_METHOD]
@@ -135,7 +198,7 @@ class TestSearchMethods:
             matrix_for_renormalization=matrix_for_renormalization,
             threshold_factor=threshold_factor,
             max_num_topics=max_num_topics,
-            num_collection_passes=10,
+            num_fit_iterations=10,
             num_restarts=3
         )
         num_search_points = len(list(range(1, max_num_topics)))
@@ -144,18 +207,19 @@ class TestSearchMethods:
 
         self._check_search_result(optimizer._result, optimizer, num_search_points)
 
-    def _test_optimize_score(self, score):
+    def _test_optimize_score(self, score, num_restarts: int = 3) -> None:
         min_num_topics = 1
-        max_num_topics = 10
+        max_num_topics = 5
         num_topics_interval = 2
+        num_fit_iterations = 3
 
         optimizer = OptimizeScoresMethod(
             scores=[score],
             min_num_topics=min_num_topics,
             max_num_topics=max_num_topics,
             num_topics_interval=num_topics_interval,
-            num_fit_iterations=10,
-            num_restarts=3
+            num_fit_iterations=num_fit_iterations,
+            num_restarts=num_restarts
         )
         num_search_points = len(
             list(range(min_num_topics, max_num_topics + 1, num_topics_interval))
