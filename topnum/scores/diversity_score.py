@@ -19,6 +19,8 @@ KL = "jensenshannon"
 _logger = logging.getLogger()
 
 '''
+Quote from http://arxiv.org/abs/1409.2993
+
 
 Our treatment makes use of a measure of diversity among
 the topics as a criterion to stop generating new topics.
@@ -29,6 +31,7 @@ quality [21], but not for selecting the optimum number
 of topics (compare across diﬀerent numbers of topics). We
 formally deﬁne the diversity among a set of topics as follows:
 
+\text{Diversity}(\Phi) = \frac{2}{T (T-1)}\sum_{i>j} \text{dist}(\phi_{i*}, \phi_{j*})
 
 where K is the number of topics, θi is the word distribution
 of the ith topic, and dist(·,·) is a distance function between
@@ -49,9 +52,28 @@ Therefore, diversity seems to be a good measure to capture
 the right granularity of topics. 
 
 
+[20] Q. Mei, J. Guo, and D. R. Radev. Divrank: the interplay of
+prestige and diversity in information networks. In KDD,
+pages 1009–1018, 2010.
+[19] H. Ma, M. R. Lyu, and I. King. Diversifying query
+suggestion results. In AAAI, 2010.
+[5] J. Carbonell and J. Goldstein. The use of mmr,
+diversity-based reranking for reordering documents and
+producing summaries. In SIGIR, pages 335–336, New York,
+NY, USA, 1998. ACM.
+[21] D. M. Mimno, H. M. Wallach, E. M. Talley, M. Leenders,
+and A. McCallum. Optimizing semantic coherence in topic
+models. In EMNLP’11, pages 262–272, 2011.
+[7] T. M. Cover and J. A. Thomas. Elements of information
+theory. Wiley-Interscience, New York, NY, USA, 1991.
+
+
 '''
 
 class DiversityScore(BaseCustomScore):
+    '''
+    Higher is better
+    '''
     def __init__(
             self,
             name: str,
