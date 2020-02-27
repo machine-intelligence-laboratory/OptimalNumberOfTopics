@@ -18,6 +18,7 @@ class BaseTopicScore(BaseCustomScore):
     def compute(
             self,
             model: BaseModel,
-            topics: List[str] = None) -> Dict[str, float]:
+            topics: List[str] = None,
+            documents: List[str] = None) -> Dict[str, float]:
 
         raise NotImplementedError()

@@ -42,7 +42,8 @@ class SophisticatedTopTokensCoherenceScore(BaseTopicScore):
             word_topic_relatedness: WordTopicRelatednessType = WordTopicRelatednessType.PWT,
             specificity_estimation: SpecificityEstimationMethod = SpecificityEstimationMethod.NONE,
             word_cooccurrences: Dict[Tuple[WordType, WordType], float] = None,
-            window=10):
+            num_top_words=10,
+            window=20):
         """
         Parameters
         ----------
@@ -84,6 +85,7 @@ class SophisticatedTopTokensCoherenceScore(BaseTopicScore):
         self._specificity_estimation = specificity_estimation
 
         self._word_cooccurrences = word_cooccurrences
+        self._num_top_words = num_top_words
         self._window = window
 
         self._score = self._initialize()
@@ -101,6 +103,7 @@ class SophisticatedTopTokensCoherenceScore(BaseTopicScore):
             word_topic_relatedness=self._word_topic_relatedness,
             specificity_estimation=self._specificity_estimation,
             word_cooccurrences=self._word_cooccurrences,
+            num_top_words=self._num_top_words,
             window=self._window
         )
 
@@ -123,7 +126,7 @@ class _TopTokensCoherenceScore(_BaseCoherenceScore):
             specificity_estimation: SpecificityEstimationMethod = SpecificityEstimationMethod.NONE,
             word_cooccurrences: Dict[Tuple[WordType, WordType], float] = None,
             num_top_words=10,
-            window=10):
+            window=20):
 
         super().__init__(
             dataset=dataset,
