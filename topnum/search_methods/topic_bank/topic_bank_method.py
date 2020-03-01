@@ -62,6 +62,7 @@ class TopicBankMethod(BaseSearchMethod):
             self,
             data: Union[Dataset, VowpalWabbitTextCollection],
             main_modality: str,
+            minimum_word_frequency: int = 30,  # TODO: think about this param
             main_topic_score: BaseTopicScore = None,
             other_topic_scores: List[BaseTopicScore] = None,
             stop_bank_score: BaseScore = None,
@@ -87,6 +88,7 @@ class TopicBankMethod(BaseSearchMethod):
             raise TypeError(f'data: "{data}", its type: "{type(data)}"')
 
         self._main_modality = main_modality
+        self._minimum_word_frequency = minimum_word_frequency
 
         if main_topic_score is not None:
             self._main_topic_score = main_topic_score
@@ -124,7 +126,7 @@ class TopicBankMethod(BaseSearchMethod):
         else:
             self._stop_bank_score = PerplexityScore(name='perplexity_score')
 
-        if other_scores is None:
+        if other_scores is not None:
             self._other_scores = other_scores
         else:
             self._other_scores = [
@@ -146,7 +148,8 @@ class TopicBankMethod(BaseSearchMethod):
             if os.path.isfile(save_file_path):
                 warnings.warn(f'File "{save_file_path}" already exists! Overwriting')
         else:
-            save_file_path = tempfile.mkstemp(prefix='topic_bank_result__')
+            file_descriptor, save_file_path = tempfile.mkstemp(prefix='topic_bank_result__')
+            os.close(file_descriptor)
 
         self._save_file_path = save_file_path
 
@@ -173,26 +176,31 @@ class TopicBankMethod(BaseSearchMethod):
         if os.path.isfile(self._save_file_path):
             os.remove(self._save_file_path)
 
-    def search_for_optimum(self, text_collection: VowpalWabbitTextCollection) -> None:
-        dataset = text_collection._to_dataset()
-
-        # TODO: refine, debug!
-        documents = dataset._data['raw_text'].values.tolist()
+    def search_for_optimum(self, text_collection: VowpalWabbitTextCollection = None) -> None:
+        """
+        Parameters
+        ----------
+        text_collection:
+            Not needed, kept only for compatibility with the base search method
+        """
+        # TODO: refactor this stuff!
+        documents = self._dataset._data['raw_text'].values.tolist()
         all_words_multiset = Counter(
             [w for d in documents for w in d.split()]  # if w not in stopwords
         )  # TODO: filtering stopwords?
-        vocabulary = set(w for w, c in all_words_multiset.items() if c >= 30)
+        vocabulary = set(
+            w for w, c in all_words_multiset.items() if c >= self._minimum_word_frequency
+        )
         word2index = {w: i for i, w in enumerate(vocabulary)}
 
         # TODO: select better
         documents_for_coherence = np.random.choice(
-            dataset._data['id'].values, size=100, replace=False
+            self._dataset._data['id'].values,
+            size=min(100, int(0.2 * len(self._dataset._data['id'].values))),  # TODO: add as param
+            replace=False
         ).tolist()
 
         bank_topics = list()
-
-        bank_scores = list()
-
         bank_topic_scores = list()
 
         i = 0
@@ -205,9 +213,9 @@ class TopicBankMethod(BaseSearchMethod):
             _logger.info('Building topic model')
 
             tm = self._get_topic_model(
-                dataset=dataset,
+                dataset=self._dataset,
                 num_topics=self._one_model_num_topics,
-                dictionary=dataset.get_dictionary(),
+                dictionary=self._dataset.get_dictionary(),
                 seed=seed
             )
 
@@ -267,7 +275,7 @@ class TopicBankMethod(BaseSearchMethod):
             #     )
 
             tm._model.fit_offline(
-                dataset.get_batch_vectorizer(),
+                self._dataset.get_batch_vectorizer(),
                 num_collection_passes=self._num_fit_iterations
             )
 
@@ -317,15 +325,12 @@ class TopicBankMethod(BaseSearchMethod):
 
             self.save()
 
-
             threshold = self._aggregate_scores_for_models(
-                raw_topic_scores[self._main_topic_score.name],  # TODO: check
+                raw_topic_scores[self._main_topic_score.name],
                 self._topic_score_threshold_percentile
             )
 
-
-
-            print('Finding new topics')
+            _logger.info('Finding new topics...')
 
             # TODO: or all words somehow?
             phi = tm.get_phi().xs(self._main_modality, level=0)
@@ -334,27 +339,6 @@ class TopicBankMethod(BaseSearchMethod):
                 t for t in phi.columns
                 if raw_topic_scores[self._main_topic_score.name][t] >= threshold
             ]
-
-
-
-
-            # if len(bank_topics) == 0 and len(good_topic_names) > 0:
-            #     # Adding first topic of there are no one in the bank
-            #     bank_topics.append(phi.loc[:, good_topic_names[0]].to_dict())
-            #
-            # # TODO: better to compare also with each other
-            # new_topic_names = [
-            #     t for t in good_topic_names
-            #     if (min(self._jaccard_distance(phi.loc[:, t].to_dict(), bt)
-            #             for bt in bank_topics) >= self._distance_threshold)
-            # ]
-            #
-            # for t in new_topic_names:
-            #     bank_topics.append(phi.loc[:, t].to_dict())
-
-
-
-
 
             if len(bank_topics) == 0 and len(good_topic_names) > 0:
                 # TODO: almost copy-paste!!
@@ -366,8 +350,8 @@ class TopicBankMethod(BaseSearchMethod):
                 t_scores['kernel'] = len(v[v > 1.0 / tm.get_phi()[t].values.shape[0]])
 
                 # TODO: refine
-                for score in raw_topic_scores:
-                    t_scores[score.name] = raw_topic_scores[score.name][t]
+                for score_name in raw_topic_scores:
+                    t_scores[score_name] = raw_topic_scores[score_name][t]
 
                 t_scores['rho'] = 0.0
 
@@ -383,8 +367,8 @@ class TopicBankMethod(BaseSearchMethod):
                 t_scores['kernel'] = len(v[v > 1.0 / tm.get_phi()[t].values.shape[0]])
 
                 # TODO: refine
-                for score in raw_topic_scores:
-                    t_scores[score.name] = raw_topic_scores[score.name][t]
+                for score_name in raw_topic_scores:
+                    t_scores[score_name] = raw_topic_scores[score_name][t]
 
                 model_topic_current_scores.append(t_scores)
 
@@ -406,18 +390,17 @@ class TopicBankMethod(BaseSearchMethod):
 
             self.save()
 
-
             _logger.info('Scoring bank model...')
 
             bank_phi = self._get_phi(bank_topics, word2index)
             bank_model = self._get_topic_model(
-                dataset,
+                self._dataset,
                 phi=bank_phi,
-                dictionary=dataset.get_dictionary()
+                dictionary=self._dataset.get_dictionary()
             )
 
             # TODO: refine this shamanizm
-            bank_model.fit_offline(dataset.get_batch_vectorizer(), 1)
+            bank_model.fit_offline(self._dataset.get_batch_vectorizer(), 1)
 
             (_, phi_ref) = bank_model._model.master.attach_model(
                 model=bank_model._model.model_pwt
@@ -431,7 +414,7 @@ class TopicBankMethod(BaseSearchMethod):
                 phi_new
             )
 
-            bank_model.fit_offline(dataset.get_batch_vectorizer(), 1)
+            bank_model.fit_offline(self._dataset.get_batch_vectorizer(), 1)
 
             scores = dict()
 
@@ -439,25 +422,35 @@ class TopicBankMethod(BaseSearchMethod):
 
             scores.update(self._get_default_scores(bank_model))
 
-            # Not needed as per topics are calculated
-            #
-            # _logger.info('Computing top tokens scores for bank model...')
-            # scores.update(self._get_top_tokens_scores(bank_model, dataset, documents_for_coherence))
-            #
-            # _logger.info('Computing intratext scores for bank model...')
-            # scores.update(self._get_intratext_scores(bank_model, dataset, documents_for_coherence))
+            # Topic scores already calculated
 
             self._result[_KEY_BANK_SCORES].append(scores)
-            self._result[_KEY_NUM_BANK_TOPICS] = bank_phi.shape[1]
+            self._result[_KEY_NUM_BANK_TOPICS].append(bank_phi.shape[1])
 
             _logger.info(f'Num topics in bank: {len(bank_topics)}')
 
-            #bank_scores.append(scores)
-
-            # TODO: save folder
             self.save()
 
             i = i + 1
+
+        self._result[_KEY_OPTIMUM] = self._result[_KEY_NUM_BANK_TOPICS][-1]
+
+        # TODO: refine computing when do early stop
+        if len(self._result[_KEY_NUM_BANK_TOPICS]) <= 1:  # TODO: can be zero?
+            self._result[_KEY_OPTIMUM + _STD_KEY_SUFFIX] = self._result[_KEY_OPTIMUM]
+        else:
+            differences = list()
+            max_num_last_values = 5
+
+            i = len(self._result[_KEY_NUM_BANK_TOPICS]) - 1
+
+            while i > 0 and len(differences) < max_num_last_values:
+                differences.append(abs(
+                    self._result[_KEY_NUM_BANK_TOPICS][-i] -
+                    self._result[_KEY_NUM_BANK_TOPICS][-i - 1]
+                ))
+
+            self._result[_KEY_OPTIMUM + _STD_KEY_SUFFIX] = float(np.sum(differences))
 
     @staticmethod
     def _jaccard_distance(p, q) -> float:
@@ -571,7 +564,6 @@ class TopicBankMethod(BaseSearchMethod):
         })
 
         phi = phi.reindex(list(word2index.keys()), fill_value=0)
-
         phi.fillna(0.0, inplace=True)
 
         return phi
@@ -581,8 +573,8 @@ class TopicBankMethod(BaseSearchMethod):
 
         for score in self._all_model_scores:
             # TODO: check here
-            score_values[score] = (
-                topic_model.scores[score.name].last_value
+            score_values[score.name] = (
+                topic_model.scores[score.name][-1]
             )
 
         return score_values

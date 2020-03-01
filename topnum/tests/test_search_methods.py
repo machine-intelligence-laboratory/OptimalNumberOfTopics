@@ -9,6 +9,7 @@ from itertools import combinations
 from numbers import Number
 from time import sleep
 from topicnet.cooking_machine.dataset import W_DIFF_BATCHES_1
+from topicnet.cooking_machine.models import BaseModel
 from typing import (
     Dict,
     List
@@ -22,9 +23,11 @@ from topnum.scores import (
     SimpleTopTokensCoherenceScore,
     SophisticatedTopTokensCoherenceScore
 )
+from topnum.scores.base_topic_score import BaseTopicScore
 from topnum.search_methods import (
     OptimizeScoresMethod,
-    RenormalizationMethod
+    RenormalizationMethod,
+    TopicBankMethod
 )
 from topnum.search_methods.base_search_method import BaseSearchMethod
 from topnum.search_methods.constants import DEFAULT_EXPERIMENT_DIR
@@ -36,6 +39,26 @@ from topnum.search_methods.renormalization_method import (
     PHI_RENORMALIZATION_MATRIX,
     THETA_RENORMALIZATION_MATRIX,
 )
+
+
+# TODO: remove? try to use Coherence instead of this
+class _DummyTopicScore(BaseTopicScore):
+    def __init__(self, name='dummy_score'):
+        super().__init__(name)
+
+    def compute(
+            self,
+            model: BaseModel,
+            topics: List[str] = None,
+            documents: List[str] = None) -> Dict[str, float]:
+
+        if topics is None:
+            topics = list(model.get_phi().columns)
+
+        return {
+            t: np.random.randint(1, 10)
+            for t in topics
+        }
 
 
 @pytest.mark.filterwarnings(f'ignore:{W_DIFF_BATCHES_1}')
@@ -211,6 +234,36 @@ class TestSearchMethods:
         optimizer.search_for_optimum(self.text_collection)
 
         self._check_search_result(optimizer._result, optimizer, num_search_points)
+
+    def test_topic_bank(self):
+        self.dataset._data['raw_text'] = self.dataset._data['vw_text'].apply(
+            lambda text: ' '.join(w.split(':')[0] for w in text.split()[1:] if not w.startswith('|'))
+        )  # TODO: "workaround"
+
+        optimizer = TopicBankMethod(
+            data=self.dataset,
+            main_modality=self.main_modality,
+            minimum_word_frequency=0,
+            main_topic_score=_DummyTopicScore(),
+            other_topic_scores=list(),
+            one_model_num_topics=2,
+            num_fit_iterations=5,
+            max_num_models=5,
+            topic_score_threshold_percentile=2
+        )
+
+        optimizer.search_for_optimum(self.text_collection)
+
+        print(optimizer._result)
+
+        # TODO: this is cleanup, not test
+        optimizer.clear()
+        self.dataset._data['raw_text'] = None
+
+        # TODO: improve check
+        for result_key in ['optimum', 'optimum_std']:
+            assert result_key in optimizer._result
+            assert isinstance(optimizer._result[result_key], Number)
 
     def _test_optimize_score(self, score, num_restarts: int = 3) -> None:
         min_num_topics = 1
