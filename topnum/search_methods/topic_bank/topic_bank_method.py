@@ -1,4 +1,3 @@
-import artm
 import json
 import logging
 import numpy as np
@@ -11,6 +10,7 @@ from collections import Counter
 from topicnet.cooking_machine.dataset import Dataset
 from topicnet.cooking_machine.models import TopicModel
 from typing import (
+    Callable,
     Dict,
     List,
     Union
@@ -42,6 +42,10 @@ from topnum.search_methods.base_search_method import (
     _KEY_OPTIMUM,
     _STD_KEY_SUFFIX
 )
+from topnum.search_methods.topic_bank.train_funcs_zoo import (
+    default_train_func,
+    _get_topic_model
+)
 
 
 _KEY_BANK_SCORES = 'bank_scores'
@@ -67,9 +71,13 @@ class TopicBankMethod(BaseSearchMethod):
             other_topic_scores: List[BaseTopicScore] = None,
             stop_bank_score: BaseScore = None,
             other_scores: List[BaseScore] = None,
-            one_model_num_topics: int = 100,  # TODO: or list of ints
-            num_fit_iterations: int = DEFAULT_NUM_FIT_ITERATIONS,
             max_num_models: int = 100,
+            one_model_num_topics: Union[int, List[int]] = 100,
+            num_fit_iterations: int = DEFAULT_NUM_FIT_ITERATIONS,
+            train_func: Union[
+                Callable[[Dataset, int, int, int], TopicModel],
+                List[Callable[[Dataset, int, int, int], TopicModel]],
+                None] = None,
             topic_score_threshold_percentile: int = 95,
             distance_threshold: float = 0.5,
             save_file_path: str = None):  # TODO: say that distance between 0 and 1
@@ -136,8 +144,24 @@ class TopicBankMethod(BaseSearchMethod):
 
         self._all_model_scores = [self._stop_bank_score] + self._other_scores
 
-        self._one_model_num_topics = one_model_num_topics
         self._max_num_models = max_num_models
+
+        if not isinstance(one_model_num_topics, list):
+            one_model_num_topics = [
+                one_model_num_topics for _ in range(self._max_num_models)
+            ]
+
+        if train_func is None:
+            train_func = default_train_func
+
+        if not isinstance(train_func, list):
+            train_func = [
+                train_func for _ in range(self._max_num_models)
+            ]
+
+        self._one_model_num_topics: List[int] = one_model_num_topics
+        self._train_func: List[Callable[[Dataset, int, int, int], TopicModel]] = train_func
+
         self._topic_score_threshold_percentile = topic_score_threshold_percentile
         self._distance_threshold = distance_threshold
 
@@ -165,14 +189,14 @@ class TopicBankMethod(BaseSearchMethod):
         self._result[_KEY_NUM_MODEL_TOPICS] = list()
 
     @property
-    def save_path(self):
+    def save_path(self) -> str:
         return self._save_file_path
 
-    def save(self):
+    def save(self) -> None:
         with open(self._save_file_path, 'w') as f:
             f.write(json.dumps(self._result))
 
-    def clear(self):
+    def clear(self) -> None:
         if os.path.isfile(self._save_file_path):
             os.remove(self._save_file_path)
 
@@ -183,7 +207,9 @@ class TopicBankMethod(BaseSearchMethod):
         text_collection:
             Not needed, kept only for compatibility with the base search method
         """
-        # TODO: refactor this stuff!
+        # TODO: simplify
+
+        # TODO: refactor the stuff right below!
         documents = self._dataset._data['raw_text'].values.tolist()
         all_words_multiset = Counter(
             [w for d in documents for w in d.split()]  # if w not in stopwords
@@ -207,111 +233,25 @@ class TopicBankMethod(BaseSearchMethod):
 
         while i < self._max_num_models:
             # TODO: stop when perplexity stabilizes
-            seed = i - 1  # to use -1 also
 
-            _logger.info(f'Seed: {seed}')
-            _logger.info('Building topic model')
+            _logger.info(f'Building topic model number {i}...')
 
-            tm = self._get_topic_model(
+            topic_model = self._train_func[i](
                 dataset=self._dataset,
-                num_topics=self._one_model_num_topics,
-                dictionary=self._dataset.get_dictionary(),
-                seed=seed
+                model_number=i,
+                num_topics=self._one_model_num_topics[i],
+                num_fit_iterations=self._num_fit_iterations,
+                scores=self._all_model_scores
             )
-
-            # TODO: remove or implement
-            # ***Non-random initialization***
-            #
-            # external_phi = cdc_phi  # arora_phi / cdc_phi
-            #
-            # (_, phi_ref) = tm._model.master.attach_model(
-            #     model=bank_model._model.model_pwt
-            # )
-            #
-            # phi_new = np.copy(phi_ref)
-            # phi_new[np.array(list(word2index[w] for w in external_phi.index)), :external_phi.shape[1]] = external_phi.values
-            #
-            # np.copyto(
-            #     phi_ref,
-            #     phi_new
-            # )
-            #
-            # ***End of non-random initialization***
-
-            # TODO: regularizers: remove or implement
-            #
-            #     tm._model.regularizers.add(
-            #         artm.regularizers.DecorrelatorPhiRegularizer(tau=10**6)
-            #     )
-            #
-            # for t in list(tm.get_phi().columns)[:NUM_CDC_TOPICS]:  # NUM_ARORA_TOPICS / NUM_CDC_TOPICS
-            #     tm._model.regularizers.add(
-            #         artm.regularizers.SmoothSparsePhiRegularizer(
-            #             tau=1e-5,
-            #             topic_names=t
-            #         )
-            #     )
-            #
-            #     tm._model.regularizers.add(
-            #         artm.regularizers.SmoothSparsePhiRegularizer(tau=0.01, topic_names=list(tm.get_phi().columns)[-1])
-            #     )
-            #     tm._model.regularizers.add(
-            #         artm.regularizers.SmoothSparsePhiRegularizer(tau=0.01, topic_names=list(tm.get_phi().columns)[-2])
-            #     )
-            #
-            #     tm._model.regularizers.add(
-            #         artm.regularizers.DecorrelatorPhiRegularizer(name='reg', tau=10**5)
-            #     )
-            #
-            #     tm._model.fit_offline(
-            #         dataset.get_batch_vectorizer(),
-            #         num_fit_iterations=NUM_ITERATIONS // 2  # TODO !!!!!!
-            #     )
-            #
-            #     tm._model.regularizers['reg'].tau = 0
-            #
-            #     tm._model.regularizers.add(
-            #         artm.regularizers.SmoothSparsePhiRegularizer(tau=1e-5)
-            #     )
-
-            tm._model.fit_offline(
-                self._dataset.get_batch_vectorizer(),
-                num_collection_passes=self._num_fit_iterations
-            )
-
-            # **Removing Background Topics***
-            #     _phi = tm.get_phi().iloc[:, :-2]
-            #
-            #     tm = get_topic_model(dataset, phi=_phi, dictionary=dictionary)
-            #
-            #     tm.fit_offline(dataset.get_batch_vectorizer(), 1)
-            #
-            #     (_, phi_ref) = tm._model.master.attach_model(
-            #         model=tm._model.model_pwt
-            #     )
-            #
-            #     phi_new = np.copy(phi_ref)
-            #     phi_new[:, :_phi.shape[1]] = _phi.values
-            #
-            #     np.copyto(
-            #         phi_ref,
-            #         phi_new
-            #     )
-            #
-            #     tm.fit_offline(dataset.get_batch_vectorizer(), 1)
-            #
-            #     del _phi
-            #
-            # ***End of removing***
 
             scores = dict()
 
             _logger.info('Computing scores for one topic model...')
 
-            scores.update(self._get_default_scores(tm))
+            scores.update(self._get_default_scores(topic_model))
 
             raw_topic_scores = self._compute_raw_topic_scores(
-                tm,
+                topic_model,
                 documents_for_coherence
             )
 
@@ -321,7 +261,7 @@ class TopicBankMethod(BaseSearchMethod):
                 )
 
             self._result[_KEY_MODEL_SCORES].append(scores)
-            self._result[_KEY_NUM_MODEL_TOPICS].append(tm.get_phi().shape[1])
+            self._result[_KEY_NUM_MODEL_TOPICS].append(topic_model.get_phi().shape[1])
 
             self.save()
 
@@ -333,7 +273,7 @@ class TopicBankMethod(BaseSearchMethod):
             _logger.info('Finding new topics...')
 
             # TODO: or all words somehow?
-            phi = tm.get_phi().xs(self._main_modality, level=0)
+            phi = topic_model.get_phi().xs(self._main_modality, level=0)
 
             good_topic_names = [
                 t for t in phi.columns
@@ -346,8 +286,8 @@ class TopicBankMethod(BaseSearchMethod):
 
                 t_scores = dict()
 
-                v = tm.get_phi()[t].values
-                t_scores['kernel'] = len(v[v > 1.0 / tm.get_phi()[t].values.shape[0]])
+                v = topic_model.get_phi()[t].values
+                t_scores['kernel'] = len(v[v > 1.0 / topic_model.get_phi()[t].values.shape[0]])
 
                 # TODO: refine
                 for score_name in raw_topic_scores:
@@ -360,11 +300,11 @@ class TopicBankMethod(BaseSearchMethod):
 
             model_topic_current_scores = list()
 
-            for t in tm.get_phi().columns:
+            for t in topic_model.get_phi().columns:
                 t_scores = dict()
 
-                v = tm.get_phi()[t].values
-                t_scores['kernel'] = len(v[v > 1.0 / tm.get_phi()[t].values.shape[0]])
+                v = topic_model.get_phi()[t].values
+                t_scores['kernel'] = len(v[v > 1.0 / topic_model.get_phi()[t].values.shape[0]])
 
                 # TODO: refine
                 for score_name in raw_topic_scores:
@@ -393,10 +333,10 @@ class TopicBankMethod(BaseSearchMethod):
             _logger.info('Scoring bank model...')
 
             bank_phi = self._get_phi(bank_topics, word2index)
-            bank_model = self._get_topic_model(
+            bank_model = _get_topic_model(
                 self._dataset,
                 phi=bank_phi,
-                dictionary=self._dataset.get_dictionary()
+                scores=self._all_model_scores
             )
 
             # TODO: refine this shamanizm
@@ -453,7 +393,7 @@ class TopicBankMethod(BaseSearchMethod):
             self._result[_KEY_OPTIMUM + _STD_KEY_SUFFIX] = float(np.sum(differences))
 
     @staticmethod
-    def _jaccard_distance(p, q) -> float:
+    def _jaccard_distance(p: Dict[str, float], q: Dict[str, float]) -> float:
         numerator = 0
         denominator = 0
 
@@ -483,82 +423,8 @@ class TopicBankMethod(BaseSearchMethod):
 
         return distance
 
-    def _get_topic_model(
-            self,
-            dataset,
-            phi=None,
-            dictionary=None,
-            num_topics=None,
-            seed=None,
-            additional_phi=None):  # TODO: workaround
-
-        if dictionary is None:
-            dictionary = dataset.get_dictionary()
-
-        if num_topics is not None and phi is not None:
-            assert num_topics >= phi.shape[1]
-        elif num_topics is None and phi is not None:
-            num_topics = phi.shape[1]
-        elif num_topics is None and phi is None:
-            raise ValueError()
-
-        topic_names = [f'topic_{i}' for i in range(num_topics)]
-
-        if seed is None:
-            artm_model = artm.ARTM(topic_names=topic_names)
-        else:
-            artm_model = artm.ARTM(topic_names=topic_names, seed=seed)
-
-        artm_model.initialize(dictionary)
-
-        # add_topic_kernel_score(artm_model, topic_names)
-
-        if phi is not None:
-            (_, phi_ref) = artm_model.master.attach_model(
-                model=artm_model.model_pwt
-            )
-
-            phi_new = np.copy(phi_ref)
-            phi_new[:, :phi.shape[1]] = phi.values
-
-            #     if additional_phi is not None:
-            #         phi_new[:, phi.shape[1]:phi.shape[1] + additional_phi.shape[1]] = additional_phi.values
-
-            np.copyto(
-                phi_ref,
-                phi_new
-            )
-
-        #     initial_phi = np.array(phi_new)
-
-        #     num_times_to_fit_for_scores = 3
-
-        #     for _ in range(num_times_to_fit_for_scores):
-        #         (_, phi_ref) = artm_model.master.attach_model(
-        #             model=artm_model.model_pwt
-        #         )
-
-        #         np.copyto(
-        #             phi_ref,
-        #             initial_phi
-        #         )
-
-        #         artm_model.fit_offline(dataset.get_batch_vectorizer(), 1)
-
-        topic_model = TopicModel(
-            artm_model=artm_model,
-            model_id='0',
-            cache_theta=True,
-            theta_columns_naming='id'
-        )
-
-        for score in self._all_model_scores:
-            score._attach(topic_model)
-
-        return topic_model
-
     @staticmethod
-    def _get_phi(topics, word2index):
+    def _get_phi(topics: List[Dict[str, float]], word2index: Dict[str, int]) -> pd.DataFrame:
         phi = pd.DataFrame.from_dict({
             f'topic_{i}': words for i, words in enumerate(topics)
         })
@@ -568,7 +434,7 @@ class TopicBankMethod(BaseSearchMethod):
 
         return phi
 
-    def _get_default_scores(self, topic_model):
+    def _get_default_scores(self, topic_model: TopicModel) -> Dict[str, float]:
         score_values = dict()
 
         for score in self._all_model_scores:
@@ -579,7 +445,11 @@ class TopicBankMethod(BaseSearchMethod):
 
         return score_values
 
-    def _compute_raw_topic_scores(self, topic_model, documents=None):
+    def _compute_raw_topic_scores(
+            self,
+            topic_model: TopicModel,
+            documents: List[str] = None) -> Dict[str, Dict[str, float]]:
+
         score_values = dict()
 
         for score in self._all_topic_scores:
@@ -588,7 +458,11 @@ class TopicBankMethod(BaseSearchMethod):
 
         return score_values
 
-    def _compute_topic_scores(self, topic_model, documents):
+    def _compute_topic_scores(
+            self,
+            topic_model: TopicModel,
+            documents: List[str]) -> Dict[str, float]:
+
         score_values = dict()
 
         raw_score_values = self._compute_raw_topic_scores(
@@ -596,12 +470,14 @@ class TopicBankMethod(BaseSearchMethod):
         )
 
         for score_name, raw_values in raw_score_values.items():
-            score_values[score_name] = TopicBankMethod._aggregate_scores_for_models(raw_values)
+            score_values[score_name] = TopicBankMethod._aggregate_scores_for_models(
+                raw_values
+            )
 
         return score_values
 
     @staticmethod
-    def _aggregate_scores_for_models(topic_scores, p=50):
+    def _aggregate_scores_for_models(topic_scores: Dict[str, float], p: int = 50) -> float:
         values = list(v for k, v in topic_scores.items() if v is not None)
 
         if len(values) == 0:

@@ -39,6 +39,10 @@ from topnum.search_methods.renormalization_method import (
     PHI_RENORMALIZATION_MATRIX,
     THETA_RENORMALIZATION_MATRIX,
 )
+from topnum.search_methods.topic_bank.train_funcs_zoo import (
+    default_train_func,
+    train_func_regularizers
+)
 
 
 # TODO: remove? try to use Coherence instead of this
@@ -235,10 +239,12 @@ class TestSearchMethods:
 
         self._check_search_result(optimizer._result, optimizer, num_search_points)
 
-    def test_topic_bank(self):
+    @pytest.mark.parametrize('train_func', [None, default_train_func, train_func_regularizers])
+    def test_topic_bank(self, train_func):
+        # TODO: "workaround", TopicBank needs raw text
         self.dataset._data['raw_text'] = self.dataset._data['vw_text'].apply(
             lambda text: ' '.join(w.split(':')[0] for w in text.split()[1:] if not w.startswith('|'))
-        )  # TODO: "workaround"
+        )
 
         optimizer = TopicBankMethod(
             data=self.dataset,
@@ -246,24 +252,23 @@ class TestSearchMethods:
             minimum_word_frequency=0,
             main_topic_score=_DummyTopicScore(),
             other_topic_scores=list(),
+            max_num_models=5,
             one_model_num_topics=2,
             num_fit_iterations=5,
-            max_num_models=5,
+            train_func=train_func,
             topic_score_threshold_percentile=2
         )
 
         optimizer.search_for_optimum(self.text_collection)
 
-        print(optimizer._result)
-
-        # TODO: this is cleanup, not test
-        optimizer.clear()
-        self.dataset._data['raw_text'] = None
-
         # TODO: improve check
         for result_key in ['optimum', 'optimum_std']:
             assert result_key in optimizer._result
             assert isinstance(optimizer._result[result_key], Number)
+
+        # TODO: this is cleanup, not test
+        optimizer.clear()
+        self.dataset._data['raw_text'] = None
 
     def _test_optimize_score(self, score, num_restarts: int = 3) -> None:
         min_num_topics = 1
