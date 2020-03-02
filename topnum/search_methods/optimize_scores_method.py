@@ -25,6 +25,7 @@ from .constants import (
 from ..data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
 from ..scores.base_score import BaseScore
 
+from ..model_constructor import init_model_from_family
 
 _KEY_SCORE_RESULTS = 'score_results'
 _KEY_SCORE_VALUES = 'score_values'
@@ -90,57 +91,43 @@ class OptimizeScoresMethod(BaseSearchMethod):
             self._num_topics_interval)
         )
 
-        artm_model = init_model_from_family(
-            self.family,
-            dataset,
-            modalities_to_use=list(text_collection._modalities.keys()),
-            main_modality=text_collection._main_modality,
-            num_topics=nums_topics[0],  # doesn't matter, will be overwritten in experiment
-            num_processors = self._one_model_num_processors
-        )
-
-        model = TopicModel(artm_model)
-
-        # TODO: Find out, why in Renyi entropy test the score already in model here
-        _logger.info(
-            f'Model\'s custom scores before attaching: {list(model.custom_scores.keys())}'
-        )
-
-        for score in self._scores:
-            score._attach(model)
 
         result_models = []
-        topic_Names_grid = TODO
+        dataset_trainable = dataset._transform_data_for_training()
 
         for seed in tqdm(seeds):  # dirty workaround for 'too many models' issue
-            exp_model = model.clone()
+            for num_topics in nums_topics:
+                artm_model = init_model_from_family(
+                    self._family,
+                    dataset,
+                    modalities_to_use=list(text_collection._modalities.keys()),
+                    main_modality=text_collection._main_modality,
+                    num_topics=num_topics,
+                    num_processors = self._one_model_num_processors
+                )
 
-            cube = CubeCreator(
-                num_iter=self._num_collection_passes,
-                parameters={
-                    "seed": [seed],
-                    "topic_names": topic_names_grid
-                },
-                verbose=False,
-                separate_thread=self._separate_thread
-            )
-            exp = Experiment(
-                exp_model,
-                experiment_id=f"{self._experiment_name}_{seed}",
-                save_path=self._experiment_directory,
-                save_experiment=self._save_experiment  # TODO: save_experiment=False actually not working
-            )
-            cube(exp_model, dataset)
+                model = TopicModel(artm_model)
+                model.set_model_id_as_timestamp()
+                path_components = [
+                    self._experiment_directory,
+                    f"{self._experiment_name}_{seed}",
+                    model.model_id
+                ]
 
-            result_models += exp.select()
+                for score in self._scores:
+                    score._attach(model)
 
-            del exp
+                model._fit(
+                    dataset_trainable=dataset_trainable,
+                    num_iterations=self._num_collection_passes,
+                )
+                model.save(model_save_path=os.path.join(*path_components))
 
-        restarts = "seed=" + pd.Series(seeds, name="restart_id").astype(str)
-        result, detailed_result = _summarize_models(
-            result_models,
-            [s.name for s in self._scores],
-            restarts
+                del model
+
+        result, detailed_result = restore_failed_experiment(
+            self._experiment_directory,
+            self._experiment_name
         )
         self._detailed_result = detailed_result
         self._result = result
@@ -197,7 +184,6 @@ def _summarize_models(result_models, score_names=None, restarts=None):
     return result, detailed_result
 
 
-# TODO: is this needed?
 def restore_failed_experiment(experiment_directory, base_experiment_name, scores=None):
     from topicnet.cooking_machine.experiment import START
     import glob
@@ -205,7 +191,6 @@ def restore_failed_experiment(experiment_directory, base_experiment_name, scores
     result_models = []
 
     for folder in glob.glob(f"{experiment_directory}/{base_experiment_name}_*"):
-        folder = os.path.join(experiment_directory, experiment_name)  # TODO: indefined name experiment_name
         model_pathes = [
             f.path for f in os.scandir(folder)
             if f.is_dir() and f.name != START

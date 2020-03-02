@@ -45,6 +45,10 @@ def _main():
         help='Path to the file with text collection in vowpal wabbit format'
     )
     parser.add_argument(
+        'model_family', default="PLSA",
+        help=f''
+    )
+    parser.add_argument(
         'main_modality',
         help=f'Main modality in text. {MESSAGE_MODALITY_FORMAT}'
     )
@@ -228,6 +232,7 @@ def _main():
         num_topics_interval = args.num_topics_interval
         num_fit_iterations = args.num_fit_iterations
         num_restarts = args.num_restarts
+        model_family = args.model_family
 
         scores = list()
         scores.append(_build_score(args, text_collection, modality_names))
@@ -239,7 +244,9 @@ def _main():
             scores.append(_build_score(current_args, text_collection, modality_names))
 
         _optimize_scores(
+
             scores,
+            model_family,
             text_collection,
             output_file_path,
             min_num_topics=min_num_topics,

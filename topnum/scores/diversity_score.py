@@ -62,9 +62,6 @@ class DiversityScore(BaseCustomScore):
 
         metric = metric.lower()
 
-        if metric not in [L2, KL]:
-            raise ValueError()
-
         self._metric = metric
         self._class_ids = class_ids
 
@@ -80,8 +77,10 @@ class _DiversityScore(BaseTopicNetScore):
 
         metric = metric.lower()
 
-        if metric not in [L2, KL]:
-            raise ValueError()
+        # test if metric is known to SciPy
+        if metric != "hellinger":
+            test_matrix = np.reshape(range(4), (2, 2))
+            pdist(test_matrix, metric=metric)
 
         self._metric = metric
         self._class_ids = class_ids
@@ -89,7 +88,11 @@ class _DiversityScore(BaseTopicNetScore):
     def call(self, model: TopicModel):
         phi = model.get_phi(class_ids=self._class_ids).values
 
-        condensed_distances = pdist(phi.T, metric=self._metric)
+        if self._metric == "hellinger":
+            matrix = np.sqrt(phi.T)
+            condensed_distances = pdist(matrix, metric='euclidean') / np.sqrt(2)
+        else:
+            condensed_distances = pdist(phi.T, metric=self._metric)
 
         # if you need a DataFrame:
         # from scipy.spatial.distance import squareform
