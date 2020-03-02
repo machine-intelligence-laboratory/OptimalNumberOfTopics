@@ -3,15 +3,19 @@
 Here are the scores available for using for finding an appropriate number of topics in a text collection:
 
     .
-    └── base_score.py                                       # Base score class. If a score is used anywhere in the module, it inherits from BaseScore
-        ├── base_default_score.py                           # ARTM score wrapped in BaseScore
-        │   └── perplexity_score.py
-        └── base_custom_score.py                            # TopicNet score wrapped in BaseScore
+    └── base_score.py                                        # Base score class. If a score is used anywhere in the module, it inherits from BaseScore
+        ├── base_default_score.py                            # ARTM score wrapped in BaseScore
+        │   ├── perplexity_score.py
+        │   ├── sparsity_phi_score.py
+        │   └── sparsity_theta_score.py
+        └── base_custom_score.py                             # TopicNet score wrapped in BaseScore
+            ├── base_topic_score.py
+            │   ├── intratext_coherence_score.py             # Coherence score (intratext)
+            │   ├── simple_toptok_coherence_score.py         # Coherence score (top tokens, #1)
+            │   └── sophisticated_toptok_coherence_score.py  # Coherence score (top tokens, #2)
             ├── diversity_score.py
-            ├── entropy_score.py
-            ├── intratext_coherence_score.py                # Coherence score (intratext)
-            ├── simple_toptok_coherence_score.py            # Coherence score (top tokens, #1)
-            └── sophisticated_toptok_coherence_score.py     # Coherence score (top tokens, #2)
+            └── entropy_score.py
+
 
 
 ## Coherence
