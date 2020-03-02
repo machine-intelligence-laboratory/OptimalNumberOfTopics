@@ -36,6 +36,7 @@ class OptimizeScoresMethod(BaseSearchMethod):
     def __init__(
             self,
             scores: List[BaseScore],  # TODO: Union[BaseScore, List[BaseScore]]
+            model_family: str = "LDA",
             num_restarts: int = 3,
             num_topics_interval: int = 10,
             min_num_topics: int = DEFAULT_MIN_NUM_TOPICS,
@@ -50,6 +51,7 @@ class OptimizeScoresMethod(BaseSearchMethod):
         super().__init__(min_num_topics, max_num_topics, num_fit_iterations)
 
         self._scores = scores
+        self._family = model_family
         self._num_restarts = num_restarts
         self._num_topics_interval = num_topics_interval
 
@@ -88,24 +90,14 @@ class OptimizeScoresMethod(BaseSearchMethod):
             self._num_topics_interval)
         )
 
-        n_bcg_topics = 0  # TODO: or better add ability to specify?
-        artm_model = init_simple_default_model(
+        artm_model = init_model_from_family(
+            self.family,
             dataset,
             modalities_to_use=list(text_collection._modalities.keys()),
-            modalities_weights=text_collection._modalities,  # TODO: remove after release
             main_modality=text_collection._main_modality,
-            specific_topics=nums_topics[0],  # doesn't matter, will be overwritten in experiment
-            background_topics=n_bcg_topics
+            num_topics=nums_topics[0],  # doesn't matter, will be overwritten in experiment
+            num_processors = self._one_model_num_processors
         )
-
-        # remove regularizers created by default
-        # if regularizers are needed, we will add them explicitly
-        # TODO: refine
-        if n_bcg_topics:
-            del artm_model.regularizers._data['smooth_theta_bcg']
-            del artm_model.regularizers._data['smooth_phi_bcg']
-
-        artm_model.num_processors = self._one_model_num_processors
 
         model = TopicModel(artm_model)
 
@@ -118,6 +110,7 @@ class OptimizeScoresMethod(BaseSearchMethod):
             score._attach(model)
 
         result_models = []
+        topic_Names_grid = TODO
 
         for seed in tqdm(seeds):  # dirty workaround for 'too many models' issue
             exp_model = model.clone()
@@ -126,7 +119,7 @@ class OptimizeScoresMethod(BaseSearchMethod):
                 num_iter=self._num_collection_passes,
                 parameters={
                     "seed": [seed],
-                    "num_topics": nums_topics
+                    "topic_names": topic_names_grid
                 },
                 verbose=False,
                 separate_thread=self._separate_thread
