@@ -15,10 +15,10 @@ _STD_KEY_SUFFIX = '_std'
 
 
 class BaseSearchMethod:
-    def __init__(self, min_num_topics, max_num_topics, num_collection_passes):
+    def __init__(self, min_num_topics, max_num_topics, num_fit_iterations):
         self._min_num_topics = min_num_topics
         self._max_num_topics = max_num_topics
-        self._num_collection_passes = num_collection_passes
+        self._num_fit_iterations = num_fit_iterations
 
         self._result = dict()
 

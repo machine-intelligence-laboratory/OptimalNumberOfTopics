@@ -123,7 +123,7 @@ class OptimizeScoresMethod(BaseSearchMethod):
             exp_model = model.clone()
 
             cube = CubeCreator(
-                num_iter=self._num_collection_passes,
+                num_iter=self._num_fit_iterations,
                 parameters={
                     "seed": [seed],
                     "num_topics": nums_topics

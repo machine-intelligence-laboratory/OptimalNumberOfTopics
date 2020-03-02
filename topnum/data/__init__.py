@@ -1,0 +1,1 @@
+from .vowpal_wabbit_text_collection import VowpalWabbitTextCollection

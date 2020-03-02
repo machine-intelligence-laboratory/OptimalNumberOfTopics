@@ -5,6 +5,7 @@ import warnings
 
 from collections import defaultdict
 from topicnet.cooking_machine.dataset import Dataset
+from topicnet.cooking_machine.models.base_model import BaseModel
 from typing import (
     Dict,
     List,
@@ -12,7 +13,6 @@ from typing import (
     Union
 )
 
-from .base_custom_score import BaseCustomScore
 from ._base_coherence_score import (
     _BaseCoherenceScore,
     SpecificityEstimationMethod,
@@ -20,10 +20,11 @@ from ._base_coherence_score import (
     WordType,
     WordTopicRelatednessType
 )
+from .base_topic_score import BaseTopicScore
 from ..data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
 
 
-class SophisticatedTopTokensCoherenceScore(BaseCustomScore):
+class SophisticatedTopTokensCoherenceScore(BaseTopicScore):
     """
     Newman's PMI-based coherence.
     It estimates the measure of nonrandomness of a joint occurrence of
@@ -41,7 +42,8 @@ class SophisticatedTopTokensCoherenceScore(BaseCustomScore):
             word_topic_relatedness: WordTopicRelatednessType = WordTopicRelatednessType.PWT,
             specificity_estimation: SpecificityEstimationMethod = SpecificityEstimationMethod.NONE,
             word_cooccurrences: Dict[Tuple[WordType, WordType], float] = None,
-            window=10):
+            num_top_words=10,
+            window=20):
         """
         Parameters
         ----------
@@ -81,6 +83,9 @@ class SophisticatedTopTokensCoherenceScore(BaseCustomScore):
         self._text_type = text_type
         self._word_topic_relatedness = word_topic_relatedness
         self._specificity_estimation = specificity_estimation
+
+        self._word_cooccurrences = word_cooccurrences
+        self._num_top_words = num_top_words
         self._window = window
 
         self._score = self._initialize()
@@ -97,8 +102,18 @@ class SophisticatedTopTokensCoherenceScore(BaseCustomScore):
             text_type=self._text_type,
             word_topic_relatedness=self._word_topic_relatedness,
             specificity_estimation=self._specificity_estimation,
+            word_cooccurrences=self._word_cooccurrences,
+            num_top_words=self._num_top_words,
             window=self._window
         )
+
+    def compute(
+            self,
+            model: BaseModel,
+            topics: List[str] = None,
+            documents: List[str] = None) -> Dict[str, float]:
+
+        return self._score.compute(model, topics, documents)
 
 
 class _TopTokensCoherenceScore(_BaseCoherenceScore):
@@ -111,7 +126,7 @@ class _TopTokensCoherenceScore(_BaseCoherenceScore):
             specificity_estimation: SpecificityEstimationMethod = SpecificityEstimationMethod.NONE,
             word_cooccurrences: Dict[Tuple[WordType, WordType], float] = None,
             num_top_words=10,
-            window=10):
+            window=20):
 
         super().__init__(
             dataset=dataset,

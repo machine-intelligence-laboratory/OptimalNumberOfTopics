@@ -126,7 +126,7 @@ class RenormalizationMethod(BaseSearchMethod):
             model = TopicModel(artm_model)
             model._fit(
                 dataset.get_batch_vectorizer(),
-                num_iterations=self._num_collection_passes
+                num_iterations=self._num_fit_iterations
             )
 
             pwt, nwt = self._get_matrices(model)
