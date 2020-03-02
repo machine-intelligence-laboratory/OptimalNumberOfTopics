@@ -122,7 +122,6 @@ class OptimizeScoresMethod(BaseSearchMethod):
                     num_iterations=self._num_collection_passes,
                 )
                 model.save(model_save_path=os.path.join(*path_components))
-
                 del model
 
         result, detailed_result = restore_failed_experiment(

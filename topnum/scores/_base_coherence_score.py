@@ -24,6 +24,9 @@ from typing import (
     Union
 )
 
+from .base_custom_score import BaseCustomScore
+from ..data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
+
 
 _logger = logging.getLogger()
 
@@ -82,34 +85,14 @@ class SpecificityEstimationMethod(IntEnum):
 
 
 class _BaseCoherenceScore(TopicNetBaseScore):
-    """"""
     def __init__(
             self,
             dataset: Dataset,
             documents: List[str] = None,
             text_type: TextType = TextType.VW_TEXT,
             word_topic_relatedness: WordTopicRelatednessType = WordTopicRelatednessType.PWT,
-            specificity_estimation: SpecificityEstimationMethod = SpecificityEstimationMethod.NONE,
+            specificity_estimation: SpecificityEstimationMethod = SpecificityEstimationMethod.NONE
     ):
-        """
-        Parameters
-        ----------
-        dataset
-            Dataset with document collection
-            (any model passed to `call()` is supposed to be trained on it)
-        documents
-            Which documents from the dataset are to be used for computing coherence
-        text_type
-            What text to use when computing coherence: raw text or VW text
-            Preferable to use VW (as it is usually preprocessed, stop-words removed etc.),
-            and with words in *natural order*.
-            Score needs "real" text to compute coherence
-        word_topic_relatedness
-            How to estimate word relevance to topic: using p(w | t) or p(t | w)
-        specificity_estimation
-            How to estimate specificity of word to topic
-        """
-        # TODO: word_topic_relatedness seems to be connected with TopTokensViewer stuff
         super().__init__()
 
         if not isinstance(dataset, Dataset):

@@ -1,2 +1,3 @@
 from .optimize_scores_method import OptimizeScoresMethod
 from .renormalization_method import RenormalizationMethod
+from .topic_bank import TopicBankMethod
