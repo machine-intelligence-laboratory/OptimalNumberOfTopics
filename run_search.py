@@ -129,8 +129,16 @@ def _main():
         help='Renyi entropy -> min'
     )
     parser_optimize_diversity = subparsers_optimize_scores.add_parser(
+        'calinski_harabasz_score',
+        help='CH -> max'
+    )
+    parser_optimize_diversity = subparsers_optimize_scores.add_parser(
+        'silhouette_score',
+        help='SilhouetteScore -> max'
+    )
+    parser_optimize_diversity = subparsers_optimize_scores.add_parser(
         'diversity_score',
-        help='Diversity -> max'  # TODO: right?
+        help='Diversity -> max'
     )
     parser_optimize_intratext = subparsers_optimize_scores.add_parser(
         'intratext_coherence',
@@ -335,6 +343,16 @@ def _build_score(
             entropy=RENYI_ENTROPY_NAME,
             threshold_factor=args.threshold_factor,
             class_ids=modality_names
+        )
+    elif args.score_name == 'calinski_harabasz_score':
+        return CalinskiHarabaszScore(
+            'calinski_harabasz_score',
+            validation_dataset=text_collection._to_dataset()
+        )
+    elif args.score_name == 'silhouette_score':
+        return SilhouetteScore(
+            'silhouette_diversity_score',
+            validation_dataset=text_collection._to_dataset()
         )
     elif args.score_name == 'diversity_score':
         return DiversityScore(

@@ -1,7 +1,6 @@
 import logging
 import numpy as np
 from sklearn.metrics import silhouette_score
-from sklearn.metrics import calinski_harabasz_score
 
 from topicnet.cooking_machine import Dataset
 from topicnet.cooking_machine.models import (
@@ -100,30 +99,3 @@ class _SilhouetteScore(BaseTopicNetScore):
             theta.T.values, objects_clusters,
             sample_size=self.sample_size, batches_number=self.batches_number
         )
-
-
-class CalinskiHarabaszScore(BaseCustomScore):
-    def __init__(
-            self,
-            name: str,
-            validation_dataset: Dataset
-            ):
-
-        super().__init__(name)
-
-        self._score = _CalinskiHarabaszScore(validation_dataset)
-
-
-class _CalinskiHarabaszScore(BaseTopicNetScore):
-    def __init__(self, validation_dataset):
-        super().__init__()
-        self.validation_dataset = validation_dataset
-
-    def call(self, model: TopicModel):
-        theta = model.get_theta(dataset=self.validation_dataset)
-
-        theta.columns = range(len(theta.columns))
-        objects_clusters = theta.values.argmax(axis=0)
-
-        return calinski_harabasz_score(theta.T.values, objects_clusters)
-
