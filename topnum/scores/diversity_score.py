@@ -1,25 +1,22 @@
 import logging
-import numpy as np
+
 from scipy.spatial.distance import pdist
 from topicnet.cooking_machine.models import (
     BaseScore as BaseTopicNetScore,
     TopicModel
 )
-from typing import (
-    List,
-    Tuple
-)
+from typing import List
 
 from .base_custom_score import BaseCustomScore
 
 
 L2 = 'euclidean'
-KL = "jensenshannon"
+KL = 'jensenshannon'
 
 _logger = logging.getLogger()
 
-'''
 
+'''
 Our treatment makes use of a measure of diversity among
 the topics as a criterion to stop generating new topics.
 Diversity is widely studied as a criteria in ranking [20], query
@@ -41,15 +38,14 @@ sensitive to the top-ranked words.
 Intuitively, if the number of topics is small, the learned topics
 tend to be close to the background language model and thus do not
 distinguish well between each other. When the number of topics grows,
-the granularity of topics becomes ﬁner and the topics become more distinguishable,
+the granularity of topics becomes finer and the topics become more distinguishable,
 thus increasing the diversity. However, when the number of topics
 becomes too large, we start to obtain many small topics which may
 be too close to each other, which decreases the topic diversity.
 Therefore, diversity seems to be a good measure to capture
 the right granularity of topics. 
-
-
 '''
+
 
 class DiversityScore(BaseCustomScore):
     def __init__(
