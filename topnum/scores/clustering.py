@@ -16,8 +16,6 @@ from typing import (
 from .base_custom_score import BaseCustomScore
 
 
-logger = logging.getLogger()
-
 '''
 
 Uses of Silhouette:
@@ -98,12 +96,11 @@ class _SilhouetteScore(BaseTopicNetScore):
         theta.columns = range(len(theta.columns))
         objects_clusters = theta.values.argmax(axis=0)
 
-        result = silhouette_score_by_sampling(
+        return silhouette_score_by_sampling(
             theta.T.values, objects_clusters,
             sample_size=self.sample_size, batches_number=self.batches_number
         )
 
-        return result
 
 
 class CalinskiHarabazScore(BaseCustomScore):
