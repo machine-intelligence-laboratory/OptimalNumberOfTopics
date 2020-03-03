@@ -13,10 +13,13 @@ from topnum.data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
 from topnum.scores import (
     DiversityScore,
     EntropyScore,
+    DiversityScore,
+    SilhouetteScore,
+    CalinskiHarabazScore,
     IntratextCoherenceScore,
     PerplexityScore,
     SimpleTopTokensCoherenceScore,
-    SophisticatedTopTokensCoherenceScore
+    SophisticatedTopTokensCoherenceScore,
 )
 from topnum.scores.diversity_score import L2
 from topnum.scores.entropy_score import RENYI as RENYI_ENTROPY_NAME
@@ -322,7 +325,6 @@ def _build_score(
         modality_names: List[str]) -> BaseScore:
 
     # TODO: modality_names should be available via text_collection
-
     if args.score_name == 'perplexity':
         return PerplexityScore(
             'perplexity_score',
