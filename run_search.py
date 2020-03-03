@@ -17,7 +17,6 @@ from topnum.scores import (
     PerplexityScore,
     SimpleTopTokensCoherenceScore,
     SophisticatedTopTokensCoherenceScore,
-    DiversityScore,
     SilhouetteScore,
     CalinskiHarabaszScore
 )

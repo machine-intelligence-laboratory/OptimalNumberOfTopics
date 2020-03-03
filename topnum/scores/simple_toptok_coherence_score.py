@@ -12,7 +12,7 @@ from typing import (
     Union
 )
 
-from .base_custom_score import BaseCustomScore
+from .base_topic_score import BaseTopicScore
 from ..data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
 
 
@@ -23,7 +23,7 @@ AVERAGE_TYPE_MEDIAN = 'median'
 _logger = logging.getLogger()
 
 
-class SimpleTopTokensCoherenceScore(BaseCustomScore):
+class SimpleTopTokensCoherenceScore(BaseTopicScore):
     def __init__(
             self,
             name: str,
@@ -132,7 +132,24 @@ class _TopTokensCoherenceScore(BaseTopicNetScore):
         self._average = average
         self._active_topic_threshold = active_topic_threshold
 
-    def call(self, model: TopicModel) -> float:
+    def call(self, model: TopicModel) -> float:  # not BaseModel
+        topic_coherences = self.compute(model)
+        coherence_values = list(topic_coherences.values())
+
+        if len(coherence_values) == 0:
+            return 0
+        elif self._average == AVERAGE_TYPE_MEAN:
+            return float(np.mean(coherence_values))
+        elif self._average == AVERAGE_TYPE_MEDIAN:
+            return float(np.median(coherence_values))
+        else:
+            # Unlikely to ever happen
+            raise ValueError(f'Don\'t know how to average like {self._average}')
+
+    def compute(
+            self,
+            model: TopicModel) -> Dict[str, float]:  # not BaseModel, because need access to ._model
+
         phi = model.get_phi()
 
         if self._topics is not None:
@@ -148,7 +165,7 @@ class _TopTokensCoherenceScore(BaseTopicNetScore):
 
         vocabulary_size = subphi.shape[0]
 
-        topic_coherences = list()
+        topic_coherences = dict()
 
         if self._active_topic_threshold is None:
             pass
@@ -192,16 +209,9 @@ class _TopTokensCoherenceScore(BaseTopicNetScore):
                     current_cooc_values.append(0)
 
             if len(current_cooc_values) > 0:
-                topic_coherences.append(np.mean(current_cooc_values))
+                topic_coherences[topic] = float(np.mean(current_cooc_values))
             else:
-                topic_coherences.append(0)
+                # TODO: warn?
+                topic_coherences[topic] = 0.0
 
-        if len(topic_coherences) == 0:
-            return 0
-        elif self._average == AVERAGE_TYPE_MEAN:
-            return float(np.mean(topic_coherences))
-        elif self._average == AVERAGE_TYPE_MEDIAN:
-            return float(np.median(topic_coherences))
-        else:
-            # Unlikely to ever happen
-            raise ValueError(f'Don\'t know how to average like {self._average}')
+        return topic_coherences

@@ -1,26 +1,20 @@
 import logging
-import numpy as np
+
 from scipy.spatial.distance import pdist
 from topicnet.cooking_machine.models import (
     BaseScore as BaseTopicNetScore,
     TopicModel
 )
-from typing import (
-    List,
-    Tuple
-)
+from typing import List
 
 from .base_custom_score import BaseCustomScore
 
 
 L2 = 'euclidean'
-KL = "jensenshannon"
-
-_logger = logging.getLogger()
+KL = 'jensenshannon'
 
 '''
 Quote from http://arxiv.org/abs/1409.2993
-
 
 Our treatment makes use of a measure of diversity among
 the topics as a criterion to stop generating new topics.
@@ -69,6 +63,7 @@ theory. Wiley-Interscience, New York, NY, USA, 1991.
 
 
 '''
+
 
 class DiversityScore(BaseCustomScore):
     '''

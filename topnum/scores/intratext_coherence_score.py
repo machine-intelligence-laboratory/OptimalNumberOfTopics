@@ -6,14 +6,15 @@ from enum import (
     IntEnum
 )
 from topicnet.cooking_machine import Dataset
+from topicnet.cooking_machine.models.base_model import BaseModel
 from typing import (
+    Dict,
     List,
     Tuple,
     Union
 )
 
 from ..data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
-from .base_custom_score import BaseCustomScore
 from ._base_coherence_score import (
     _BaseCoherenceScore,
     SpecificityEstimationMethod,
@@ -21,6 +22,7 @@ from ._base_coherence_score import (
     WordTopicRelatednessType,
     WordType
 )
+from .base_topic_score import BaseTopicScore
 
 
 class ComputationMethod(IntEnum):
@@ -46,7 +48,7 @@ class ComputationMethod(IntEnum):
     SUM_OVER_WINDOW = auto()
 
 
-class IntratextCoherenceScore(BaseCustomScore):
+class IntratextCoherenceScore(BaseTopicScore):
     """
     Computes intratext coherence
 
@@ -105,9 +107,10 @@ class IntratextCoherenceScore(BaseCustomScore):
         self._data = data
         self._documents = documents
         self._text_type = text_type
-        self._computation_method = computation_method
         self._word_topic_relatedness = word_topic_relatedness
         self._specificity_estimation = specificity_estimation
+
+        self._computation_method = computation_method
         self._max_num_out_of_topic_words = max_num_out_of_topic_words
         self._window = window
 
@@ -129,6 +132,14 @@ class IntratextCoherenceScore(BaseCustomScore):
             max_num_out_of_topic_words=self._max_num_out_of_topic_words,
             window=self._window
         )
+
+    def compute(
+            self,
+            model: BaseModel,
+            topics: List[str] = None,
+            documents: List[str] = None) -> Dict[str, float]:
+
+        return self._score.compute(model, topics, documents)
 
 
 # TODO: same score also is in TopicNet
