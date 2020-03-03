@@ -13,13 +13,12 @@ from topnum.data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
 from topnum.scores import (
     DiversityScore,
     EntropyScore,
-    DiversityScore,
-    SilhouetteScore,
-    CalinskiHarabazScore,
     IntratextCoherenceScore,
     PerplexityScore,
     SimpleTopTokensCoherenceScore,
     SophisticatedTopTokensCoherenceScore,
+    SilhouetteScore,
+    CalinskiHarabaszScore
 )
 from topnum.scores.diversity_score import L2
 from topnum.scores.entropy_score import RENYI as RENYI_ENTROPY_NAME

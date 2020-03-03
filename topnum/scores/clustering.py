@@ -1,7 +1,7 @@
 import logging
 import numpy as np
 from sklearn.metrics import silhouette_score
-from sklearn.metrics import calinski_harabaz_score
+from sklearn.metrics import calinski_harabasz_score
 
 from topicnet.cooking_machine import Dataset
 from topicnet.cooking_machine.models import (
@@ -27,7 +27,7 @@ https://arxiv.org/pdf/1808.08098.pdf
 '''
 
 
-def silhouette_score_by_sampling(X, labels, sample_size=10000, batches_number=20, **kwargs):
+def _silhouette_score_by_sampling(X, labels, sample_size=10000, batches_number=20, **kwargs):
     """
     Calculate silhouette_score as mean value for several sampled batches
 
@@ -96,14 +96,13 @@ class _SilhouetteScore(BaseTopicNetScore):
         theta.columns = range(len(theta.columns))
         objects_clusters = theta.values.argmax(axis=0)
 
-        return silhouette_score_by_sampling(
+        return _silhouette_score_by_sampling(
             theta.T.values, objects_clusters,
             sample_size=self.sample_size, batches_number=self.batches_number
         )
 
 
-
-class CalinskiHarabazScore(BaseCustomScore):
+class CalinskiHarabaszScore(BaseCustomScore):
     def __init__(
             self,
             name: str,
@@ -112,10 +111,10 @@ class CalinskiHarabazScore(BaseCustomScore):
 
         super().__init__(name)
 
-        self._score = _CalinskiHarabazScore(validation_dataset)
+        self._score = _CalinskiHarabaszScore(validation_dataset)
 
 
-class _CalinskiHarabazScore(BaseTopicNetScore):
+class _CalinskiHarabaszScore(BaseTopicNetScore):
     def __init__(self, validation_dataset):
         super().__init__()
         self.validation_dataset = validation_dataset
@@ -126,7 +125,5 @@ class _CalinskiHarabazScore(BaseTopicNetScore):
         theta.columns = range(len(theta.columns))
         objects_clusters = theta.values.argmax(axis=0)
 
-        calinski_harabaz_score_value = calinski_harabaz_score(theta.T.values, objects_clusters)
-
-        return calinski_harabaz_score_value
+        return calinski_harabasz_score(theta.T.values, objects_clusters)
 

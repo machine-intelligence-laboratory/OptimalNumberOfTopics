@@ -1,5 +1,5 @@
 from .diversity_score import DiversityScore
-from .clustering import CalinskiHarabazScore, SilhouetteScore
+from .clustering import CalinskiHarabaszScore, SilhouetteScore
 from .entropy_score import EntropyScore
 from .intratext_coherence_score import IntratextCoherenceScore
 from .perplexity_score import PerplexityScore

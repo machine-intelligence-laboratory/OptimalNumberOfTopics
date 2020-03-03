@@ -119,7 +119,9 @@ class OptimizeScoresMethod(BaseSearchMethod):
 
         result_models = []
 
-        for seed in tqdm(seeds):  # dirty workaround for 'too many models' issue
+        # TODO: fix this in TopicNet
+        # dirty workaround for 'too many models' issue
+        for seed in tqdm(seeds):
             exp_model = model.clone()
 
             cube = CubeCreator(
