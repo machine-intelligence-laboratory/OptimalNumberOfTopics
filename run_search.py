@@ -368,6 +368,7 @@ def _build_score(
                 f'Coocs file "{cooc_file}" doesn\'t seem like valid JSON!'
                 f' Error: {traceback.format_exc()}'
             )
+
         cooc_values = {
             tuple(d[0]): d[1] for d in raw_coocs_values
         }
@@ -379,19 +380,6 @@ def _build_score(
         )
     else:
         raise ValueError(f'Unknown score name "{args.score_name}"!')
-
-
-# TODO:
-# _build_silhouette_score(dataset)
-# _build_ch_score(dataset)
-
-
-def _build_diversity_score(modalities: List[str]) -> DiversityScore:
-    return DiversityScore(
-        'l2_diversity_score',
-        metric=L2,
-        class_ids=modalities
-    )
 
 
 def _optimize_scores(
