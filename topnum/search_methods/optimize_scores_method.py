@@ -3,7 +3,6 @@ import os
 import pandas as pd
 import uuid
 
-from topicnet.cooking_machine import Experiment
 from topicnet.cooking_machine.cubes import CubeCreator
 from topicnet.cooking_machine.models import TopicModel
 from topicnet.cooking_machine.model_constructor import init_simple_default_model
@@ -91,8 +90,6 @@ class OptimizeScoresMethod(BaseSearchMethod):
             self._num_topics_interval)
         )
 
-
-        result_models = []
         dataset_trainable = dataset._transform_data_for_training()
 
         for seed in tqdm(seeds):  # dirty workaround for 'too many models' issue
@@ -119,12 +116,13 @@ class OptimizeScoresMethod(BaseSearchMethod):
 
                 model._fit(
                     dataset_trainable=dataset_trainable,
-                    num_iterations=self._num_collection_passes,
+                    num_iterations=self._num_fit_iterations,
                 )
                 model.save(model_save_path=os.path.join(*path_components))
+
                 del model
 
-        result, detailed_result = restore_failed_experiment(
+        result, detailed_result = load_models_from_disk(
             self._experiment_directory,
             self._experiment_name
         )
@@ -183,7 +181,7 @@ def _summarize_models(result_models, score_names=None, restarts=None):
     return result, detailed_result
 
 
-def restore_failed_experiment(experiment_directory, base_experiment_name, scores=None):
+def load_models_from_disk(experiment_directory, base_experiment_name, scores=None):
     from topicnet.cooking_machine.experiment import START
     import glob
 

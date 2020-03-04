@@ -18,6 +18,7 @@ from topnum.scores import (
     SimpleTopTokensCoherenceScore,
     SophisticatedTopTokensCoherenceScore
 )
+from topnum.model_constructor import KNOWN_MODELS
 from topnum.scores.diversity_score import L2
 from topnum.scores.entropy_score import RENYI as RENYI_ENTROPY_NAME
 from topnum.scores.base_score import BaseScore
@@ -45,8 +46,9 @@ def _main():
         help='Path to the file with text collection in vowpal wabbit format'
     )
     parser.add_argument(
-        'model_family', default="PLSA",
-        help=f''
+        '--mf', '--model_family',
+        help=f'The family of models to optimize the number of topics for',
+        default="PLSA", choices=KNOWN_MODELS
     )
     parser.add_argument(
         'main_modality',

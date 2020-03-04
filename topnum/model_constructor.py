@@ -8,6 +8,9 @@ lc.minloglevel = 3
 lib = artm.wrapper.LibArtm(logging_config=lc)
 
 
+KNOWN_MODELS = "LDA PLSA sparse decorrelation ARTM".split()
+
+
 def init_model_from_family(
             family,
             dataset,
@@ -22,22 +25,22 @@ def init_model_from_family(
         modalities_to_use = [main_modality]
 
     if family == "LDA":
-        model = init_LDA(dataset, modalities_to_use, main_modality, num_topics)
+        model = init_lda(dataset, modalities_to_use, main_modality, num_topics)
     elif family == "PLSA":
-        model = init_PLSA(dataset, modalities_to_use, main_modality, num_topics)
+        model = init_plsa(dataset, modalities_to_use, main_modality, num_topics)
     elif family == "sparse":
         # TODO: TARTM
-        model = init_bcg_sparse_model(dataset, modalities_to_use, main_modality, num_topics)
+        model = init_bcg_sparse_model(dataset, modalities_to_use, main_modality, num_topics, 1)
     elif family == "decorrelation":
-        model = init_decorrelated_PLSA(dataset, modalities_to_use, main_modality, num_topics)
+        model = init_decorrelated_plsa(dataset, modalities_to_use, main_modality, num_topics, 1)
     elif family == "ARTM":
-        model = init_baseline_ARTM(dataset, modalities_to_use, main_modality, num_topics)
+        model = init_baseline_artm(dataset, modalities_to_use, main_modality, num_topics)
 
     model.num_processors = num_processors
     return model
 
 
-def init_PLSA(
+def init_plsa(
         dataset, modalities_to_use, main_modality, num_topics, num_bcg_topics=0
 ):
     """
@@ -75,7 +78,7 @@ def init_PLSA(
     return model
 
 
-def init_decorrelated_PLSA(
+def init_decorrelated_plsa(
         dataset, modalities_to_use, main_modality, num_topics
 ):
     """
@@ -93,12 +96,12 @@ def init_decorrelated_PLSA(
     model: artm.ARTM() instance
     """
 
-    model = init_PLSA(
+    model = init_plsa(
         dataset, modalities_to_use, main_modality, num_topics
     )
     dictionary = dataset.get_dictionary()
 
-    specific_topic_names = model.topic_names[:-1]
+    specific_topic_names = model.topic_names  # let's decorrelate everything
     model.regularizers.add(
             artm.DecorrelatorPhiRegularizer(
             gamma=0,
@@ -111,7 +114,7 @@ def init_decorrelated_PLSA(
 
     return model
 
-def init_LDA(
+def init_lda(
         dataset, modalities_to_use, main_modality,
         num_topics, prior="symmetric"
 ):
@@ -130,7 +133,7 @@ def init_LDA(
     -------
     model: artm.ARTM() instance
     """
-    model = init_PLSA(
+    model = init_plsa(
         dataset, modalities_to_use, main_modality, num_topics
     )
     dictionary = dataset.get_dictionary()
@@ -140,6 +143,8 @@ def init_LDA(
     if prior == "symmetric":
         alpha = 1.0 / num_topics
         eta = 1.0 / num_topics
+    else:
+        raise TypeError(f"prior type '{prior}' is not supported")
 
     model.regularizers.add(
         artm.SmoothSparsePhiRegularizer(
@@ -159,7 +164,7 @@ def init_LDA(
 
 def init_bcg_sparse_model(
         dataset, modalities_to_use, main_modality,
-        specific_topics
+        specific_topics, bcg_topics
 ):
     """
     Creates simple artm model with standard scores.
@@ -177,11 +182,11 @@ def init_bcg_sparse_model(
     -------
     model: artm.ARTM() instance
     """
-    model = init_PLSA(
-        dataset, modalities_to_use, main_modality, specific_topics, 1
+    model = init_plsa(
+        dataset, modalities_to_use, main_modality, specific_topics, bcg_topics
     )
-    background_topic_names = model.topic_names[-1:]
-    specific_topic_names = model.topic_names[:-1]
+    background_topic_names = model.topic_names[-bcg_topics:]
+    specific_topic_names = model.topic_names[:-bcg_topics]
 
     dictionary = dataset.get_dictionary()
     baseline_class_ids = {class_id: 1 for class_id in modalities_to_use}
@@ -222,8 +227,8 @@ def init_bcg_sparse_model(
     return model
 
 
-def init_baseline_ARTM(
-        dataset, modalities_to_use, main_modality, num_topics
+def init_baseline_artm(
+        dataset, modalities_to_use, main_modality, num_topics, bcg_topics
 ):
     """
     Creates simple artm model with standard scores.
@@ -241,10 +246,10 @@ def init_baseline_ARTM(
     """
 
     model = init_bcg_sparse_model(
-        dataset, modalities_to_use, main_modality, num_topics
+        dataset, modalities_to_use, main_modality, num_topics, bcg_topics
     )
     dictionary = dataset.get_dictionary()
-    specific_topic_names = model.topic_names[:-1]
+    specific_topic_names = model.topic_names[:-bcg_topics]
 
     model.regularizers.add(
         artm.DecorrelatorPhiRegularizer(
