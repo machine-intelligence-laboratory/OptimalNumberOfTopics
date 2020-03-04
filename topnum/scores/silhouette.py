@@ -15,16 +15,6 @@ from typing import (
 from .base_custom_score import BaseCustomScore
 
 
-'''
-
-Uses of Silhouette:
-
-http://www.cs.wm.edu/~denys/pubs/ICSE%2713-LDA-CRC.pdf
-https://ieeexplore.ieee.org/document/7008665
-https://arxiv.org/pdf/1808.08098.pdf
-
-'''
-
 
 def _silhouette_score_by_sampling(X, labels, sample_size=10000, batches_number=20, **kwargs):
     """
@@ -67,6 +57,16 @@ def _silhouette_score_by_sampling(X, labels, sample_size=10000, batches_number=2
 
 
 class SilhouetteScore(BaseCustomScore):
+    '''
+
+    Uses of Silhouette:
+
+    http://www.cs.wm.edu/~denys/pubs/ICSE%2713-LDA-CRC.pdf
+    https://ieeexplore.ieee.org/document/7008665
+    https://arxiv.org/pdf/1808.08098.pdf
+
+    '''
+
     def __init__(
             self,
             name: str,

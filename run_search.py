@@ -128,15 +128,15 @@ def _main():
         'renyi_entropy',
         help='Renyi entropy -> min'
     )
-    parser_optimize_diversity = subparsers_optimize_scores.add_parser(
+    subparsers_optimize_scores.add_parser(
         'calinski_harabasz_score',
         help='CH -> max'
     )
-    parser_optimize_diversity = subparsers_optimize_scores.add_parser(
+    subparsers_optimize_scores.add_parser(
         'silhouette_score',
         help='SilhouetteScore -> max'
     )
-    parser_optimize_diversity = subparsers_optimize_scores.add_parser(
+    subparsers_optimize_scores.add_parser(
         'diversity_score',
         help='Diversity -> max'
     )
@@ -351,7 +351,7 @@ def _build_score(
         )
     elif args.score_name == 'silhouette_score':
         return SilhouetteScore(
-            'silhouette_diversity_score',
+            'silhouette_score',
             validation_dataset=text_collection._to_dataset()
         )
     elif args.score_name == 'diversity_score':

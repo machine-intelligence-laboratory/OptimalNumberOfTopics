@@ -15,16 +15,12 @@ from typing import (
 from .base_custom_score import BaseCustomScore
 
 
-'''
-
-Uses of Calinski-Harabasz
-
-https://link.springer.com/article/10.1007/s40815-017-0327-9
-
-'''
-
-
 class CalinskiHarabaszScore(BaseCustomScore):
+    '''
+    Uses of Calinski-Harabasz:
+
+    https://link.springer.com/article/10.1007/s40815-017-0327-9
+    '''
     def __init__(
             self,
             name: str,
