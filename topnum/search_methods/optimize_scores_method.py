@@ -149,6 +149,7 @@ class OptimizeScoresMethod(BaseSearchMethod):
         result, detailed_result = _summarize_models(
             result_models,
             [s.name for s in self._scores],
+            [s._higher_better for s in self._scores],
             restarts
         )
         self._detailed_result = detailed_result
@@ -157,7 +158,12 @@ class OptimizeScoresMethod(BaseSearchMethod):
         _logger.info('Finished searching!')
 
 
-def _summarize_models(result_models, score_names=None, restarts=None):
+def _summarize_models(
+        result_models: List[TopicModel],
+        score_names: List[str] = None,
+        score_is_higher_better: List[bool] = None,
+        restarts=None):
+
     detailed_result = dict()
     result = dict()
     result[_KEY_SCORE_RESULTS] = dict()
@@ -165,6 +171,9 @@ def _summarize_models(result_models, score_names=None, restarts=None):
     if score_names is None:
         any_model = result_models[-1]
         score_names = any_model.describe_scores().reset_index().score_name.values
+
+    if score_is_higher_better is None:
+        score_is_higher_better = [True for _ in result_models]
 
     nums_topics = sorted(list({len(tm.topic_names) for tm in result_models}))
 
@@ -189,9 +198,13 @@ def _summarize_models(result_models, score_names=None, restarts=None):
 
         detailed_result[score] = score_df.astype(float)
 
-    for score in score_names:
+    for score, higher_better in zip(score_names, score_is_higher_better):
         score_df = detailed_result[score]
-        optimum_series = score_df.idxmin(axis=1)  # TODO: some scores need to be minimized, some - maximized
+
+        if higher_better:
+            optimum_series = score_df.idxmax(axis=1)
+        else:
+            optimum_series = score_df.idxmin(axis=1)
 
         score_result = dict()
 
@@ -221,4 +234,5 @@ def restore_failed_experiment(experiment_directory, base_experiment_name, scores
         ]
         result_models += [TopicModel.load(path) for path in model_pathes]
 
+    # TODO: higher_better is unknown here for scores
     return _summarize_models(result_models)

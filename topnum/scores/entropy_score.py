@@ -31,6 +31,8 @@ class EntropyScore(BaseCustomScore):
 
         super().__init__(name)
 
+        self._higher_better = False
+
         entropy = entropy.lower()
 
         if entropy not in [RENYI, SHANNON]:

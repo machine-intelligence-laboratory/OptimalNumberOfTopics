@@ -117,7 +117,7 @@ def _main():
         dest='score_name'
     )
 
-    parser_optimize_perplexity = subparsers_optimize_scores.add_parser(
+    subparsers_optimize_scores.add_parser(
         'perplexity',
         help='Perplexity -> min'
     )
@@ -130,17 +130,17 @@ def _main():
     )
     subparsers_optimize_scores.add_parser(
         'calinski_harabasz_score',
-        help='CH -> max'
+        help='Calinski Harabasz -> max'
     )
     subparsers_optimize_scores.add_parser(
         'silhouette_score',
-        help='SilhouetteScore -> max'
+        help='Silhouette -> max'
     )
     subparsers_optimize_scores.add_parser(
         'diversity_score',
         help='Diversity -> max'
     )
-    parser_optimize_intratext = subparsers_optimize_scores.add_parser(
+    subparsers_optimize_scores.add_parser(
         'intratext_coherence',
         help='Intratext coherence -> max'
     )

@@ -9,7 +9,7 @@ from .base_default_score import BaseDefaultScore
 
 class PerplexityScore(BaseDefaultScore):
     def __init__(self, name: str, class_ids: List[str] = None):
-        super().__init__(name)
+        super().__init__(name, higher_better=False)
 
         self._class_ids = class_ids
         self._score = self._initialize()
