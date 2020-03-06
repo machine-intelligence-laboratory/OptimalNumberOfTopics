@@ -161,7 +161,7 @@ class OptimizeScoresMethod(BaseSearchMethod):
 def _summarize_models(
         result_models: List[TopicModel],
         score_names: List[str] = None,
-        score_is_higher_better: List[bool] = None,
+        score_higher_better_flags: List[bool] = None,
         restarts=None):
 
     detailed_result = dict()
@@ -172,8 +172,8 @@ def _summarize_models(
         any_model = result_models[-1]
         score_names = any_model.describe_scores().reset_index().score_name.values
 
-    if score_is_higher_better is None:
-        score_is_higher_better = [True for _ in result_models]
+    if score_higher_better_flags is None:
+        score_higher_better_flags = [True for _ in result_models]
 
     nums_topics = sorted(list({len(tm.topic_names) for tm in result_models}))
 
@@ -198,7 +198,7 @@ def _summarize_models(
 
         detailed_result[score] = score_df.astype(float)
 
-    for score, higher_better in zip(score_names, score_is_higher_better):
+    for score, higher_better in zip(score_names, score_higher_better_flags):
         score_df = detailed_result[score]
 
         if higher_better:
