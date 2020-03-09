@@ -440,7 +440,7 @@ class TopicBankMethod(BaseSearchMethod):
         for score in self._all_model_scores:
             # TODO: check here
             score_values[score.name] = (
-                topic_model.scores[score.name][-1]
+                topic_model.scores[score._fullname][-1]
             )
 
         return score_values
