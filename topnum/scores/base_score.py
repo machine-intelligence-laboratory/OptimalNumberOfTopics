@@ -1,9 +1,14 @@
+import logging
+
 from artm.scores import BaseScore as BaseArtmScore
 from topicnet.cooking_machine.models import (
     BaseScore as BaseTopicNetScore,
     TopicModel
 )
 from typing import Union
+
+
+_logger = logging.getLogger()
 
 
 class BaseScore:
@@ -26,6 +31,15 @@ class BaseScore:
 
     @staticmethod
     def _is_higher_better(fullname: str) -> bool:
+        if '__' not in fullname:
+            _logger.warning(
+                f'Seems there is no info about "higher-better"'
+                f' in the score name "{fullname}".'
+                f' Assuming, that higher-better is True'
+            )
+
+            return True
+
         higher_better_as_string = fullname.split('__')[1]
 
         return higher_better_as_string == f'{True}'
