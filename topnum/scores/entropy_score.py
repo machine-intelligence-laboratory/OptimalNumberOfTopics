@@ -60,7 +60,7 @@ class _RenyiShannonEntropyScore(BaseTopicNetScore):
     def call(self, model: TopicModel):
         phi, _ = self._get_matrices(model)
 
-        return np.exp(-1 * self._calculate_entropy(phi))  # TODO: so as to maximize all
+        return self._calculate_entropy(phi)
 
     def _get_matrices(self, model: TopicModel) -> Tuple[np.array, np.array]:
         pwt = model.get_phi(class_ids=self._class_ids).values
