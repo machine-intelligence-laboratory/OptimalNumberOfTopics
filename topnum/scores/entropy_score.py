@@ -29,7 +29,7 @@ class EntropyScore(BaseCustomScore):
             threshold_factor: float = 1.0,
             class_ids: List[str] = None):
 
-        super().__init__(name)
+        super().__init__(name, higher_better=False)
 
         entropy = entropy.lower()
 

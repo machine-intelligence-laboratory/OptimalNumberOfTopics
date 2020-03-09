@@ -11,8 +11,8 @@ _logger = logging.getLogger()
 
 
 class BaseCustomScore(BaseScore):
-    def __init__(self, name):
-        super().__init__(name)
+    def __init__(self, name, higher_better=True):
+        super().__init__(name, higher_better)
 
     def _attach(self, model: TopicModel):
         if self._name in model.custom_scores:
@@ -23,7 +23,7 @@ class BaseCustomScore(BaseScore):
             )
 
         # TODO: TopicModel should provide ability to add custom scores
-        model.custom_scores[self.name] = self._score
+        model.custom_scores[self._fullname] = self._score
 
     def _initialize(self) -> BaseTopicNetScore:
         raise NotImplementedError()
