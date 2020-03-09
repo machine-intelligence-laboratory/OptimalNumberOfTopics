@@ -18,6 +18,7 @@ from typing import (
 from topnum.data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
 from topnum.scores import (
     EntropyScore,
+    HoldoutPerplexityScore,
     IntratextCoherenceScore,
     PerplexityScore,
     SimpleTopTokensCoherenceScore,
@@ -143,6 +144,15 @@ class TestSearchMethods:
     def test_optimize_perplexity(self):
         score = PerplexityScore(
             'perplexity_score',
+            class_ids=[self.main_modality, self.other_modality]
+        )
+
+        self._test_optimize_score(score)
+
+    def test_optimize_holdout_perplexity(self):
+        score = HoldoutPerplexityScore(
+            'holdout_perplexity_score',
+            test_dataset=self.dataset,
             class_ids=[self.main_modality, self.other_modality]
         )
 
