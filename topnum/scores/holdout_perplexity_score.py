@@ -21,6 +21,7 @@ class HoldoutPerplexityScore(BaseCustomScore):
         self._score = self._initialize()
 
     def _initialize(self) -> BaseTopicNetScore:
+        # TODO: probably the name should be handled more carefully here
         self._perplexity_score_name = f'_{self.name}'  # TODO: _fullname
 
         return _HoldoutPerplexityScore(
