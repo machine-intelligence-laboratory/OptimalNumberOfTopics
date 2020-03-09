@@ -29,7 +29,7 @@ class EntropyScore(BaseCustomScore):
             threshold_factor: float = 1.0,
             class_ids: List[str] = None):
 
-        super().__init__(name, higher_better=False)
+        super().__init__(name)
 
         entropy = entropy.lower()
 
@@ -60,7 +60,7 @@ class _RenyiShannonEntropyScore(BaseTopicNetScore):
     def call(self, model: TopicModel):
         phi, _ = self._get_matrices(model)
 
-        return self._calculate_entropy(phi)
+        return np.exp(-1 * self._calculate_entropy(phi))  # TODO: so as to maximize all
 
     def _get_matrices(self, model: TopicModel) -> Tuple[np.array, np.array]:
         pwt = model.get_phi(class_ids=self._class_ids).values

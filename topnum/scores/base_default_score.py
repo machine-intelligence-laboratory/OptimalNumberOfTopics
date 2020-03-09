@@ -7,8 +7,8 @@ from .base_score import BaseScore
 class BaseDefaultScore(BaseScore):
     """Default aka implemented in BigARTM library
     """
-    def __init__(self, name, higher_better=True):
-        super().__init__(name, higher_better)
+    def __init__(self, name):
+        super().__init__(name)
 
     def _attach(self, model: TopicModel):
         model._model.scores.add(self._score)

@@ -7,9 +7,8 @@ from typing import Union
 
 
 class BaseScore:
-    def __init__(self, name, higher_better=True):
+    def __init__(self, name):
         self._name = name
-        self._higher_better = higher_better
         self._score = None
 
     @property

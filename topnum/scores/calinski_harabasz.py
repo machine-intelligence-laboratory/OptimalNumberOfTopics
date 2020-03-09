@@ -22,7 +22,7 @@ class CalinskiHarabaszScore(BaseCustomScore):
             validation_dataset: Dataset
             ):
 
-        super().__init__(name, higher_better=True)
+        super().__init__(name)
 
         self._score = _CalinskiHarabaszScore(validation_dataset)
 
