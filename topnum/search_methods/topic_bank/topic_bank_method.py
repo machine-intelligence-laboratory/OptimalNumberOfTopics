@@ -336,25 +336,13 @@ class TopicBankMethod(BaseSearchMethod):
             bank_model = _get_topic_model(
                 self._dataset,
                 phi=bank_phi,
-                scores=self._all_model_scores
+                scores=self._all_model_scores,
+                num_safe_fit_iterations=3
             )
-
-            # TODO: refine this shamanizm
-            bank_model.fit_offline(self._dataset.get_batch_vectorizer(), 1)
-
-            (_, phi_ref) = bank_model._model.master.attach_model(
-                model=bank_model._model.model_pwt
+            bank_model._fit(
+                dataset_trainable=self._dataset.get_batch_vectorizer(),
+                num_iterations=1
             )
-
-            phi_new = np.copy(phi_ref)
-            phi_new[:, :bank_phi.shape[1]] = bank_phi.values
-
-            np.copyto(
-                phi_ref,
-                phi_new
-            )
-
-            bank_model.fit_offline(self._dataset.get_batch_vectorizer(), 1)
 
             scores = dict()
 

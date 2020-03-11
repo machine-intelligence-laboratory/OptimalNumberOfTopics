@@ -184,7 +184,8 @@ def _get_topic_model(
         phi: pd.DataFrame = None,
         num_topics: int = None,
         seed: int = None,
-        scores: List[BaseScore] = None) -> TopicModel:
+        scores: List[BaseScore] = None,
+        num_safe_fit_iterations: int = 3) -> TopicModel:
 
     dictionary = dataset.get_dictionary()
 
@@ -204,18 +205,12 @@ def _get_topic_model(
 
     artm_model.initialize(dictionary)
 
-    if phi is not None:
-        (_, phi_ref) = artm_model.master.attach_model(
-            model=artm_model.model_pwt
-        )
-
-        phi_new = np.copy(phi_ref)
-        phi_new[:, :phi.shape[1]] = phi.values
-
-        np.copyto(
-            phi_ref,
-            phi_new
-        )
+    if phi is None:
+        pass
+    elif num_safe_fit_iterations is not None and num_safe_fit_iterations > 0:
+        _safe_copy_phi(artm_model, phi, dataset, num_safe_fit_iterations)
+    else:
+        _copy_phi(artm_model, phi)
 
     topic_model = TopicModel(
         artm_model=artm_model,
@@ -229,3 +224,35 @@ def _get_topic_model(
             score._attach(topic_model)
 
     return topic_model
+
+
+def _copy_phi(model: artm.ARTM, phi: pd.DataFrame) -> None:
+    # TODO: assuming, that vocabularies are the same
+    #  maybe better to check
+    (_, phi_ref) = model.master.attach_model(
+        model=model.model_pwt
+    )
+
+    phi_new = np.copy(phi_ref)
+    phi_new[:, :phi.shape[1]] = phi.values
+
+    np.copyto(
+        phi_ref,
+        phi_new
+    )
+
+
+def _safe_copy_phi(
+        model: artm.ARTM,
+        phi: pd.DataFrame,
+        dataset: Dataset,
+        small_num_fit_iterations: int = 3) -> None:
+
+    if small_num_fit_iterations == 0:
+        _copy_phi(model, phi)
+
+        return
+
+    for _ in range(small_num_fit_iterations):
+        _copy_phi(model, phi)
+        model.fit_offline(dataset.get_batch_vectorizer(), 1)
