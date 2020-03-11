@@ -1,3 +1,5 @@
+import uuid
+
 from artm.scores import PerplexityScore
 from topicnet.cooking_machine import Dataset
 from topicnet.cooking_machine.models import (
@@ -21,8 +23,7 @@ class HoldoutPerplexityScore(BaseCustomScore):
         self._score = self._initialize()
 
     def _initialize(self) -> BaseTopicNetScore:
-        # TODO: probably the name should be handled more carefully here
-        self._perplexity_score_name = f'_{self.name}'  # TODO: _fullname
+        self._perplexity_score_name = f'_{self.name}_{str(uuid.uuid4())[-12:]}'  # TODO: _fullname
 
         return _HoldoutPerplexityScore(
             perplexity_score_name=self._perplexity_score_name,
