@@ -113,7 +113,6 @@ class OptimizeScoresMethod(BaseSearchMethod):
 
         model = TopicModel(artm_model)
 
-        # TODO: Find out, why in Renyi entropy test the score already in model here
         _logger.info(
             f'Model\'s custom scores before attaching: {list(model.custom_scores.keys())}'
         )
