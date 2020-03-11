@@ -117,6 +117,11 @@ class OptimizeScoresMethod(BaseSearchMethod):
             f'Model\'s custom scores before attaching: {list(model.custom_scores.keys())}'
         )
 
+        # TODO: remove this when TopicNet fixed
+        _logger.info('Making custom scores null')
+
+        model.custom_scores = dict()
+
         for score in self._scores:
             score._attach(model)
 
