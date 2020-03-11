@@ -345,7 +345,7 @@ class TestSearchMethods:
             num_restarts=num_restarts,
             one_model_num_processors=num_processors,
             separate_thread=False,
-            experiment_name=score.name,  # otherwise use same folder
+            experiment_name=score.name,  # otherwise will be using same folder
             experiment_directory=DEFAULT_EXPERIMENT_DIR
         )
         num_search_points = len(
