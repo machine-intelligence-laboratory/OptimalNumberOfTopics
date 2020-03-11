@@ -66,6 +66,11 @@ class OptimizeScoresMethod(BaseSearchMethod):
         self._save_experiment = save_experiment
         self._experiment_directory = experiment_directory
 
+        _logger.info(
+            f'Experiment name: {self._experiment_name}.'
+            f' Experiment directory: {self._experiment_directory}'
+        )
+
         self._key_num_topics_values = _KEY_VALUES.format('num_topics')
         self._key_score_values = _KEY_SCORE_VALUES
 
@@ -91,8 +96,7 @@ class OptimizeScoresMethod(BaseSearchMethod):
         n_bcg_topics = 0  # TODO: or better add ability to specify?
         artm_model = init_simple_default_model(
             dataset,
-            modalities_to_use=list(text_collection._modalities.keys()),
-            modalities_weights=text_collection._modalities,  # TODO: remove after release
+            modalities_to_use=text_collection._modalities,
             main_modality=text_collection._main_modality,
             specific_topics=nums_topics[0],  # doesn't matter, will be overwritten in experiment
             background_topics=n_bcg_topics
@@ -109,10 +113,14 @@ class OptimizeScoresMethod(BaseSearchMethod):
 
         model = TopicModel(artm_model)
 
-        # TODO: Find out, why in Renyi entropy test the score already in model here
         _logger.info(
             f'Model\'s custom scores before attaching: {list(model.custom_scores.keys())}'
         )
+
+        # TODO: remove this when TopicNet fixed
+        _logger.info('Making custom scores null')
+
+        model.custom_scores = dict()
 
         for score in self._scores:
             score._attach(model)
