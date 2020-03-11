@@ -47,7 +47,10 @@ class _ApproximateMDLScore(BaseTopicNetScore):
         self.modalities = modalities
 
     def call(self, model: TopicModel):
-        N_p = #TODO
+        if self.consider_sparsity:
+            N_p = #TODO
+        else:
+            N_p = #TODO but different
         ll = get_log_likelihood(model)
         mdl = 0.5 * N_p * log(T * D) - ll
         aic = 2 * N_p - 2 * ll
