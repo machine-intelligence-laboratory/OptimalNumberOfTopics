@@ -1,3 +1,4 @@
+import logging
 import numpy as np
 import os
 import pytest
@@ -17,12 +18,17 @@ from typing import (
 
 from topnum.data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
 from topnum.scores import (
+    CalinskiHarabaszScore,
+    DiversityScore,
     EntropyScore,
     HoldoutPerplexityScore,
     IntratextCoherenceScore,
     PerplexityScore,
+    SilhouetteScore,
     SimpleTopTokensCoherenceScore,
-    SophisticatedTopTokensCoherenceScore
+    SophisticatedTopTokensCoherenceScore,
+    SparsityPhiScore,
+    SparsityThetaScore,
 )
 from topnum.scores.base_topic_score import BaseTopicScore
 from topnum.search_methods import (
@@ -44,6 +50,9 @@ from topnum.search_methods.topic_bank.train_funcs_zoo import (
     default_train_func,
     train_func_regularizers
 )
+
+
+_Logger = logging.getLogger()
 
 
 # TODO: remove? try to use Coherence instead of this
@@ -141,6 +150,30 @@ class TestSearchMethods:
 
         return texts
 
+    def test_optimize_calinski_harabasz(self):
+        score = CalinskiHarabaszScore(
+            'calinski_harabasz_score',
+            validation_dataset=self.dataset
+        )
+
+        self._test_optimize_score(score)
+
+    def test_optimize_diversity(self):
+        score = DiversityScore(
+            'diversity_score',
+            class_ids=self.main_modality
+        )
+
+        self._test_optimize_score(score)
+
+    def test_optimize_silhouette(self):
+        score = SilhouetteScore(
+            'holdout_perplexity_score',
+            validation_dataset=self.dataset
+        )
+
+        self._test_optimize_score(score)
+
     def test_optimize_perplexity(self):
         score = PerplexityScore(
             'perplexity_score',
@@ -216,6 +249,21 @@ class TestSearchMethods:
             cooccurrence_values=cooccurrence_values,
             data=self.dataset,
             modalities=modalities
+        )
+
+        self._test_optimize_score(score)
+
+    def test_optimize_sparsity_phi(self):
+        score = SparsityPhiScore(
+            'sparsity_phi_score',
+            class_id=self.main_modality,
+        )
+
+        self._test_optimize_score(score)
+
+    def test_optimize_sparsity_theta(self):
+        score = SparsityThetaScore(
+            'sparsity_theta_score'
         )
 
         self._test_optimize_score(score)
@@ -297,6 +345,7 @@ class TestSearchMethods:
             num_restarts=num_restarts,
             one_model_num_processors=num_processors,
             separate_thread=False,
+            experiment_name=score.name,  # otherwise use same folder
             experiment_directory=DEFAULT_EXPERIMENT_DIR
         )
         num_search_points = len(

@@ -1,11 +1,12 @@
-import logging
-
 from scipy.spatial.distance import pdist
 from topicnet.cooking_machine.models import (
     BaseScore as BaseTopicNetScore,
     TopicModel
 )
-from typing import List
+from typing import (
+    List,
+    Union
+)
 
 from .base_custom_score import BaseCustomScore
 
@@ -73,7 +74,7 @@ class DiversityScore(BaseCustomScore):
             self,
             name: str,
             metric: str = L2,
-            class_ids: List[str] = None):
+            class_ids: Union[List[str], str] = None):
 
         super().__init__(name)
 
@@ -92,7 +93,7 @@ class DiversityScore(BaseCustomScore):
 
 
 class _DiversityScore(BaseTopicNetScore):
-    def __init__(self, metric: str, class_ids: List[str] = None):
+    def __init__(self, metric: str, class_ids: Union[List[str], str] = None):
         super().__init__()
 
         metric = metric.lower()
@@ -108,12 +109,12 @@ class _DiversityScore(BaseTopicNetScore):
 
         condensed_distances = pdist(phi.T, metric=self._metric)
 
-        # if you need a DataFrame:
+        # If one needs a DataFrame:
+        #
         # from scipy.spatial.distance import squareform
-        #df = pd.DataFrame(
-        #    index=phi.columns, columns=phi.columns, 
+        # df = pd.DataFrame(
+        #    index=phi.columns, columns=phi.columns,
         #    data=squareform(condensed_distances)
-        #)
+        # )
 
         return condensed_distances.mean()
-
