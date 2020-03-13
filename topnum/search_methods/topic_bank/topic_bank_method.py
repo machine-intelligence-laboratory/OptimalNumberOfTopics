@@ -11,6 +11,7 @@ from collections import (
     Counter,
     defaultdict
 )
+from distutils.util import strtobool
 from topicnet.cooking_machine.dataset import Dataset
 from topicnet.cooking_machine.models import TopicModel
 from typing import (
@@ -76,12 +77,13 @@ class TopicBankMethod(BaseSearchMethod):
     def __init__(
             self,
             data: Union[Dataset, VowpalWabbitTextCollection],
-            main_modality: str,
-            minimum_word_frequency: int = 30,  # TODO: think about this param
+            main_modality: str = None,
             main_topic_score: BaseTopicScore = None,
             other_topic_scores: List[BaseTopicScore] = None,
             stop_bank_score: BaseScore = None,
             other_scores: List[BaseScore] = None,
+            documents_fraction_for_topic_scores: float = 0.2,
+            max_num_documents_for_topic_scores: int = 100,
             max_num_models: int = 100,
             one_model_num_topics: Union[int, List[int]] = 100,
             num_fit_iterations: int = DEFAULT_NUM_FIT_ITERATIONS,
@@ -93,7 +95,8 @@ class TopicBankMethod(BaseSearchMethod):
             distance_threshold: float = 0.5,
             bank_update: BankUpdateMethod = BankUpdateMethod.PROVIDE_NON_LINEARITY,
             child_parent_relationship_threshold: float = None,
-            save_file_path: str = None):  # TODO: say that distance between 0 and 1
+            save_file_path: str = None,
+            seed: int = None):
 
         super().__init__(
             min_num_topics=DEFAULT_MIN_NUM_TOPICS,  # not needed
@@ -109,7 +112,6 @@ class TopicBankMethod(BaseSearchMethod):
             raise TypeError(f'data: "{data}", its type: "{type(data)}"')
 
         self._main_modality = main_modality
-        self._minimum_word_frequency = minimum_word_frequency
 
         if main_topic_score is not None:
             self._main_topic_score = main_topic_score
@@ -157,6 +159,8 @@ class TopicBankMethod(BaseSearchMethod):
 
         self._all_model_scores = [self._stop_bank_score] + self._other_scores
 
+        self._documents_fraction_for_topic_scores = documents_fraction_for_topic_scores
+        self._max_num_documents_for_topic_scores = max_num_documents_for_topic_scores
         self._max_num_models = max_num_models
 
         if not isinstance(one_model_num_topics, list):
@@ -175,7 +179,25 @@ class TopicBankMethod(BaseSearchMethod):
         self._one_model_num_topics: List[int] = one_model_num_topics
         self._train_func: List[Callable[[Dataset, int, int, int], TopicModel]] = train_func
 
+        if topic_score_threshold_percentile < 1:
+            warnings.warn(
+                f'topic_score_threshold_percentile {topic_score_threshold_percentile}'
+                f' is less than one! It is expected to be in [0, 100].'
+                f' Are you sure you want to proceed (yes/no)?'
+            )
+
+            answer = input()
+
+            if strtobool(answer) is False:
+                warnings.warn('Exiting')
+
+                exit(0)
+
         self._topic_score_threshold_percentile = topic_score_threshold_percentile
+
+        if distance_threshold > 1 or distance_threshold < 0:
+            raise ValueError(f'distance_threshold should be in [0, 1], not {distance_threshold}')
+
         self._distance_threshold = distance_threshold
         self._bank_update = bank_update
         self._child_parent_relationship_threshold = child_parent_relationship_threshold
@@ -191,6 +213,8 @@ class TopicBankMethod(BaseSearchMethod):
             os.close(file_descriptor)
 
         self._save_file_path = save_file_path
+
+        self._random = np.random.RandomState(seed=seed)
 
         self._result = dict()
 
@@ -224,25 +248,9 @@ class TopicBankMethod(BaseSearchMethod):
         """
         # TODO: simplify
 
-        # TODO: refactor the stuff right below!
-        # documents = self._dataset._data['raw_text'].values.tolist()
-        # all_words_multiset = Counter(
-        #     [w for d in documents for w in d.split()]  # if w not in stopwords
-        # )  # TODO: filtering stopwords?
-        # vocabulary = set(
-        #     w for w, c in all_words_multiset.items() if c >= self._minimum_word_frequency
-        # )
-        # word2index = {w: i for i, w in enumerate(vocabulary)}
-
         word2index = None
 
-        # TODO: select better
-        documents_for_coherence = np.random.choice(
-            self._dataset._data['id'].values,
-            size=min(100, int(0.2 * len(self._dataset._data['id'].values))),  # TODO: add as param
-            replace=False
-        ).tolist()
-
+        documents_for_coherence = self._select_documents_for_topic_scores()
         topic_bank = TopicBank()
 
         i = 0
@@ -288,17 +296,17 @@ class TopicBankMethod(BaseSearchMethod):
 
             _logger.info('Finding new topics...')
 
-            # TODO: or all words somehow?
-            #phi = topic_model.get_phi().xs(self._main_modality, level=0)
             phi = topic_model.get_phi()
-            phi = phi.iloc[phi.index.get_level_values(0).isin([self._main_modality])]
+
+            if self._main_modality is None:
+                phi = phi
+            else:
+                phi = phi.iloc[phi.index.get_level_values(0).isin([self._main_modality])]
 
             if word2index is None:
                 word2index = {
                     word: index for index, word in enumerate(phi.index)
                 }
-
-
 
             if self._bank_update == BankUpdateMethod.JUST_ADD_GOOD_TOPICS:
                 topics_for_append = list(range(len(phi.columns)))
@@ -431,6 +439,22 @@ class TopicBankMethod(BaseSearchMethod):
                 ))
 
             self._result[_KEY_OPTIMUM + _STD_KEY_SUFFIX] = float(np.sum(differences))
+
+    def _select_documents_for_topic_scores(self) -> List[str]:
+        document_ids = self._dataset._data['id'].values
+        num_documents = len(document_ids)
+
+        selected_documents = self._random.choice(
+            document_ids,
+            size=min(
+                self._max_num_documents_for_topic_scores,
+                int(self._documents_fraction_for_topic_scores * num_documents)
+            ),
+            replace=False
+        )
+        selected_documents = list(selected_documents)
+
+        return selected_documents
 
     def _extract_hierarchical_relationship(
             self,

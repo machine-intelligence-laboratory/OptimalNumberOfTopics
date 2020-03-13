@@ -7,6 +7,7 @@ from typing import (
     Union
 )
 
+
 TokenType = Union[str, Tuple[str, str]]
 
 
@@ -44,3 +45,9 @@ class TopicBank:
 
         self._topics[index] = None
         self._topic_scores[index] = None
+
+    def save(self):
+        raise NotImplementedError()
+
+    def clear(self):
+        raise NotImplementedError()

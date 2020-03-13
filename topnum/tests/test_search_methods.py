@@ -315,7 +315,6 @@ class TestSearchMethods:
         optimizer = TopicBankMethod(
             data=self.dataset,
             main_modality=self.main_modality,
-            minimum_word_frequency=0,
             main_topic_score=_DummyTopicScore(),
             other_topic_scores=list(),
             max_num_models=5,
