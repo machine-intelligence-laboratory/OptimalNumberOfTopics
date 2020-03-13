@@ -216,7 +216,7 @@ def _get_topic_model(
         artm_model=artm_model,
         model_id='0',
         cache_theta=True,
-        theta_columns_naming='id'
+        theta_columns_naming='title'
     )
 
     if scores is not None:
@@ -227,14 +227,20 @@ def _get_topic_model(
 
 
 def _copy_phi(model: artm.ARTM, phi: pd.DataFrame) -> None:
-    # TODO: assuming, that vocabularies are the same
-    #  maybe better to check
+    model_wrapper = TopicModel(artm_model=model)
+    base_index = model_wrapper.get_phi().index
+
+    # TODO: faster? check if char is in?
+    target_indices = [
+        base_index.get_loc(i) for i in phi.index
+    ]
+
     (_, phi_ref) = model.master.attach_model(
         model=model.model_pwt
     )
 
     phi_new = np.copy(phi_ref)
-    phi_new[:, :phi.shape[1]] = phi.values
+    phi_new[target_indices, :phi.shape[1]] = phi.values
 
     np.copyto(
         phi_ref,

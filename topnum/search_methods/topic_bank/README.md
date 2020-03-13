@@ -1,6 +1,6 @@
 # TopicBank
 
-![Concept of TopicBank](images/concept.png)
+![Concept of TopicBank](images/topic_bank_concept.png)
 
 TODO: text
 

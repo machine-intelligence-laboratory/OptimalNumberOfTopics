@@ -46,6 +46,7 @@ from topnum.search_methods.renormalization_method import (
     PHI_RENORMALIZATION_MATRIX,
     THETA_RENORMALIZATION_MATRIX,
 )
+from topnum.search_methods.topic_bank import BankUpdateMethod
 from topnum.search_methods.topic_bank.train_funcs_zoo import (
     default_train_func,
     train_func_regularizers
@@ -297,8 +298,15 @@ class TestSearchMethods:
 
         self._check_search_result(optimizer._result, optimizer, num_search_points)
 
-    @pytest.mark.parametrize('train_func', [None, default_train_func, train_func_regularizers])
-    def test_topic_bank(self, train_func):
+    @pytest.mark.parametrize(
+        'bank_update',
+        [BankUpdateMethod.JUST_ADD_GOOD_TOPICS, BankUpdateMethod.PROVIDE_NON_LINEARITY]
+    )
+    @pytest.mark.parametrize(
+        'train_func',
+        [None, default_train_func, train_func_regularizers]
+    )
+    def test_topic_bank(self, bank_update, train_func):
         # TODO: "workaround", TopicBank needs raw text
         self.dataset._data['raw_text'] = self.dataset._data['vw_text'].apply(
             lambda text: ' '.join(w.split(':')[0] for w in text.split()[1:] if not w.startswith('|'))
@@ -314,7 +322,8 @@ class TestSearchMethods:
             one_model_num_topics=2,
             num_fit_iterations=5,
             train_func=train_func,
-            topic_score_threshold_percentile=2
+            topic_score_threshold_percentile=2,
+            bank_update=bank_update
         )
 
         optimizer.search_for_optimum(self.text_collection)
