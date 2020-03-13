@@ -1,5 +1,6 @@
 import logging
 import numpy as np
+
 from sklearn.metrics import silhouette_score
 
 from topicnet.cooking_machine import Dataset
@@ -7,13 +8,12 @@ from topicnet.cooking_machine.models import (
     BaseScore as BaseTopicNetScore,
     TopicModel
 )
-from typing import (
-    List,
-    Tuple
-)
+
 
 from .base_custom_score import BaseCustomScore
 
+
+_Logger = logging.getLogger()
 
 
 def _silhouette_score_by_sampling(X, labels, sample_size=10000, batches_number=20, **kwargs):
@@ -94,6 +94,14 @@ class _SilhouetteScore(BaseTopicNetScore):
 
         theta.columns = range(len(theta.columns))
         objects_clusters = theta.values.argmax(axis=0)
+
+        # TODO: or return some numeric?
+        if len(set(objects_clusters)) == 1:
+            _Logger.warning(
+                'Only one unique cluster! Returning None as score value'
+            )
+
+            return float('nan')
 
         return _silhouette_score_by_sampling(
             theta.T.values, objects_clusters,

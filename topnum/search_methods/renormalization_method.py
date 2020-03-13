@@ -113,8 +113,7 @@ class RenormalizationMethod(BaseSearchMethod):
 
             artm_model = init_simple_default_model(
                 dataset,
-                modalities_to_use=list(text_collection._modalities.keys()),
-                modalities_weights=text_collection._modalities,  # TODO: remove after release
+                modalities_to_use=text_collection._modalities,
                 main_modality=text_collection._main_modality,
                 specific_topics=self._max_num_topics,
                 background_topics=0  # TODO: or better add ability to specify?
