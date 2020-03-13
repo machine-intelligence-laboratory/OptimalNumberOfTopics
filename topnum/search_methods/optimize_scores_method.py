@@ -3,9 +3,7 @@ import os
 import pandas as pd
 import uuid
 
-from topicnet.cooking_machine.cubes import CubeCreator
 from topicnet.cooking_machine.models import TopicModel
-from topicnet.cooking_machine.model_constructor import init_simple_default_model
 from tqdm import tqdm
 from typing import List
 
@@ -100,7 +98,8 @@ class OptimizeScoresMethod(BaseSearchMethod):
                     modalities_to_use=list(text_collection._modalities.keys()),
                     main_modality=text_collection._main_modality,
                     num_topics=num_topics,
-                    num_processors = self._one_model_num_processors
+                    seed=seed,
+                    num_processors=self._one_model_num_processors
                 )
 
                 model = TopicModel(artm_model)

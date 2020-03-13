@@ -1,5 +1,7 @@
-from topicnet.cooking_machine.rel_toolbox_lite import count_vocab_size, modality_weight_rel2abs, transform_regularizer
-from topicnet.cooking_machine.model_constructor import create_default_topics, add_standard_scores, init_model
+from topicnet.cooking_machine.rel_toolbox_lite import count_vocab_size, transform_regularizer
+from topicnet.cooking_machine.model_constructor import (
+    create_default_topics, add_standard_scores, init_model
+)
 import artm
 
 # change log style
@@ -16,6 +18,7 @@ def init_model_from_family(
             dataset,
             main_modality,
             num_topics,
+            seed,
             modalities_to_use=None,
             num_processors=3
 ):
@@ -32,11 +35,12 @@ def init_model_from_family(
         # TODO: TARTM
         model = init_bcg_sparse_model(dataset, modalities_to_use, main_modality, num_topics, 1)
     elif family == "decorrelation":
-        model = init_decorrelated_plsa(dataset, modalities_to_use, main_modality, num_topics, 1)
+        model = init_decorrelated_plsa(dataset, modalities_to_use, main_modality, num_topics)
     elif family == "ARTM":
-        model = init_baseline_artm(dataset, modalities_to_use, main_modality, num_topics)
+        model = init_baseline_artm(dataset, modalities_to_use, main_modality, num_topics, 1)
 
     model.num_processors = num_processors
+    model.seed = seed
     return model
 
 
@@ -99,11 +103,10 @@ def init_decorrelated_plsa(
     model = init_plsa(
         dataset, modalities_to_use, main_modality, num_topics
     )
-    dictionary = dataset.get_dictionary()
 
     specific_topic_names = model.topic_names  # let's decorrelate everything
     model.regularizers.add(
-            artm.DecorrelatorPhiRegularizer(
+        artm.DecorrelatorPhiRegularizer(
             gamma=0,
             tau=0.01,
             name='decorrelation',
@@ -113,6 +116,7 @@ def init_decorrelated_plsa(
     )
 
     return model
+
 
 def init_lda(
         dataset, modalities_to_use, main_modality,
@@ -136,7 +140,6 @@ def init_lda(
     model = init_plsa(
         dataset, modalities_to_use, main_modality, num_topics
     )
-    dictionary = dataset.get_dictionary()
 
     # what GenSim returns by default (everything is 'symmetric')
     # see https://github.com/RaRe-Technologies/gensim/blob/master/gensim/models/ldamodel.py#L521
@@ -162,6 +165,7 @@ def init_lda(
 
     return model
 
+
 def init_bcg_sparse_model(
         dataset, modalities_to_use, main_modality,
         specific_topics, bcg_topics
@@ -172,11 +176,10 @@ def init_bcg_sparse_model(
     Parameters
     ----------
     dataset : Dataset
-    modalities_to_use : list of str
+    modalities_to_use : list of str or dict
     main_modality : str
-    specific_topics : list or int
-    background_topics : list or int
-    modalities_weights : dict or None
+    specific_topics : int
+    bcg_topics : int
 
     Returns
     -------
@@ -192,6 +195,7 @@ def init_bcg_sparse_model(
     baseline_class_ids = {class_id: 1 for class_id in modalities_to_use}
     data_stats = count_vocab_size(dictionary, baseline_class_ids)
 
+    # all coefficients are relative
     regularizers = [
         artm.SmoothSparsePhiRegularizer(
              name='smooth_phi_bcg',
@@ -218,7 +222,7 @@ def init_bcg_sparse_model(
     ]
     for reg in regularizers:
         model.regularizers.add(transform_regularizer(
-            data_stats, 
+            data_stats,
             reg,
             model.class_ids,
             n_topics=len(reg.topic_names)
@@ -248,7 +252,6 @@ def init_baseline_artm(
     model = init_bcg_sparse_model(
         dataset, modalities_to_use, main_modality, num_topics, bcg_topics
     )
-    dictionary = dataset.get_dictionary()
     specific_topic_names = model.topic_names[:-bcg_topics]
 
     model.regularizers.add(
@@ -262,5 +265,3 @@ def init_baseline_artm(
     )
 
     return model
-
-

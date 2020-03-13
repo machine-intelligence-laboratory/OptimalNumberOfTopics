@@ -1,15 +1,9 @@
-import logging
-import numpy as np
 from sklearn.metrics import calinski_harabasz_score
 
 from topicnet.cooking_machine import Dataset
 from topicnet.cooking_machine.models import (
     BaseScore as BaseTopicNetScore,
     TopicModel
-)
-from typing import (
-    List,
-    Tuple
 )
 
 from .base_custom_score import BaseCustomScore
@@ -44,4 +38,3 @@ class _CalinskiHarabaszScore(BaseTopicNetScore):
         objects_clusters = theta.values.argmax(axis=0)
 
         return calinski_harabasz_score(theta.T.values, objects_clusters)
-
