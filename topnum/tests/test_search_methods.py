@@ -47,9 +47,9 @@ from topnum.search_methods.renormalization_method import (
     THETA_RENORMALIZATION_MATRIX,
 )
 from topnum.search_methods.topic_bank import BankUpdateMethod
-from topnum.search_methods.topic_bank.train_funcs_zoo import (
+from topnum.search_methods.topic_bank.one_model_train_funcs import (
     default_train_func,
-    train_func_regularizers
+    regularization_train_func
 )
 
 
@@ -304,7 +304,7 @@ class TestSearchMethods:
     )
     @pytest.mark.parametrize(
         'train_func',
-        [None, default_train_func, train_func_regularizers]
+        [None, default_train_func, regularization_train_func]
     )
     def test_topic_bank(self, bank_update, train_func):
         # TODO: "workaround", TopicBank needs raw text

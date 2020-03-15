@@ -53,11 +53,11 @@ from topnum.search_methods.topic_bank.topic_bank import (
     TopicBank,
     TokenType
 )
-from topnum.search_methods.topic_bank.train_funcs_zoo import (
+from topnum.search_methods.topic_bank.one_model_train_funcs import (
     default_train_func,
-    _get_topic_model,
-    _safe_copy_phi
+    _get_topic_model
 )
+from topnum.search_methods.topic_bank.phi_initialization.utils import _safe_copy_phi
 
 
 _KEY_BANK_SCORES = 'bank_scores'
@@ -531,12 +531,20 @@ class TopicBankMethod(BaseSearchMethod):
         return topics_for_append, topics_for_update
 
     @staticmethod
-    def _jaccard_distance(p: Dict[str, float], q: Dict[str, float]) -> float:
+    def _jaccard_distance(
+            p: Dict[str, float],
+            q: Dict[str, float],
+            kernel_only: bool = True) -> float:
+
         numerator = 0
         denominator = 0
 
-        vocabulary_a = set([w for w in p.keys() if p[w] > 1.0 / len(p)])
-        vocabulary_b = set([w for w in q.keys() if q[w] > 1.0 / len(q)])
+        if not kernel_only:
+            vocabulary_a = set([w for w in p.keys()])
+            vocabulary_b = set([w for w in q.keys()])
+        else:
+            vocabulary_a = set([w for w in p.keys() if p[w] > 1.0 / len(p)])
+            vocabulary_b = set([w for w in q.keys() if q[w] > 1.0 / len(q)])
 
         common_vocabulary = vocabulary_a.intersection(vocabulary_b)
         only_a_vocabulary = vocabulary_a.difference(vocabulary_b)
