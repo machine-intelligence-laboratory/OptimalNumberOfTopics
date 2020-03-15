@@ -7,10 +7,7 @@ import pandas as pd
 import tempfile
 import warnings
 
-from collections import (
-    Counter,
-    defaultdict
-)
+from collections import defaultdict
 from distutils.util import strtobool
 from topicnet.cooking_machine.dataset import Dataset
 from topicnet.cooking_machine.models import TopicModel
@@ -66,6 +63,8 @@ _KEY_MODEL_SCORES = 'model_scores'
 _KEY_MODEL_TOPIC_SCORES = 'model_topic_scores'
 _KEY_NUM_BANK_TOPICS = 'num_bank_topics'
 _KEY_NUM_MODEL_TOPICS = 'num_model_topics'
+_KEY_TOPIC_SCORE_DISTANCE_TO_NEAREST = 'rho'
+_KEY_TOPIC_SCORE_KERNEL_SIZE = 'kernel_size'
 
 _DEFAULT_WINDOW = 20
 
@@ -74,6 +73,8 @@ _logger = logging.getLogger()
 
 
 class TopicBankMethod(BaseSearchMethod):
+    _MINIMUM_TOPIC_DISTANCE = 0.0
+
     def __init__(
             self,
             data: Union[Dataset, VowpalWabbitTextCollection],
@@ -204,7 +205,7 @@ class TopicBankMethod(BaseSearchMethod):
 
         if save_file_path is not None:
             if not os.path.isdir(os.path.dirname(save_file_path)):
-                raise FileNotFoundError(f'Directory not found "{save_file_path}"')  # TODO: right error?
+                raise NotADirectoryError(f'Directory not found "{save_file_path}"')
 
             if os.path.isfile(save_file_path):
                 warnings.warn(f'File "{save_file_path}" already exists! Overwriting')
@@ -324,53 +325,43 @@ class TopicBankMethod(BaseSearchMethod):
                 topic_index for topic_index, topic_name in enumerate(phi.columns)
                 if raw_topic_scores[self._main_topic_score.name][topic_name] >= threshold
             ]
-
-            topics_for_append = [t for t in topics_for_append if t in good_new_topics]
-
-            topics_for_update_new = dict()
-            for old_topic, new_topic_candidates in topics_for_update.items():
-                if all([t in good_new_topics for t in new_topic_candidates]):
-                    topics_for_update_new[old_topic] = new_topic_candidates
-            del topics_for_update
-            topics_for_update = topics_for_update_new
-
-            # TODO: refactor the stuff!
-            topics_for_update_reverse = dict()
-            for old_topic, new_topics in topics_for_update.items():
-                for new_topic in new_topics:
-                    assert new_topic not in topics_for_update_reverse  # only one parent
-
-                    topics_for_update_reverse[new_topic] = old_topic
-
-
+            topics_for_append, topics_for_update, topics_for_update_reverse = (
+                self._keep_good_new_topics_only(
+                    topics_for_append, topics_for_update, good_new_topics
+                )
+            )
 
             model_topic_current_scores = list()
 
             for topic_index, topic_name in enumerate(topic_model.get_phi().columns):
-                t_scores = dict()
+                topic_scores = dict()
 
                 v = topic_model.get_phi()[topic_name].values
-                t_scores['kernel'] = len(v[v > 1.0 / topic_model.get_phi().shape[0]])
+                topic_scores[_KEY_TOPIC_SCORE_KERNEL_SIZE] = len(v[v > 1.0 / topic_model.get_phi().shape[0]])
 
-                # TODO: refine
                 for score_name in raw_topic_scores:
-                    t_scores[score_name] = raw_topic_scores[score_name][topic_name]
+                    topic_scores[score_name] = raw_topic_scores[score_name][topic_name]
 
-                model_topic_current_scores.append(t_scores)
+                model_topic_current_scores.append(topic_scores)
 
-                if topic_index not in topics_for_append and topic_index not in topics_for_update_reverse:
-                    continue
-                # TODO: refactor!
-
-                if (topic_index in topics_for_update_reverse and
-                    len(topics_for_update[topics_for_update_reverse[topic_index]]) == 1 and
-                    t_scores[self._main_topic_score.name] <=
-                        topic_bank.topic_scores[topics_for_update_reverse[topic_index]][self._main_topic_score.name]):
+                if (topic_index not in topics_for_append and
+                        topic_index not in topics_for_update_reverse):
 
                     continue
+
+                if topic_index in topics_for_update_reverse:
+                    old_topic_index = topics_for_update_reverse[topic_index]
+                    new_topic_candidates = topics_for_update[old_topic_index]
+                    current_topic_score = topic_scores[self._main_topic_score.name]
+                    current_old_topic_score = topic_bank.topic_scores[old_topic_index][self._main_topic_score.name]
+
+                    if (len(new_topic_candidates) == 1 and
+                            current_topic_score <= current_old_topic_score):
+
+                        continue
 
                 if len(topic_bank.topics) == 0:
-                    d = 0  # TODO: MIN_DISTANCE
+                    d = self._MINIMUM_TOPIC_DISTANCE
                 else:
                     d = (
                         min(self._jaccard_distance(phi.loc[:, topic_name].to_dict(), bt)
@@ -380,9 +371,9 @@ class TopicBankMethod(BaseSearchMethod):
                     if d < self._distance_threshold:
                         continue
 
-                t_scores['rho'] = d
+                topic_scores[_KEY_TOPIC_SCORE_DISTANCE_TO_NEAREST] = d
 
-                topic_bank.add_topic(phi.loc[:, topic_name].to_dict(), t_scores)
+                topic_bank.add_topic(phi.loc[:, topic_name].to_dict(), topic_scores)
 
                 if topic_index in topics_for_update_reverse:
                     # TODO: check this
@@ -400,7 +391,7 @@ class TopicBankMethod(BaseSearchMethod):
                 self._dataset,
                 phi=bank_phi,
                 scores=self._all_model_scores,
-                num_safe_fit_iterations=3
+                num_safe_fit_iterations=1
             )
             bank_model._fit(self._dataset.get_batch_vectorizer(), 1)
 
@@ -495,7 +486,7 @@ class TopicBankMethod(BaseSearchMethod):
         # TODO: or smaller tau? or without regularizer at all? or change the real topics?
         level1.regularizers.add(
             artm.HierarchySparsingThetaRegularizer(
-                name='sparse_hier',
+                name='sparse_hierarchy',
                 tau=1.0
             )
         )
@@ -529,6 +520,36 @@ class TopicBankMethod(BaseSearchMethod):
                 assert False
 
         return topics_for_append, topics_for_update
+
+    @staticmethod
+    def _keep_good_new_topics_only(
+            topics_for_append: List[int],
+            topics_for_update: Dict[int, List[int]],
+            good_new_topics: List[int]) -> Tuple[List[int], Dict[int, List[int]], Dict[int, int]]:
+
+        topics_for_append = [t for t in topics_for_append if t in good_new_topics]
+
+        topics_for_update_new = dict()
+
+        for old_topic, new_topic_candidates in topics_for_update.items():
+            if all([t in good_new_topics for t in new_topic_candidates]):
+                topics_for_update_new[old_topic] = new_topic_candidates
+
+        topics_for_update = topics_for_update_new
+
+        topics_for_update_reverse = dict()
+
+        for old_topic, new_topics in topics_for_update.items():
+            for new_topic in new_topics:
+                assert new_topic not in topics_for_update_reverse  # only one parent
+
+                topics_for_update_reverse[new_topic] = old_topic
+
+        return (
+            topics_for_append,
+            topics_for_update,
+            topics_for_update_reverse
+        )
 
     @staticmethod
     def _jaccard_distance(
