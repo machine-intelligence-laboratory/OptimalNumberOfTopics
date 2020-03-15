@@ -15,6 +15,8 @@ It gives an opportunity to try different method to find an *appropriate*, *appro
 The first method is just about optimizing something for the number of topics.
 That is, train several models with different number of topics, calculate some quality function for those models, and find the one which is the best.
 
+![The idea behind scores optimization](docs/images/optimize_scores_concept.png)
+
 Scores, available for optimizing:
 * [*Perplexity*](https://en.wikipedia.org/wiki/Perplexity) (which is minimized).
 Definitely, this is not the best choice (TODO: links, why).
