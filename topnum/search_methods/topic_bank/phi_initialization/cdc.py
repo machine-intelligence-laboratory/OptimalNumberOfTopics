@@ -78,7 +78,7 @@ def compute_phi(
 
     topic_names = [f'cdc_topic_{i}' for i in range(len(centers))]
     phi_values = np.zeros(shape=(len(phi_index), len(centers)))
-    phi_values[list(word2index.values())] = word_in_word_probabilities[:, centers]
+    phi_values[:word_in_word_probabilities.shape[0], :] = word_in_word_probabilities[:, centers]
 
     return pd.DataFrame(
         index=phi_index,
@@ -113,8 +113,14 @@ def _count_word_in_word_frequencies(
         smoothing_value: float = 0.01,
         num_docs_to_log: int = 500) -> Tuple[np.ndarray, np.ndarray]:  # 2D, 1D
 
-    frequencies = np.zeros((len(word2index), len(word2index)))
-    document_frequencies = np.zeros((len(word2index),))
+    words_dimension_size = max(list(word2index.values())) + 1
+
+    frequencies = np.zeros(
+        shape=(words_dimension_size, words_dimension_size)
+    )
+    document_frequencies = np.zeros(
+        shape=(words_dimension_size,)
+    )
 
     def process_words(words: List[str]) -> None:
         for w in set(words):

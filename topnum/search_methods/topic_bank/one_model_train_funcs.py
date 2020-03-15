@@ -151,7 +151,19 @@ def background_topics_train_func(
         scores=scores
     )
 
-    init_phi_utils._copy_phi(topic_model._model, specific_topics_phi)
+    for fit_iteration in range(num_fit_iterations):
+        init_phi_utils._copy_phi(
+            topic_model._model, specific_topics_phi
+        )
+        topic_model._fit(
+            dataset.get_batch_vectorizer(),
+            num_iterations=num_fit_iterations
+        )
+
+    # TODO: not very safe here? (if cache_theta us True, Theta not updated here)
+    init_phi_utils._copy_phi(
+        topic_model._model, specific_topics_phi
+    )
 
     return topic_model
 

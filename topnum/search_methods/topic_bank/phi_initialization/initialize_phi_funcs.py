@@ -41,7 +41,7 @@ def initialize_with_copying_topics(
             'Either `num_topics_to_copy` or `topic_indices_to_copy` should be specified!'
         )
     elif topic_indices_to_copy is None:
-        topic_indices_to_copy = list(phi.index)
+        topic_indices_to_copy = list(range(len(phi.columns)))
     elif num_topics_to_copy is None:
         num_topics_to_copy = len(topic_indices_to_copy)
     elif num_topics_to_copy != len(topic_indices_to_copy):
@@ -61,9 +61,10 @@ def initialize_with_copying_topics(
         dataset,
         num_topics
     )
+
     init_phi_utils._copy_phi(
         artm_model_template,
-        phi.loc[:, topics_to_copy]
+        phi.iloc[:, topics_to_copy]
     )
     model_template = TopicModel(
         artm_model=artm_model_template

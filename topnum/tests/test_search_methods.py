@@ -33,8 +33,7 @@ from topnum.scores import (
 from topnum.scores.base_topic_score import BaseTopicScore
 from topnum.search_methods import (
     OptimizeScoresMethod,
-    RenormalizationMethod,
-    TopicBankMethod
+    RenormalizationMethod
 )
 from topnum.search_methods.base_search_method import BaseSearchMethod
 from topnum.search_methods.constants import DEFAULT_EXPERIMENT_DIR
@@ -45,11 +44,6 @@ from topnum.search_methods.renormalization_method import (
     KL_MERGE_METHOD,
     PHI_RENORMALIZATION_MATRIX,
     THETA_RENORMALIZATION_MATRIX,
-)
-from topnum.search_methods.topic_bank import BankUpdateMethod
-from topnum.search_methods.topic_bank.one_model_train_funcs import (
-    default_train_func,
-    regularization_train_func
 )
 
 
@@ -297,44 +291,6 @@ class TestSearchMethods:
         optimizer.search_for_optimum(self.text_collection)
 
         self._check_search_result(optimizer._result, optimizer, num_search_points)
-
-    @pytest.mark.parametrize(
-        'bank_update',
-        [BankUpdateMethod.JUST_ADD_GOOD_TOPICS, BankUpdateMethod.PROVIDE_NON_LINEARITY]
-    )
-    @pytest.mark.parametrize(
-        'train_func',
-        [None, default_train_func, regularization_train_func]
-    )
-    def test_topic_bank(self, bank_update, train_func):
-        # TODO: "workaround", TopicBank needs raw text
-        self.dataset._data['raw_text'] = self.dataset._data['vw_text'].apply(
-            lambda text: ' '.join(w.split(':')[0] for w in text.split()[1:] if not w.startswith('|'))
-        )
-
-        optimizer = TopicBankMethod(
-            data=self.dataset,
-            main_modality=self.main_modality,
-            main_topic_score=_DummyTopicScore(),
-            other_topic_scores=list(),
-            max_num_models=5,
-            one_model_num_topics=2,
-            num_fit_iterations=5,
-            train_func=train_func,
-            topic_score_threshold_percentile=2,
-            bank_update=bank_update
-        )
-
-        optimizer.search_for_optimum(self.text_collection)
-
-        # TODO: improve check
-        for result_key in ['optimum', 'optimum_std']:
-            assert result_key in optimizer._result
-            assert isinstance(optimizer._result[result_key], Number)
-
-        # TODO: this is cleanup, not test
-        optimizer.clear()
-        self.dataset._data['raw_text'] = None
 
     def _test_optimize_score(self, score, num_restarts: int = 3) -> None:
         min_num_topics = 1

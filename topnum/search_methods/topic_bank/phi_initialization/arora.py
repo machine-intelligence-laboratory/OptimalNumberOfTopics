@@ -1,4 +1,4 @@
-import anchor_topic
+import anchor_topic.topics
 import numpy as np
 import pandas as pd
 import scipy
@@ -41,17 +41,22 @@ def compute_phi(
     )
 
     topic_names = [f'arora_topic_{i}' for i in range(len(anchors))]
+    phi_values = np.zeros(shape=(len(phi_index), len(topic_names)))
+    phi_values[:word_topic_matrix.shape[0], :] = word_topic_matrix
 
     return pd.DataFrame(
         index=phi_index,
         columns=topic_names,
-        data=word_topic_matrix
+        data=phi_values
     )
 
 
 def _count_word_document_frequencies(dataset: Dataset, word2index: Dict[str, int]):
     num_documents = dataset._data.shape[0]
-    frequencies = np.zeros((len(word2index), num_documents))
+    words_dimension_size = max(list(word2index.values())) + 1
+    frequencies = np.zeros(
+        shape=(words_dimension_size, num_documents)
+    )
 
     for doc_index, doc_text in enumerate(dataset._data[_COL_DOCUMENT_TEXT].values):
         words = doc_text.split()
