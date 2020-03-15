@@ -203,6 +203,12 @@ Scores currenly available are:
 
 More about scores one can find [here](https://github.com/machine-intelligence-laboratory/OptimalNumberOfTopics/tree/feature/coherences/topnum/scores) in the module.
 
+## TopicBank
+
+The idea is to search for *new* *interpretable* topics as long as possible, training many topic models.
+As the searching for an appropriate number of topics in a document collection is a task at hand, when all the interpretable topics are collected in the bank, their number may serve as this appropriate number of topics.
+
+For some more details one may look [here](./topnum/search_methods/topic_bank).
 
 ## Renormalization
 
