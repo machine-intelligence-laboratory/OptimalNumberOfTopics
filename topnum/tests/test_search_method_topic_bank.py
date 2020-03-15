@@ -1,10 +1,7 @@
 import logging
 import numpy as np
-import os
 import pandas as pd
 import pytest
-import shutil
-import tempfile
 
 from numbers import Number
 from topicnet.cooking_machine.dataset import (
@@ -21,11 +18,9 @@ from typing import (
     List
 )
 
-from topnum.data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
 from topnum.scores.base_score import BaseScore
 from topnum.scores.base_topic_score import BaseTopicScore
 from topnum.search_methods import TopicBankMethod
-from topnum.search_methods.constants import DEFAULT_EXPERIMENT_DIR
 from topnum.search_methods.topic_bank import BankUpdateMethod
 from topnum.search_methods.topic_bank.one_model_train_funcs import (
     background_topics_train_func,
@@ -67,6 +62,8 @@ class _DummyTopicScore(BaseTopicScore):
 
 @pytest.mark.filterwarnings(f'ignore:{W_DIFF_BATCHES_1}')
 class TestSearchMethodTopicBank:
+    data_generator = None
+
     dataset = None
     main_modality = None
     other_modality = None
@@ -76,11 +73,13 @@ class TestSearchMethodTopicBank:
 
     @classmethod
     def setup_class(cls):
-        TestDataGenerator.generate()
+        cls.data_generator = TestDataGenerator()
 
-        cls.text_collection = TestDataGenerator.text_collection
-        cls.main_modality = TestDataGenerator.main_modality
-        cls.other_modality = TestDataGenerator.other_modality
+        cls.data_generator.generate()
+
+        cls.text_collection = cls.data_generator.text_collection
+        cls.main_modality = cls.data_generator.main_modality
+        cls.other_modality = cls.data_generator.other_modality
 
         cls.dataset = cls.text_collection._to_dataset()
 
@@ -95,7 +94,7 @@ class TestSearchMethodTopicBank:
 
     @classmethod
     def teardown_class(cls):
-        TestDataGenerator.clear()
+        cls.data_generator.clear()
 
     @pytest.mark.parametrize(
         'bank_update',
