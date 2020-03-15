@@ -63,7 +63,7 @@ _KEY_MODEL_SCORES = 'model_scores'
 _KEY_MODEL_TOPIC_SCORES = 'model_topic_scores'
 _KEY_NUM_BANK_TOPICS = 'num_bank_topics'
 _KEY_NUM_MODEL_TOPICS = 'num_model_topics'
-_KEY_TOPIC_SCORE_DISTANCE_TO_NEAREST = 'rho'
+_KEY_TOPIC_SCORE_DISTANCE_TO_NEAREST = 'distance_to_nearest'
 _KEY_TOPIC_SCORE_KERNEL_SIZE = 'kernel_size'
 
 _DEFAULT_WINDOW = 20
@@ -74,6 +74,7 @@ _logger = logging.getLogger()
 
 class TopicBankMethod(BaseSearchMethod):
     _MINIMUM_TOPIC_DISTANCE = 0.0
+    _MAXIMUM_TOPIC_DISTANCE = 1.0
 
     def __init__(
             self,
@@ -581,12 +582,12 @@ class TopicBankMethod(BaseSearchMethod):
         )
 
         if denominator == 0:  # both zero topics
-            return 0
+            return TopicBankMethod._MINIMUM_TOPIC_DISTANCE
 
-        distance = 1.0 - numerator / denominator
+        distance = TopicBankMethod._MAXIMUM_TOPIC_DISTANCE - numerator / denominator
 
-        distance = max(0.0, distance)
-        distance = min(1.0, distance)
+        distance = max(TopicBankMethod._MINIMUM_TOPIC_DISTANCE, distance)
+        distance = min(TopicBankMethod._MAXIMUM_TOPIC_DISTANCE, distance)
 
         return distance
 

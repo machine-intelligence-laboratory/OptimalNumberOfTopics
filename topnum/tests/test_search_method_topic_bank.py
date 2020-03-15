@@ -90,11 +90,13 @@ class TestSearchMethodTopicBank:
         )
 
     def teardown_method(self):
-        self.optimizer.clear()
+        if self.optimizer is not None:
+            self.optimizer.clear()
 
     @classmethod
     def teardown_class(cls):
-        cls.data_generator.clear()
+        if cls.data_generator is not None:
+            cls.data_generator.clear()
 
     @pytest.mark.parametrize(
         'bank_update',
