@@ -15,6 +15,8 @@ It gives an opportunity to try different method to find an *appropriate*, *appro
 The first method is just about optimizing something for the number of topics.
 That is, train several models with different number of topics, calculate some quality function for those models, and find the one which is the best.
 
+![The idea behind scores optimization](docs/images/optimize_scores_concept.png)
+
 Scores, available for optimizing:
 * [*Perplexity*](https://en.wikipedia.org/wiki/Perplexity) (which is minimized).
 Definitely, this is not the best choice (TODO: links, why).
@@ -201,6 +203,12 @@ Scores currenly available are:
 
 More about scores one can find [here](https://github.com/machine-intelligence-laboratory/OptimalNumberOfTopics/tree/feature/coherences/topnum/scores) in the module.
 
+## TopicBank
+
+The idea is to search for *new* *interpretable* topics as long as possible, training many topic models.
+As the searching for an appropriate number of topics in a document collection is a task at hand, when all the interpretable topics are collected in the bank, their number may serve as this appropriate number of topics.
+
+For some more details one may look [here](./topnum/search_methods/topic_bank).
 
 ## Renormalization
 
