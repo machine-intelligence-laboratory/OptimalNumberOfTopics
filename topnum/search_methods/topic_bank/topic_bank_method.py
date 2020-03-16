@@ -231,6 +231,8 @@ class TopicBankMethod(BaseSearchMethod):
         self._result[_KEY_NUM_BANK_TOPICS] = list()
         self._result[_KEY_NUM_MODEL_TOPICS] = list()
 
+        self._topic_bank: TopicBank = None
+
     @property
     def save_path(self) -> str:
         return self._save_file_path
@@ -255,7 +257,7 @@ class TopicBankMethod(BaseSearchMethod):
         word2index = None
 
         documents_for_coherence = self._select_documents_for_topic_scores()
-        topic_bank = TopicBank()
+        self._topic_bank = TopicBank()
 
         for i in tqdm.tqdm(range(self._max_num_models), total=self._max_num_models, file=sys.stdout):
             # TODO: stop when perplexity stabilizes
@@ -317,7 +319,7 @@ class TopicBankMethod(BaseSearchMethod):
                 topics_for_update = dict()
             elif self._bank_update == BankUpdateMethod.PROVIDE_NON_LINEARITY:
                 topics_for_append, topics_for_update = self._extract_hierarchical_relationship(
-                    bank_phi=self._get_phi(topic_bank.topics, word2index),
+                    bank_phi=self._get_phi(self._topic_bank.topics, word2index),
                     new_model_phi=phi,
                     psi_threshold=self._child_parent_relationship_threshold
                 )
@@ -361,19 +363,19 @@ class TopicBankMethod(BaseSearchMethod):
                     old_topic_index = topics_for_update_reverse[topic_index]
                     new_topic_candidates = topics_for_update[old_topic_index]
                     current_topic_score = topic_scores[self._main_topic_score.name]
-                    current_old_topic_score = topic_bank.topic_scores[old_topic_index][self._main_topic_score.name]
+                    current_old_topic_score = self._topic_bank.topic_scores[old_topic_index][self._main_topic_score.name]
 
                     if (len(new_topic_candidates) == 1 and
                             current_topic_score <= current_old_topic_score):
 
                         continue
 
-                if len(topic_bank.topics) == 0:
+                if len(self._topic_bank.topics) == 0:
                     d = self._MINIMUM_TOPIC_DISTANCE
                 else:
                     d = (
                         min(self._jaccard_distance(phi.loc[:, topic_name].to_dict(), bt)
-                            for bt in topic_bank.topics)
+                            for bt in self._topic_bank.topics)
                     )
 
                     if d < self._distance_threshold:
@@ -381,14 +383,14 @@ class TopicBankMethod(BaseSearchMethod):
 
                 topic_scores[_KEY_TOPIC_SCORE_DISTANCE_TO_NEAREST] = d
 
-                topic_bank.add_topic(phi.loc[:, topic_name].to_dict(), topic_scores)
+                self._topic_bank.add_topic(phi.loc[:, topic_name].to_dict(), topic_scores)
 
                 if topic_index in topics_for_update_reverse:
                     # TODO: check this
-                    topic_bank.delete_topic(topics_for_update_reverse[topic_index])
+                    self._topic_bank.delete_topic(topics_for_update_reverse[topic_index])
 
             self._result[_KEY_MODEL_TOPIC_SCORES].append(model_topic_current_scores)
-            self._result[_KEY_BANK_TOPIC_SCORES] = topic_bank.topic_scores  # TODO: append
+            self._result[_KEY_BANK_TOPIC_SCORES] = self._topic_bank.topic_scores  # TODO: append
 
             self.save()
 
@@ -396,10 +398,10 @@ class TopicBankMethod(BaseSearchMethod):
 
             scores = dict()
 
-            if len(topic_bank.topics) == 0:
+            if len(self._topic_bank.topics) == 0:
                 _logger.info('No topics in bank — returning empty default scores for bank model')
             else:
-                bank_phi = self._get_phi(topic_bank.topics, word2index)
+                bank_phi = self._get_phi(self._topic_bank.topics, word2index)
 
                 bank_model = _get_topic_model(
                     self._dataset,
@@ -416,9 +418,9 @@ class TopicBankMethod(BaseSearchMethod):
             # Topic scores already calculated
 
             self._result[_KEY_BANK_SCORES].append(scores)
-            self._result[_KEY_NUM_BANK_TOPICS].append(len(topic_bank.topics))
+            self._result[_KEY_NUM_BANK_TOPICS].append(len(self._topic_bank.topics))
 
-            _logger.info(f'Num topics in bank: {len(topic_bank.topics)}')
+            _logger.info(f'Num topics in bank: {len(self._topic_bank.topics)}')
 
             self.save()
 
