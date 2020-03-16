@@ -254,13 +254,13 @@ class _BaseCoherenceScore(TopicNetBaseScore):
     def _get_words(self, document: str) -> List[Tuple[str, str]]:
 
         if self._text_type == TextType.RAW_TEXT:
-            text = self._dataset.get_source_document(document).values[0, 0]  # TODO: this way?
+            text = self._get_source_document(document)
             modality = self._get_biggest_modality_or_default()
 
             return list(map(lambda w: (modality, w), text.split()))
 
         if self._text_type == TextType.VW_TEXT:
-            text = self._dataset.get_vw_document(document).values[0, 0]  # TODO: this way?
+            text = self._get_vw_document(document)
 
             words = []
             modality = None
@@ -299,6 +299,17 @@ class _BaseCoherenceScore(TopicNetBaseScore):
         ))
 
         return modalities[np.argmax(modalities_vocabulary_sizes)]
+
+    # TODO: wtf
+    def _get_source_document(self, document_id: str) -> str:
+        return self._dataset._data[
+                   self._dataset._data['id'] == document_id
+               ].loc[:, 'raw_text'].values[0]
+
+    def _get_vw_document(self, document_id: str) -> str:
+        return self._dataset._data[
+                   self._dataset._data['id'] == document_id
+                   ].loc[:, 'vw_text'].values[0]
 
     @staticmethod
     def _get_relatedness(

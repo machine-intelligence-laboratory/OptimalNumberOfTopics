@@ -390,31 +390,29 @@ class TopicBankMethod(BaseSearchMethod):
 
             _logger.info('Scoring bank model...')
 
-            if len(topic_bank.topics) > 0:
-                bank_phi = self._get_phi(topic_bank.topics, word2index)
-            else:
-                # TODO: think about it more carefully
-                dummy_bank_topics = [{w: 0.0 for w in phi.index}]
-                bank_phi = self._get_phi(dummy_bank_topics, word2index)
-
-            bank_model = _get_topic_model(
-                self._dataset,
-                phi=bank_phi,
-                scores=self._all_model_scores,
-                num_safe_fit_iterations=1
-            )
-            bank_model._fit(self._dataset.get_batch_vectorizer(), 1)
-
             scores = dict()
 
-            _logger.info('Computing default scores for bank model...')
+            if len(topic_bank.topics) == 0:
+                _logger.info('No topics in bank — returning empty default scores for bank model')
+            else:
+                bank_phi = self._get_phi(topic_bank.topics, word2index)
 
-            scores.update(self._get_default_scores(bank_model))
+                bank_model = _get_topic_model(
+                    self._dataset,
+                    phi=bank_phi,
+                    scores=self._all_model_scores,
+                    num_safe_fit_iterations=1
+                )
+                bank_model._fit(self._dataset.get_batch_vectorizer(), 1)
+
+                _logger.info('Computing default scores for bank model...')
+
+                scores.update(self._get_default_scores(bank_model))
 
             # Topic scores already calculated
 
             self._result[_KEY_BANK_SCORES].append(scores)
-            self._result[_KEY_NUM_BANK_TOPICS].append(bank_phi.shape[1])
+            self._result[_KEY_NUM_BANK_TOPICS].append(len(topic_bank.topics))
 
             _logger.info(f'Num topics in bank: {len(topic_bank.topics)}')
 
