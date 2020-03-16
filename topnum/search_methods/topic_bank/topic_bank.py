@@ -1,3 +1,4 @@
+import logging
 import warnings
 
 from typing import (
@@ -6,6 +7,9 @@ from typing import (
     Tuple,
     Union
 )
+
+
+_logger = logging.getLogger()
 
 
 TokenType = Union[str, Tuple[str, str]]
@@ -33,6 +37,11 @@ class TopicBank:
         self._topic_scores.append(scores)
 
     def delete_topic(self, index: int) -> None:
+        _logger.debug(
+            f'Deleting topic number {index}.'
+            f' Number of topics in bank: {len(self._topics)}'
+        )
+
         if index < 0:
             raise ValueError(f'index: {index}')
 

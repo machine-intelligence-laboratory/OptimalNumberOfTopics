@@ -257,8 +257,6 @@ class TopicBankMethod(BaseSearchMethod):
         documents_for_coherence = self._select_documents_for_topic_scores()
         topic_bank = TopicBank()
 
-        i = 0
-
         for i in tqdm.tqdm(range(self._max_num_models), total=self._max_num_models, file=sys.stdout):
             # TODO: stop when perplexity stabilizes
 
@@ -312,6 +310,8 @@ class TopicBankMethod(BaseSearchMethod):
                     word: index for index, word in enumerate(phi.index)
                 }
 
+            _logger.info('Finding topics for append and update...')
+
             if self._bank_update == BankUpdateMethod.JUST_ADD_GOOD_TOPICS:
                 topics_for_append = list(range(len(phi.columns)))
                 topics_for_update = dict()
@@ -323,6 +323,8 @@ class TopicBankMethod(BaseSearchMethod):
                 )
             else:
                 raise NotImplementedError(f'BankUpdateMethod: "{self._bank_update}"')
+
+            _logger.info('Finding good new topics, updating topics for append and update')
 
             good_new_topics = [
                 topic_index for topic_index, topic_name in enumerate(phi.columns)
@@ -336,6 +338,8 @@ class TopicBankMethod(BaseSearchMethod):
             )
 
             model_topic_current_scores = list()
+
+            _logger.info('Calculating model topic scores...')
 
             for topic_index, topic_name in enumerate(topic_model.get_phi().columns):
                 topic_scores = dict()
