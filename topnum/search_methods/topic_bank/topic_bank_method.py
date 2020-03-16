@@ -4,7 +4,9 @@ import logging
 import numpy as np
 import os
 import pandas as pd
+import sys
 import tempfile
+import tqdm
 import warnings
 
 from collections import defaultdict
@@ -257,7 +259,7 @@ class TopicBankMethod(BaseSearchMethod):
 
         i = 0
 
-        while i < self._max_num_models:
+        for i in tqdm.tqdm(range(self._max_num_models), total=self._max_num_models, file=sys.stdout):
             # TODO: stop when perplexity stabilizes
 
             _logger.info(f'Building topic model number {i}...')
@@ -410,8 +412,6 @@ class TopicBankMethod(BaseSearchMethod):
             _logger.info(f'Num topics in bank: {len(topic_bank.topics)}')
 
             self.save()
-
-            i = i + 1
 
         self._result[_KEY_OPTIMUM] = self._result[_KEY_NUM_BANK_TOPICS][-1]
 
