@@ -326,7 +326,8 @@ class TopicBankMethod(BaseSearchMethod):
 
             good_new_topics = [
                 topic_index for topic_index, topic_name in enumerate(phi.columns)
-                if raw_topic_scores[self._main_topic_score.name][topic_name] >= threshold
+                if raw_topic_scores[self._main_topic_score.name][topic_name] is not None and
+                raw_topic_scores[self._main_topic_score.name][topic_name] >= threshold
             ]
             topics_for_append, topics_for_update, topics_for_update_reverse = (
                 self._keep_good_new_topics_only(
