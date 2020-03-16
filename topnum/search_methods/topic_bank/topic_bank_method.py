@@ -390,7 +390,13 @@ class TopicBankMethod(BaseSearchMethod):
 
             _logger.info('Scoring bank model...')
 
-            bank_phi = self._get_phi(topic_bank.topics, word2index)
+            if len(topic_bank.topics) > 0:
+                bank_phi = self._get_phi(topic_bank.topics, word2index)
+            else:
+                # TODO: think about it more carefully
+                dummy_bank_topics = [{w: 0.0 for w in phi.index}]
+                bank_phi = self._get_phi(dummy_bank_topics, word2index)
+
             bank_model = _get_topic_model(
                 self._dataset,
                 phi=bank_phi,
