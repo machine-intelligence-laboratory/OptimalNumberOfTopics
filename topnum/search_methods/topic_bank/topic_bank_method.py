@@ -473,7 +473,7 @@ class TopicBankMethod(BaseSearchMethod):
 
         # TODO: think about bank_phi.shape[1] == 1: alright to proceed?
 
-        hierarchy = artm.hARTM(cache_theta=True, num_processors=1)
+        hierarchy = artm.hARTM(num_processors=1)
 
         level0 = hierarchy.add_level(
             num_topics=bank_phi.shape[1]
