@@ -59,7 +59,7 @@ def compute_document_details(demo_data, all_mods):
 
 
 def _symmetric_kl(distrib_p, distrib_q):
-    return np.sum([stats.entropy(distrib_p, distrib_q), stats.entropy(distrib_p, distrib_q)])
+    return 0.5 * np.sum([stats.entropy(distrib_p, distrib_q), stats.entropy(distrib_p, distrib_q)])
 
 
 class SpectralDivergenceScore(BaseCustomScore):

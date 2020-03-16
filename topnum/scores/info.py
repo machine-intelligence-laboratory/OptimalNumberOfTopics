@@ -29,7 +29,7 @@ class LikelihoodBasedScore(BaseCustomScore):
             self,
             name: str,
             validation_dataset: Dataset = None,
-            modalities: List = None,
+            modality: str,
             mode: str = 'AIC',
             consider_sparsity: bool = False,
             ):
@@ -37,7 +37,7 @@ class LikelihoodBasedScore(BaseCustomScore):
         super().__init__(name)
 
         self._score = _LikelihoodBasedScore(
-            validation_dataset, modalities,
+            validation_dataset, modality,
             mode, consider_sparsity
         )
 
@@ -47,40 +47,38 @@ class _LikelihoodBasedScore(BaseTopicNetScore):
 
     def __init__(
             self,
-            validation_dataset: Dataset = None,
-            modalities: List = None,
+            validation_dataset: Dataset,
+            modality: str,
             mode: str = 'AIC',
             consider_sparsity: bool = False,
             ):
 
         super().__init__()
 
-        if mode == "MDL" and validation_dataset is None:
-            raise ValueError("MDL requires the corpus")
-
         self.num_docs = validation_dataset._data.shape[0]
 
         self.consider_sparsity = consider_sparsity
-        self.mode = mode
-        if modalities is None or len(modalities) != 1:
-            raise ValueError("not supported")
-        self.modalities = modalities
+        self.mode = mode.upper()
+        self.modality = modality
 
     def call(self, model: TopicModel):
 
-        phi = model.get_phi(class_ids=self.modalities)
+        phi = model.get_phi(class_ids=[self.modality])
         V, T = phi.shape
         D = self.num_docs
 
         # TODO: consider the case of having vector of taus instead
-        hyperparams = len(model.regularizers) 
+        hyperparams = len(model.regularizers)
 
+        # than2012 (https://link.springer.com/content/pdf/10.1007/978-3-642-33460-3_37.pdf)
+        # argues that number of free parameters in LDA and sparse models (such as PLSA)
+        # should should be calculated differently
         if self.consider_sparsity:
             N_p = phi.astype(bool).sum().sum() + hyperparams
         else:
             N_p = (V - 1) * T + hyperparams
 
-        ll = get_log_likelihood(model, self.modalities[0])
+        ll = get_log_likelihood(model._model, self.modality)
 
         if self.mode == "MDL":
             return 0.5 * N_p * np.log(T * D) - ll
@@ -89,4 +87,4 @@ class _LikelihoodBasedScore(BaseTopicNetScore):
         if self.mode == "BIC":
             return N_p * np.log(D) - 2 * ll
 
-        raise ValueError("Unsupported score type")
+        raise ValueError(f"Unsupported score type {self.mode}; Supported ones are: AIC/BIC/MDL")

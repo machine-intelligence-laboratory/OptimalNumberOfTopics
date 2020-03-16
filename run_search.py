@@ -143,7 +143,7 @@ def _main():
     )
     parser_optimize_likelihood = subparsers_optimize_scores.add_parser(
         'likelihood',
-        help='AIC / BIC / Approximate MDL -> max'
+        help='AIC / BIC / Approximate MDL -> min'
     )
     parser_optimize_likelihood.add_argument(
         '--mode',
