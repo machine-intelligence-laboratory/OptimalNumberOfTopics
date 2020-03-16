@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import scipy
 import scipy.stats
+import sys
 import tqdm
 
 from datetime import datetime
@@ -100,7 +101,7 @@ class RenormalizationMethod(BaseSearchMethod):
         dataset = text_collection._to_dataset()
         restart_results = list()
 
-        for i in tqdm.tqdm(range(self._num_restarts), total=self._num_restarts):
+        for i in tqdm.tqdm(range(self._num_restarts), total=self._num_restarts, file=sys.stdout):
             seed = i - 1  # so as to use also seed = -1 (whoever knows what this means in ARTM)
             need_set_seed = seed >= 0
 
