@@ -13,6 +13,7 @@ from topnum.data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
 from topnum.scores import (
     DiversityScore,
     EntropyScore,
+    HoldoutPerplexityScore,
     IntratextCoherenceScore,
     PerplexityScore,
     SimpleTopTokensCoherenceScore,
@@ -118,27 +119,29 @@ def _main():
         dest='score_name'
     )
 
+    # TODO: try to run with several identical scores (for testing purposes)
     parser_optimize_perplexity = subparsers_optimize_scores.add_parser(
         'perplexity',
         help='Perplexity -> min'
     )
-
-    # TODO: try to run with several identical scores
-
+    parser_optimize_holdout_perplexity = subparsers_optimize_scores.add_parser(
+        'holdout_perplexity',
+        help='As usual perplexity, but on holdout sample'
+    )
     parser_optimize_renyi_entropy = subparsers_optimize_scores.add_parser(
         'renyi_entropy',
         help='Renyi entropy -> min'
     )
     subparsers_optimize_scores.add_parser(
-        'calinski_harabasz_score',
+        'calinski_harabasz',
         help='CH -> max'
     )
     subparsers_optimize_scores.add_parser(
-        'silhouette_score',
+        'silhouette',
         help='SilhouetteScore -> max'
     )
     subparsers_optimize_scores.add_parser(
-        'diversity_score',
+        'diversity',
         help='Diversity -> max'
     )
     parser_optimize_likelihood = subparsers_optimize_scores.add_parser(
@@ -161,6 +164,13 @@ def _main():
         help='Top tokens coherence -> max'
     )
 
+    # TODO: check this score using command line
+    parser_optimize_holdout_perplexity.add_argument(
+        '--test-vw-file-path',
+        help='Path to the holdout data as vw file',
+        type=str,
+        required=True
+    )
     parser_optimize_renyi_entropy.add_argument(
         '-f', '--threshold-factor',
         help='A greater than zero factor'
@@ -258,7 +268,9 @@ def _main():
             current_args, unparsed_args = parser_optimize_scores.parse_known_args(
                 unparsed_args
             )
-            scores.append(_build_score(current_args, text_collection, modality_names))
+            scores.append(
+                _build_score(current_args, text_collection, modality_names, main_modality_name)
+            )
 
         _optimize_scores(
             scores,
@@ -341,13 +353,25 @@ def _parse_modalities(
 def _build_score(
         args: argparse.Namespace,
         text_collection: VowpalWabbitTextCollection,
-        modality_names: List[str]) -> BaseScore:
+        modality_names: List[str],
+        main_modality_name: str) -> BaseScore:
 
     # TODO: modality_names should be available via text_collection
     if args.score_name == 'perplexity':
         return PerplexityScore(
             'perplexity_score',
             class_ids=modality_names
+        )
+    elif args.score_name == 'holdout_perplexity':
+        test_text_collection = VowpalWabbitTextCollection(
+            args.test_vw_file_path,
+            main_modality=main_modality_name,
+            modalities=modality_names
+        )
+
+        return HoldoutPerplexityScore(
+            name='holdout_perplexity_score',
+            test_dataset=test_text_collection._to_dataset()
         )
     elif args.score_name == 'renyi_entropy':
         return EntropyScore(
@@ -356,17 +380,17 @@ def _build_score(
             threshold_factor=args.threshold_factor,
             class_ids=modality_names
         )
-    elif args.score_name == 'calinski_harabasz_score':
+    elif args.score_name == 'calinski_harabasz':
         return CalinskiHarabaszScore(
             'calinski_harabasz_score',
             validation_dataset=text_collection._to_dataset()
         )
-    elif args.score_name == 'silhouette_score':
+    elif args.score_name == 'silhouette':
         return SilhouetteScore(
             'silhouette_score',
             validation_dataset=text_collection._to_dataset()
         )
-    elif args.score_name == 'diversity_score':
+    elif args.score_name == 'diversity':
         return DiversityScore(
             'l2_diversity_score',
             metric=L2,
