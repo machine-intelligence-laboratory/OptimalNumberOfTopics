@@ -86,9 +86,10 @@ class TestIntratextCoherenceScore:
         cls.data_folder_path = tempfile.mkdtemp()
 
         dataset_file_path = os.path.join(cls.data_folder_path, DATASET_FILE_NAME)
-        dataset_table.to_csv(dataset_file_path)
+        dataset_table.to_csv(dataset_file_path, index=False)
 
         cls.dataset = Dataset(dataset_file_path)
+        cls.dataset._data.reset_index(inplace=True)  # TODO: wtf
 
     @classmethod
     def teardown_class(cls):
