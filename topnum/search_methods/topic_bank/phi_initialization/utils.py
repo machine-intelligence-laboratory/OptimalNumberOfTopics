@@ -87,5 +87,5 @@ def _safe_copy_phi(
 
     # TODO: small_num_fit_iterations bigger than 1 seems not working for big matrices
     for _ in range(small_num_fit_iterations):
-        phi_ref = _copy_phi(model, phi, pri_ref=phi_ref)
+        phi_ref = _copy_phi(model, phi, phi_ref=phi_ref)
         model.fit_offline(dataset.get_batch_vectorizer(), 1)
