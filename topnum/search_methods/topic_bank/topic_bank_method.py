@@ -506,7 +506,7 @@ class TopicBankMethod(BaseSearchMethod):
             f' First words: {bank_phi.index[:10]}'
         )
 
-        _safe_copy_phi(
+        phi_ref0 = _safe_copy_phi(
             level0, bank_phi, self._dataset,
             small_num_fit_iterations=1
         )
@@ -540,7 +540,7 @@ class TopicBankMethod(BaseSearchMethod):
             f' First words: {new_model_phi.index[:10]}'
         )
 
-        _safe_copy_phi(
+        phi_ref1 = _safe_copy_phi(
             level1, new_model_phi, self._dataset,
             small_num_fit_iterations=3
         )
@@ -576,6 +576,8 @@ class TopicBankMethod(BaseSearchMethod):
         hierarchy.del_level(1)
         hierarchy.del_level(0)
 
+        del phi_ref1
+        del phi_ref0
         del hierarchy
 
         gc.collect()
