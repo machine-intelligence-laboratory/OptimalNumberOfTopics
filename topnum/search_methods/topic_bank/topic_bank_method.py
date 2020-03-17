@@ -473,16 +473,25 @@ class TopicBankMethod(BaseSearchMethod):
 
         # TODO: think about bank_phi.shape[1] == 1: alright to proceed?
 
+        _logger.debug('Creating hARTM')
+
         hierarchy = artm.hARTM(num_processors=1)
+
+        _logger.debug(f'Creating first level with {bank_phi.shape[1]} topics')
 
         level0 = hierarchy.add_level(
             num_topics=bank_phi.shape[1]
         )
         level0.initialize(dictionary=self._dataset.get_dictionary())
+
+        _logger.debug(f'Copying phi for the first level')
+
         _safe_copy_phi(
             level0, bank_phi, self._dataset,
             small_num_fit_iterations=1
         )
+
+        _logger.debug(f'Creating first level with {bank_phi.shape[1]} topics')
 
         level1 = hierarchy.add_level(
             num_topics=new_model_phi.shape[1],
@@ -495,6 +504,8 @@ class TopicBankMethod(BaseSearchMethod):
         # However, the regularizer won't affect the topics themselves,
         # only the ARTM hierarchy defined here.
 
+        _logger.debug('Adding HierarchySparsingThetaRegularizer to second level')
+
         # TODO: or smaller tau? or without regularizer at all? or change the real topics?
         level1.regularizers.add(
             artm.HierarchySparsingThetaRegularizer(
@@ -502,6 +513,9 @@ class TopicBankMethod(BaseSearchMethod):
                 tau=1.0
             )
         )
+
+        _logger.debug('Copying phi for the second level')
+
         _safe_copy_phi(
             level1, new_model_phi, self._dataset,
             small_num_fit_iterations=3
@@ -518,6 +532,8 @@ class TopicBankMethod(BaseSearchMethod):
         topics_for_append: List[int] = list()
         topics_for_update: Dict[int, List[int]] = defaultdict(list)
 
+        _logger.debug('Analyzing Psi for parent-child relationship')
+
         for new_topic in range(level1.get_phi().shape[1]):
             psi_row = psi.iloc[new_topic, :]
             parents = np.where(psi_row > psi_threshold)[0]
@@ -530,6 +546,8 @@ class TopicBankMethod(BaseSearchMethod):
                 topics_for_update[parents[0]].append(new_topic)
             else:
                 assert False
+
+        _logger.debug('Deleting hARTM')
 
         hierarchy.del_level(1)
         hierarchy.del_level(0)
