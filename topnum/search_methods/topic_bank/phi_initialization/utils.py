@@ -1,11 +1,14 @@
 import artm
-import numpy as np
 import pandas as pd
+import logging
 import warnings
 
 from pandas.core.indexes.base import Index
 from topicnet.cooking_machine import Dataset
 from topicnet.cooking_machine.models import TopicModel
+
+
+_logger = logging.getLogger()
 
 
 # TODO: seems like method suitable for Dataset?
@@ -56,17 +59,13 @@ def _copy_phi(model: artm.ARTM, phi: pd.DataFrame) -> None:
             f' Seems like doing initialization in such circumstances is not good'
         )
 
+    _logger.debug(f'Attaching pwt and copying')
+
     (_, phi_ref) = model.master.attach_model(
         model=model.model_pwt
     )
 
-    phi_new = np.copy(phi_ref)
-    phi_new[target_indices, :phi.shape[1]] = phi.values
-
-    np.copyto(
-        phi_ref,
-        phi_new
-    )
+    phi_ref[target_indices, :phi.shape[1]] = phi.values
 
 
 def _safe_copy_phi(

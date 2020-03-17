@@ -510,7 +510,7 @@ class TopicBankMethod(BaseSearchMethod):
             small_num_fit_iterations=1
         )
 
-        _logger.debug(f'Creating first level with {bank_phi.shape[1]} topics')
+        _logger.debug(f'Creating second level with {new_model_phi.shape[1]} topics')
 
         level1 = hierarchy.add_level(
             num_topics=new_model_phi.shape[1],
