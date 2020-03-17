@@ -103,11 +103,11 @@ class TestSearchMethodTopicBank:
         [BankUpdateMethod.JUST_ADD_GOOD_TOPICS, BankUpdateMethod.PROVIDE_NON_LINEARITY]
     )
     @pytest.mark.parametrize(
-        'train_func',
+        'train_funcs',
         [None, background_topics_train_func, default_train_func, regularization_train_func]
     )
-    def test_topic_bank(self, bank_update, train_func):
-        self._test_topic_bank(bank_update, train_func=train_func)
+    def test_topic_bank(self, bank_update, train_funcs):
+        self._test_topic_bank(bank_update, train_func=train_funcs)
 
     @pytest.mark.parametrize(
         'bank_update',
@@ -237,7 +237,7 @@ class TestSearchMethodTopicBank:
             max_num_models=5,
             one_model_num_topics=one_model_num_topics,
             num_fit_iterations=5,
-            train_func=train_func,
+            train_funcs=train_func,
             topic_score_threshold_percentile=2,
             bank_update=bank_update
         )

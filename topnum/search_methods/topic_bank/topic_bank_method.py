@@ -82,7 +82,7 @@ class TopicBankMethod(BaseSearchMethod):
             self,
             data: Union[Dataset, VowpalWabbitTextCollection],
             main_modality: str = None,
-            min_df_rate: float = 0.002,
+            min_df_rate: float = 0.01,
             max_df_rate: float = 0.9,
             main_topic_score: BaseTopicScore = None,
             other_topic_scores: List[BaseTopicScore] = None,
@@ -93,7 +93,7 @@ class TopicBankMethod(BaseSearchMethod):
             max_num_models: int = 100,
             one_model_num_topics: Union[int, List[int]] = 100,
             num_fit_iterations: int = DEFAULT_NUM_FIT_ITERATIONS,
-            train_func: Union[
+            train_funcs: Union[
                 Callable[[Dataset, int, int, int], TopicModel],
                 List[Callable[[Dataset, int, int, int], TopicModel]],
                 None] = None,
@@ -182,16 +182,16 @@ class TopicBankMethod(BaseSearchMethod):
                 one_model_num_topics for _ in range(self._max_num_models)
             ]
 
-        if train_func is None:
-            train_func = default_train_func
+        if train_funcs is None:
+            train_funcs = default_train_func
 
-        if not isinstance(train_func, list):
-            train_func = [
-                train_func for _ in range(self._max_num_models)
+        if not isinstance(train_funcs, list):
+            train_funcs = [
+                train_funcs for _ in range(self._max_num_models)
             ]
 
         self._one_model_num_topics: List[int] = one_model_num_topics
-        self._train_func: List[Callable[[Dataset, int, int, int], TopicModel]] = train_func
+        self._train_func: List[Callable[[Dataset, int, int, int], TopicModel]] = train_funcs
 
         if topic_score_threshold_percentile < 1:
             warnings.warn(
