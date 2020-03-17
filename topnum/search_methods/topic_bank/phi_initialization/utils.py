@@ -1,4 +1,5 @@
 import artm
+import numpy as np
 import pandas as pd
 import logging
 import warnings
@@ -25,7 +26,7 @@ def get_phi_index(dataset: Dataset) -> Index:
     return phi_index
 
 
-def _copy_phi(model: artm.ARTM, phi: pd.DataFrame) -> None:
+def _copy_phi(model: artm.ARTM, phi: pd.DataFrame, pri_ref: np.ndarray = None) -> np.ndarray:
     model_wrapper = TopicModel(artm_model=model)
     base_phi_index = model_wrapper.get_phi().index
 
@@ -61,24 +62,30 @@ def _copy_phi(model: artm.ARTM, phi: pd.DataFrame) -> None:
 
     _logger.debug(f'Attaching pwt and copying')
 
-    (_, phi_ref) = model.master.attach_model(
-        model=model.model_pwt
-    )
+    if pri_ref is None:
+        (_, phi_ref) = model.master.attach_model(
+            model=model.model_pwt
+        )
 
     phi_ref[target_indices, :phi.shape[1]] = phi.values
+
+    return phi_ref
 
 
 def _safe_copy_phi(
         model: artm.ARTM,
         phi: pd.DataFrame,
         dataset: Dataset,
-        small_num_fit_iterations: int = 3) -> None:
+        small_num_fit_iterations: int = 3) -> np.ndarray:
 
     if small_num_fit_iterations == 0:
-        _copy_phi(model, phi)
+        phi_ref = _copy_phi(model, phi)
 
-        return
+        return phi_ref
 
+    phi_ref = None
+
+    # TODO: small_num_fit_iterations bigger than 1 seems not working for big matrices
     for _ in range(small_num_fit_iterations):
-        _copy_phi(model, phi)
+        phi_ref = _copy_phi(model, phi, pri_ref=phi_ref)
         model.fit_offline(dataset.get_batch_vectorizer(), 1)

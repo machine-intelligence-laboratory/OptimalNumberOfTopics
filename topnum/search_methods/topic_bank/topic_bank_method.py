@@ -1,4 +1,5 @@
 import artm
+import gc
 import json
 import logging
 import numpy as np
@@ -576,6 +577,8 @@ class TopicBankMethod(BaseSearchMethod):
         hierarchy.del_level(0)
 
         del hierarchy
+
+        gc.collect()
 
         return topics_for_append, topics_for_update
 
