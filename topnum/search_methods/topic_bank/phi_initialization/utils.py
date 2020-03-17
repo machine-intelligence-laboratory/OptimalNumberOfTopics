@@ -26,7 +26,7 @@ def get_phi_index(dataset: Dataset) -> Index:
     return phi_index
 
 
-def _copy_phi(model: artm.ARTM, phi: pd.DataFrame, pri_ref: np.ndarray = None) -> np.ndarray:
+def _copy_phi(model: artm.ARTM, phi: pd.DataFrame, phi_ref: np.ndarray = None) -> np.ndarray:
     model_wrapper = TopicModel(artm_model=model)
     base_phi_index = model_wrapper.get_phi().index
 
@@ -62,7 +62,7 @@ def _copy_phi(model: artm.ARTM, phi: pd.DataFrame, pri_ref: np.ndarray = None) -
 
     _logger.debug(f'Attaching pwt and copying')
 
-    if pri_ref is None:
+    if phi_ref is None:
         (_, phi_ref) = model.master.attach_model(
             model=model.model_pwt
         )
