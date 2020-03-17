@@ -484,7 +484,11 @@ class TopicBankMethod(BaseSearchMethod):
         )
         level0.initialize(dictionary=self._dataset.get_dictionary())
 
-        _logger.debug(f'Copying phi for the first level')
+        _logger.debug(
+            f'Copying phi for the first level.'
+            f' Phi shape: {bank_phi.shape}.'
+            f' First words: {bank_phi.index[:10]}'
+        )
 
         _safe_copy_phi(
             level0, bank_phi, self._dataset,
@@ -514,7 +518,11 @@ class TopicBankMethod(BaseSearchMethod):
             )
         )
 
-        _logger.debug('Copying phi for the second level')
+        _logger.debug(
+            f'Copying phi for the second level.'
+            f' Phi shape: {new_model_phi.shape}.'
+            f' First words: {new_model_phi.index[:10]}'
+        )
 
         _safe_copy_phi(
             level1, new_model_phi, self._dataset,
