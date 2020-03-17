@@ -122,7 +122,7 @@ class _BaseCoherenceScore(TopicNetBaseScore):
         if documents is not None:
             self._documents = documents
         else:
-            self._documents = list(self._dataset.get_dataset()['id'])
+            self._documents = list(self._dataset.get_dataset().index)
 
     def call(self, model: BaseModel) -> float:
         topic_coherences = self.compute(model, None)
@@ -300,16 +300,12 @@ class _BaseCoherenceScore(TopicNetBaseScore):
 
         return modalities[np.argmax(modalities_vocabulary_sizes)]
 
-    # TODO: wtf
+    # TODO: try again self._dataset.get_source_document()?
     def _get_source_document(self, document_id: str) -> str:
-        return self._dataset._data[
-                   self._dataset._data['id'] == document_id
-               ].loc[:, 'raw_text'].values[0]
+        return self._dataset._data.loc[document_id, 'raw_text']
 
     def _get_vw_document(self, document_id: str) -> str:
-        return self._dataset._data[
-                   self._dataset._data['id'] == document_id
-                ].loc[:, 'vw_text'].values[0]
+        return self._dataset._data.loc[document_id, 'vw_text']
 
     @staticmethod
     def _get_relatedness(

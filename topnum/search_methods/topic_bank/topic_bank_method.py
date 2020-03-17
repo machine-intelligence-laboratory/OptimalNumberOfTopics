@@ -454,7 +454,7 @@ class TopicBankMethod(BaseSearchMethod):
             self._result[_KEY_OPTIMUM + _STD_KEY_SUFFIX] = float(np.sum(differences))
 
     def _select_documents_for_topic_scores(self) -> List[str]:
-        document_ids = self._dataset._data['id'].values
+        document_ids = list(self._dataset._data.index)
         num_documents = len(document_ids)
 
         selected_documents = self._random.choice(

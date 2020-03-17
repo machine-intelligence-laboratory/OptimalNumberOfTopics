@@ -72,7 +72,6 @@ class VowpalWabbitTextCollection(BaseTextCollection):
         )
 
         dataset = Dataset(dataset_table_path)
-        dataset._data.reset_index(inplace=True)
 
         return dataset
 

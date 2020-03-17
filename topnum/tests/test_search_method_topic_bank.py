@@ -34,7 +34,7 @@ from topnum.search_methods.topic_bank.phi_initialization.initialize_phi_funcs im
     initialize_randomly,
     initialize_with_copying_topics
 )
-from topnum.tests.test_data_generator import TestDataGenerator
+from topnum.tests.data_generator import TestDataGenerator
 
 
 _Logger = logging.getLogger()
@@ -232,6 +232,8 @@ class TestSearchMethodTopicBank:
         self.optimizer = TopicBankMethod(
             data=self.dataset,
             main_modality=self.main_modality,
+            min_df_rate=0.0,
+            max_df_rate=1.1,
             main_topic_score=_DummyTopicScore(),
             other_topic_scores=list(),
             max_num_models=5,
