@@ -122,8 +122,13 @@ class TopicBankMethod(BaseSearchMethod):
             f' min_df_rate={min_df_rate} and max_df_rate={max_df_rate}'
         )
 
+        self._dataset._cached_dict = None  # TODO: shouldn't be here
         self._dictionary = self._dataset.get_dictionary()
         self._dictionary.filter(min_df_rate=min_df_rate, max_df_rate=max_df_rate)
+
+        # TODO: "workaround". Need this in train funcs
+        self._dataset._min_df_rate = min_df_rate
+        self._dataset._max_df_rate = max_df_rate
 
         self._main_modality = main_modality
 

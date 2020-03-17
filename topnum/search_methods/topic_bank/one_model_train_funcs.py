@@ -176,7 +176,14 @@ def _get_topic_model(
         scores: List[BaseScore] = None,
         num_safe_fit_iterations: int = 3) -> TopicModel:
 
+    dataset._cached_dict = None  # TODO: shouldn't be here
     dictionary = dataset.get_dictionary()
+
+    # TODO: "workaround"
+    if hasattr(dataset, '_min_df_rate'):
+        dictionary.filter(min_df_rate=dataset._min_df_rate)
+    if hasattr(dataset, '_max_df_rate'):
+        dictionary.filter(max_df_rate=dataset._max_df_rate)
 
     if num_topics is not None and phi is not None:
         assert num_topics >= phi.shape[1]
