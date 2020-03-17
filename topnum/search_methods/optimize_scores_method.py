@@ -66,6 +66,11 @@ class OptimizeScoresMethod(BaseSearchMethod):
         self._save_experiment = save_experiment
         self._experiment_directory = experiment_directory
 
+        _logger.info(
+            f'Experiment name: {self._experiment_name}.'
+            f' Experiment directory: {self._experiment_directory}'
+        )
+
         self._key_num_topics_values = _KEY_VALUES.format('num_topics')
         self._key_score_values = _KEY_SCORE_VALUES
 

@@ -1,5 +1,6 @@
-from sklearn.metrics import calinski_harabasz_score
+import logging
 
+from sklearn.metrics import calinski_harabasz_score
 from topicnet.cooking_machine import Dataset
 from topicnet.cooking_machine.models import (
     BaseScore as BaseTopicNetScore,
@@ -7,6 +8,9 @@ from topicnet.cooking_machine.models import (
 )
 
 from .base_custom_score import BaseCustomScore
+
+
+_Logger = logging.getLogger()
 
 
 class CalinskiHarabaszScore(BaseCustomScore):
@@ -36,5 +40,13 @@ class _CalinskiHarabaszScore(BaseTopicNetScore):
 
         theta.columns = range(len(theta.columns))
         objects_clusters = theta.values.argmax(axis=0)
+
+        # TODO: or return some numeric?
+        if len(set(objects_clusters)) == 1:
+            _Logger.warning(
+                'Only one unique cluster! Returning None as score value'
+            )
+
+            return float('nan')
 
         return calinski_harabasz_score(theta.T.values, objects_clusters)

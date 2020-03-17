@@ -1,3 +1,4 @@
+import logging
 import numpy as np
 import os
 import pytest
@@ -17,17 +18,22 @@ from typing import (
 
 from topnum.data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
 from topnum.scores import (
+    CalinskiHarabaszScore,
+    DiversityScore,
     EntropyScore,
+    HoldoutPerplexityScore,
     IntratextCoherenceScore,
     PerplexityScore,
+    SilhouetteScore,
     SimpleTopTokensCoherenceScore,
-    SophisticatedTopTokensCoherenceScore
+    SophisticatedTopTokensCoherenceScore,
+    SparsityPhiScore,
+    SparsityThetaScore,
 )
 from topnum.scores.base_topic_score import BaseTopicScore
 from topnum.search_methods import (
     OptimizeScoresMethod,
-    RenormalizationMethod,
-    TopicBankMethod
+    RenormalizationMethod
 )
 from topnum.search_methods.base_search_method import BaseSearchMethod
 from topnum.search_methods.constants import DEFAULT_EXPERIMENT_DIR
@@ -39,10 +45,9 @@ from topnum.search_methods.renormalization_method import (
     PHI_RENORMALIZATION_MATRIX,
     THETA_RENORMALIZATION_MATRIX,
 )
-from topnum.search_methods.topic_bank.train_funcs_zoo import (
-    default_train_func,
-    train_func_regularizers
-)
+
+
+_Logger = logging.getLogger()
 
 
 # TODO: remove? try to use Coherence instead of this
@@ -140,9 +145,42 @@ class TestSearchMethods:
 
         return texts
 
+    def test_optimize_calinski_harabasz(self):
+        score = CalinskiHarabaszScore(
+            'calinski_harabasz_score',
+            validation_dataset=self.dataset
+        )
+
+        self._test_optimize_score(score)
+
+    def test_optimize_diversity(self):
+        score = DiversityScore(
+            'diversity_score',
+            class_ids=self.main_modality
+        )
+
+        self._test_optimize_score(score)
+
+    def test_optimize_silhouette(self):
+        score = SilhouetteScore(
+            'holdout_perplexity_score',
+            validation_dataset=self.dataset
+        )
+
+        self._test_optimize_score(score)
+
     def test_optimize_perplexity(self):
         score = PerplexityScore(
             'perplexity_score',
+            class_ids=[self.main_modality, self.other_modality]
+        )
+
+        self._test_optimize_score(score)
+
+    def test_optimize_holdout_perplexity(self):
+        score = HoldoutPerplexityScore(
+            'holdout_perplexity_score',
+            test_dataset=self.dataset,
             class_ids=[self.main_modality, self.other_modality]
         )
 
@@ -210,6 +248,21 @@ class TestSearchMethods:
 
         self._test_optimize_score(score)
 
+    def test_optimize_sparsity_phi(self):
+        score = SparsityPhiScore(
+            'sparsity_phi_score',
+            class_id=self.main_modality,
+        )
+
+        self._test_optimize_score(score)
+
+    def test_optimize_sparsity_theta(self):
+        score = SparsityThetaScore(
+            'sparsity_theta_score'
+        )
+
+        self._test_optimize_score(score)
+
     @pytest.mark.parametrize(
         'merge_method',
         [ENTROPY_MERGE_METHOD, RANDOM_MERGE_METHOD, KL_MERGE_METHOD]
@@ -239,37 +292,6 @@ class TestSearchMethods:
 
         self._check_search_result(optimizer._result, optimizer, num_search_points)
 
-    @pytest.mark.parametrize('train_func', [None, default_train_func, train_func_regularizers])
-    def test_topic_bank(self, train_func):
-        # TODO: "workaround", TopicBank needs raw text
-        self.dataset._data['raw_text'] = self.dataset._data['vw_text'].apply(
-            lambda text: ' '.join(w.split(':')[0] for w in text.split()[1:] if not w.startswith('|'))
-        )
-
-        optimizer = TopicBankMethod(
-            data=self.dataset,
-            main_modality=self.main_modality,
-            minimum_word_frequency=0,
-            main_topic_score=_DummyTopicScore(),
-            other_topic_scores=list(),
-            max_num_models=5,
-            one_model_num_topics=2,
-            num_fit_iterations=5,
-            train_func=train_func,
-            topic_score_threshold_percentile=2
-        )
-
-        optimizer.search_for_optimum(self.text_collection)
-
-        # TODO: improve check
-        for result_key in ['optimum', 'optimum_std']:
-            assert result_key in optimizer._result
-            assert isinstance(optimizer._result[result_key], Number)
-
-        # TODO: this is cleanup, not test
-        optimizer.clear()
-        self.dataset._data['raw_text'] = None
-
     def _test_optimize_score(self, score, num_restarts: int = 3) -> None:
         min_num_topics = 1
         max_num_topics = 2
@@ -287,6 +309,7 @@ class TestSearchMethods:
             num_restarts=num_restarts,
             one_model_num_processors=num_processors,
             separate_thread=False,
+            experiment_name=score.name,  # otherwise will be using same folder
             experiment_directory=DEFAULT_EXPERIMENT_DIR
         )
         num_search_points = len(
