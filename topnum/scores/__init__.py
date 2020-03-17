@@ -2,7 +2,7 @@ from .calinski_harabasz import CalinskiHarabaszScore
 from .diversity_score import DiversityScore
 from .entropy_score import EntropyScore
 from .arun import SpectralDivergenceScore
-from .info import LikelihoodBasedScore
+from .likelihood import LikelihoodBasedScore
 from .holdout_perplexity_score import HoldoutPerplexityScore
 from .intratext_coherence_score import IntratextCoherenceScore
 from .perplexity_score import PerplexityScore

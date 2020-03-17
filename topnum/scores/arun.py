@@ -21,6 +21,14 @@ from topicnet.cooking_machine.dataset import get_modality_vw
 # TODO: move this to TopicNet Dataset
 # ==================================
 
+def col_total_len(modality):
+    return f'len_total{modality}'
+
+
+def col_uniq_len(modality):
+    return f'len_uniq{modality}'
+
+
 def count_tokens_unigram(text):
     result_uniq, result_total = 0, 0
     for raw_token in text.split():
@@ -38,13 +46,13 @@ def count_tokens_raw_tokenized(text):
 
 
 def compute_document_details(demo_data, all_mods):
-    columns = ["len_total" + m for m in all_mods] + ["len_uniq" + m for m in all_mods]
+    columns = [col_total_len(m) for m in all_mods] + [col_uniq_len(m) for m in all_mods]
     token_count_df = pd.DataFrame(index=demo_data._data.index, columns=columns)
 
     is_raw_tokenized = not demo_data._data.vw_text.str.contains(":").any()
 
     for m in all_mods:
-        local_columns = f'len_total{m}', f'len_uniq{m}'
+        local_columns = col_total_len(m), col_uniq_len(m)
         vw_copy = demo_data._data.vw_text.apply(lambda vw_string: get_modality_vw(vw_string, m))
         if is_raw_tokenized:
             data = vw_copy.apply(count_tokens_raw_tokenized)
@@ -94,7 +102,7 @@ class _SpectralDivergenceScore(BaseTopicNetScore):
         self.validation_dataset = validation_dataset
         document_length_stats = compute_document_details(validation_dataset, modalities)
 
-        self.document_lengths = sum(document_length_stats[f'len_total{m}'] for m in modalities)
+        self.document_lengths = sum(document_length_stats[col_total_len(m)] for m in modalities)
         self.modalities = modalities
 
     def call(self, model: TopicModel):

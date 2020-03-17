@@ -18,7 +18,9 @@ import pandas as pd
 
 
 def get_log_likelihood(model, modality):
-    return model.score_tracker[f'PerplexityScore{modality}'].last_class_id_info[modality].raw
+    raw_perplexity = model.score_tracker[f'PerplexityScore{modality}'].last_class_id_info[modality].raw
+    assert raw_perplexity != 0.0
+    return raw_perplexity
 
 
 class LikelihoodBasedScore(BaseCustomScore):
