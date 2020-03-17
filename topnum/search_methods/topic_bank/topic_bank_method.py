@@ -82,6 +82,8 @@ class TopicBankMethod(BaseSearchMethod):
             self,
             data: Union[Dataset, VowpalWabbitTextCollection],
             main_modality: str = None,
+            min_df_rate: float = 0.002,
+            max_df_rate: float = 0.9,
             main_topic_score: BaseTopicScore = None,
             other_topic_scores: List[BaseTopicScore] = None,
             stop_bank_score: BaseScore = None,
@@ -114,6 +116,14 @@ class TopicBankMethod(BaseSearchMethod):
             self._dataset = data._to_dataset()
         else:
             raise TypeError(f'data: "{data}", its type: "{type(data)}"')
+
+        _logger.info(
+            f'Filtering dictionary with params:'
+            f' min_df_rate={min_df_rate} and max_df_rate={max_df_rate}'
+        )
+
+        self._dictionary = self._dataset.get_dictionary()
+        self._dictionary.filter(min_df_rate=min_df_rate, max_df_rate=max_df_rate)
 
         self._main_modality = main_modality
 
@@ -482,7 +492,7 @@ class TopicBankMethod(BaseSearchMethod):
         level0 = hierarchy.add_level(
             num_topics=bank_phi.shape[1]
         )
-        level0.initialize(dictionary=self._dataset.get_dictionary())
+        level0.initialize(dictionary=self._dictionary)
 
         _logger.debug(
             f'Copying phi for the first level.'
@@ -501,7 +511,7 @@ class TopicBankMethod(BaseSearchMethod):
             num_topics=new_model_phi.shape[1],
             parent_level_weight=1
         )
-        level1.initialize(dictionary=self._dataset.get_dictionary())
+        level1.initialize(dictionary=self._dictionary)
 
         # Regularizer may help to refine new topics a bit
         # in search of parent-child relationship
