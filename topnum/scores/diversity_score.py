@@ -1,4 +1,5 @@
 from scipy.spatial.distance import pdist
+import numpy as np
 from topicnet.cooking_machine.models import (
     BaseScore as BaseTopicNetScore,
     TopicModel
@@ -13,8 +14,9 @@ from .base_custom_score import BaseCustomScore
 
 L2 = 'euclidean'
 KL = 'jensenshannon'
+KNOWN_METRICS = [L2, KL, 'hellinger', 'cosine']
 
-'''
+r'''
 Quote from http://arxiv.org/abs/1409.2993
 
 Our treatment makes use of a measure of diversity among
@@ -44,7 +46,7 @@ thus increasing the diversity. However, when the number of topics
 becomes too large, we start to obtain many small topics which may
 be too close to each other, which decreases the topic diversity.
 Therefore, diversity seems to be a good measure to capture
-the right granularity of topics. 
+the right granularity of topics.
 
 
 [20] Q. Mei, J. Guo, and D. R. Radev. Divrank: the interplay of
@@ -80,9 +82,6 @@ class DiversityScore(BaseCustomScore):
 
         metric = metric.lower()
 
-        if metric not in [L2, KL]:
-            raise ValueError()
-
         self._metric = metric
         self._class_ids = class_ids
 
@@ -98,8 +97,15 @@ class _DiversityScore(BaseTopicNetScore):
 
         metric = metric.lower()
 
-        if metric not in [L2, KL]:
-            raise ValueError()
+        if metric not in KNOWN_METRICS:
+            raise ValueError(f"Unsupported metric {metric}")
+
+        '''
+        # test if metric is known to SciPy
+        if metric != "hellinger":
+            test_matrix = np.reshape(range(4), (2, 2))
+            pdist(test_matrix, metric=metric)
+        '''
 
         self._metric = metric
         self._class_ids = class_ids
@@ -107,14 +113,19 @@ class _DiversityScore(BaseTopicNetScore):
     def call(self, model: TopicModel):
         phi = model.get_phi(class_ids=self._class_ids).values
 
-        condensed_distances = pdist(phi.T, metric=self._metric)
+        if self._metric == "hellinger":
+            matrix = np.sqrt(phi.T)
+            condensed_distances = pdist(matrix, metric='euclidean') / np.sqrt(2)
+        else:
+            condensed_distances = pdist(phi.T, metric=self._metric)
 
-        # If one needs a DataFrame:
-        #
-        # from scipy.spatial.distance import squareform
-        # df = pd.DataFrame(
-        #    index=phi.columns, columns=phi.columns,
-        #    data=squareform(condensed_distances)
-        # )
+        '''
+        # if one needs a DataFrame:
+        from scipy.spatial.distance import squareform
+        df = pd.DataFrame(
+            index=phi.columns, columns=phi.columns,
+            data=squareform(condensed_distances)
+        )
+        '''
 
         return condensed_distances.mean()

@@ -1,4 +1,3 @@
-import logging
 import numpy as np
 
 from sklearn.metrics import silhouette_score
@@ -78,7 +77,6 @@ class SilhouetteScore(BaseCustomScore):
         super().__init__(name)
 
         self._score = _SilhouetteScore(validation_dataset, sample_size, batches_number)
-
 
 
 class _SilhouetteScore(BaseTopicNetScore):
