@@ -339,8 +339,6 @@ class TestSearchMethods:
 
         tiny = 1e-7
 
-        print(search_result)
-
         for key in optimizer._keys_mean_one:
             assert key in search_result
             assert isinstance(search_result[key], Number)
