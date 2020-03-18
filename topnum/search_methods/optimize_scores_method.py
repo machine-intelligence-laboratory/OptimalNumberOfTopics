@@ -3,10 +3,7 @@ import os
 import pandas as pd
 import uuid
 
-from topicnet.cooking_machine import Experiment
-from topicnet.cooking_machine.cubes import CubeCreator
 from topicnet.cooking_machine.models import TopicModel
-from topicnet.cooking_machine.model_constructor import init_simple_default_model
 from tqdm import tqdm
 from typing import List
 
@@ -25,6 +22,7 @@ from .constants import (
 from ..data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
 from ..scores.base_score import BaseScore
 
+from ..model_constructor import init_model_from_family
 
 _KEY_SCORE_RESULTS = 'score_results'
 _KEY_SCORE_VALUES = 'score_values'
@@ -36,6 +34,7 @@ class OptimizeScoresMethod(BaseSearchMethod):
     def __init__(
             self,
             scores: List[BaseScore],  # TODO: Union[BaseScore, List[BaseScore]]
+            model_family: str = "LDA",
             num_restarts: int = 3,
             num_topics_interval: int = 10,
             min_num_topics: int = DEFAULT_MIN_NUM_TOPICS,
@@ -50,6 +49,7 @@ class OptimizeScoresMethod(BaseSearchMethod):
         super().__init__(min_num_topics, max_num_topics, num_fit_iterations)
 
         self._scores = scores
+        self._family = model_family
         self._num_restarts = num_restarts
         self._num_topics_interval = num_topics_interval
 
@@ -84,8 +84,8 @@ class OptimizeScoresMethod(BaseSearchMethod):
 
         dataset = text_collection._to_dataset()
 
-        # seed == -1 is too similar to seed == 0
-        seeds = [-1] + list(range(1, self._num_restarts))
+        # seed == None is too similar to seed == 0
+        seeds = [None] + list(range(0, self._num_restarts - 1))
 
         nums_topics = list(range(
             self._min_num_topics,
@@ -93,71 +93,52 @@ class OptimizeScoresMethod(BaseSearchMethod):
             self._num_topics_interval)
         )
 
-        n_bcg_topics = 0  # TODO: or better add ability to specify?
-        artm_model = init_simple_default_model(
-            dataset,
-            modalities_to_use=text_collection._modalities,
-            main_modality=text_collection._main_modality,
-            specific_topics=nums_topics[0],  # doesn't matter, will be overwritten in experiment
-            background_topics=n_bcg_topics
-        )
+        dataset_trainable = dataset._transform_data_for_training()
 
-        # remove regularizers created by default
-        # if regularizers are needed, we will add them explicitly
-        # TODO: refine
-        if n_bcg_topics:
-            del artm_model.regularizers._data['smooth_theta_bcg']
-            del artm_model.regularizers._data['smooth_phi_bcg']
+        for seed in tqdm(seeds):  # dirty workaround for 'too many models' issue
+            for num_topics in nums_topics:
+                artm_model = init_model_from_family(
+                    self._family,
+                    dataset,
+                    modalities_to_use=list(text_collection._modalities.keys()),
+                    main_modality=text_collection._main_modality,
+                    num_topics=num_topics,
+                    seed=seed,
+                    num_processors=self._one_model_num_processors
+                )
 
-        artm_model.num_processors = self._one_model_num_processors
+                model = TopicModel(artm_model)
 
-        model = TopicModel(artm_model)
+                _logger.info(
+                    f'Model\'s custom scores before attaching: {list(model.custom_scores.keys())}'
+                )
 
-        _logger.info(
-            f'Model\'s custom scores before attaching: {list(model.custom_scores.keys())}'
-        )
+                # TODO: remove this when TopicNet fixed
+                _logger.info('Making custom scores empty dict')
 
-        # TODO: remove this when TopicNet fixed
-        _logger.info('Making custom scores null')
+                model.custom_scores = dict()
+                model.model_id = str(uuid.uuid4())
 
-        model.custom_scores = dict()
+                path_components = [
+                    self._experiment_directory,
+                    f"{self._experiment_name}_{seed}",
+                    model.model_id
+                ]
 
-        for score in self._scores:
-            score._attach(model)
+                for score in self._scores:
+                    score._attach(model)
 
-        result_models = []
+                model._fit(
+                    dataset_trainable=dataset_trainable,
+                    num_iterations=self._num_fit_iterations,
+                )
+                model.save(model_save_path=os.path.join(*path_components))
 
-        # TODO: fix this in TopicNet
-        # dirty workaround for 'too many models' issue
-        for seed in tqdm(seeds):
-            exp_model = model.clone()
+                del model
 
-            cube = CubeCreator(
-                num_iter=self._num_fit_iterations,
-                parameters={
-                    "seed": [seed],
-                    "num_topics": nums_topics
-                },
-                verbose=False,
-                separate_thread=self._separate_thread
-            )
-            exp = Experiment(
-                exp_model,
-                experiment_id=f"{self._experiment_name}_{seed}",
-                save_path=self._experiment_directory,
-                save_experiment=self._save_experiment  # TODO: save_experiment=False actually not working
-            )
-            cube(exp_model, dataset)
-
-            result_models += exp.select()
-
-            del exp
-
-        restarts = "seed=" + pd.Series(seeds, name="restart_id").astype(str)
-        result, detailed_result = _summarize_models(
-            result_models,
-            [s.name for s in self._scores],
-            restarts
+        result, detailed_result = load_models_from_disk(
+            self._experiment_directory,
+            self._experiment_name
         )
         self._detailed_result = detailed_result
         self._result = result
@@ -214,15 +195,13 @@ def _summarize_models(result_models, score_names=None, restarts=None):
     return result, detailed_result
 
 
-# TODO: is this needed?
-def restore_failed_experiment(experiment_directory, base_experiment_name, scores=None):
+def load_models_from_disk(experiment_directory, base_experiment_name, scores=None):
     from topicnet.cooking_machine.experiment import START
     import glob
 
     result_models = []
 
     for folder in glob.glob(f"{experiment_directory}/{base_experiment_name}_*"):
-        folder = os.path.join(experiment_directory, experiment_name)  # TODO: indefined name experiment_name
         model_pathes = [
             f.path for f in os.scandir(folder)
             if f.is_dir() and f.name != START

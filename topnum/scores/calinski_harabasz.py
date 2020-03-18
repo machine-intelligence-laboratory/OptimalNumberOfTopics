@@ -7,7 +7,6 @@ from topicnet.cooking_machine.models import (
     TopicModel
 )
 
-
 from .base_custom_score import BaseCustomScore
 
 
@@ -51,4 +50,3 @@ class _CalinskiHarabaszScore(BaseTopicNetScore):
             return float('nan')
 
         return calinski_harabasz_score(theta.T.values, objects_clusters)
-

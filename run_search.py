@@ -19,8 +19,10 @@ from topnum.scores import (
     SimpleTopTokensCoherenceScore,
     SophisticatedTopTokensCoherenceScore,
     SilhouetteScore,
-    CalinskiHarabaszScore
+    CalinskiHarabaszScore,
+    LikelihoodBasedScore
 )
+from topnum.model_constructor import KNOWN_MODELS
 from topnum.scores.diversity_score import L2
 from topnum.scores.entropy_score import RENYI as RENYI_ENTROPY_NAME
 from topnum.scores.base_score import BaseScore
@@ -46,6 +48,11 @@ def _main():
     parser.add_argument(
         'vw_file_path',
         help='Path to the file with text collection in vowpal wabbit format'
+    )
+    parser.add_argument(
+        '--mf', '--model_family',
+        help=f'The family of models to optimize the number of topics for',
+        default="PLSA", choices=KNOWN_MODELS
     )
     parser.add_argument(
         'main_modality',
@@ -143,6 +150,17 @@ def _main():
         'diversity',
         help='Diversity -> max'
     )
+    parser_optimize_likelihood = subparsers_optimize_scores.add_parser(
+        'likelihood',
+        help='AIC / BIC / Approximate MDL -> min'
+    )
+    parser_optimize_likelihood.add_argument(
+        '--mode',
+        help='A type of information criterion',
+        choices=['AIC', 'BIC', 'MDL'],
+        default='AIC'
+    )
+
     parser_optimize_intratext = subparsers_optimize_scores.add_parser(
         'intratext_coherence',
         help='Intratext coherence -> max'
@@ -248,6 +266,7 @@ def _main():
         num_topics_interval = args.num_topics_interval
         num_fit_iterations = args.num_fit_iterations
         num_restarts = args.num_restarts
+        model_family = args.model_family
 
         scores = list()
         scores.append(_build_score(args, text_collection, modality_names))
@@ -262,6 +281,7 @@ def _main():
 
         _optimize_scores(
             scores,
+            model_family,
             text_collection,
             output_file_path,
             min_num_topics=min_num_topics,
@@ -425,6 +445,7 @@ def _build_score(
 
 def _optimize_scores(
         scores: List[BaseScore],
+        model_family: str,
         text_collection: VowpalWabbitTextCollection,
         output_file_path: str,
         min_num_topics: int,
@@ -435,6 +456,7 @@ def _optimize_scores(
 
     optimizer = OptimizeScoresMethod(
         scores=scores,
+        model_family=model_family,
         min_num_topics=min_num_topics,
         max_num_topics=max_num_topics,
         num_topics_interval=num_topics_interval,

@@ -2,7 +2,6 @@ import logging
 import numpy as np
 
 from sklearn.metrics import silhouette_score
-
 from topicnet.cooking_machine import Dataset
 from topicnet.cooking_machine.models import (
     BaseScore as BaseTopicNetScore,
@@ -78,7 +77,6 @@ class SilhouetteScore(BaseCustomScore):
         super().__init__(name)
 
         self._score = _SilhouetteScore(validation_dataset, sample_size, batches_number)
-
 
 
 class _SilhouetteScore(BaseTopicNetScore):
