@@ -11,20 +11,16 @@ from typing import (
     List
 )
 
-from topnum.scores import (
-    DiversityScore,
-    IntratextCoherenceScore,
-    PerplexityScore,
-)
 from topnum.scores.base_topic_score import BaseTopicScore
-from topnum.search_methods import (
-    OptimizeScoresMethod,
-    RenormalizationMethod,
-    TopicBankMethod,
-)
+from topnum.search_methods import RenormalizationMethod
 from topnum.search_methods.base_search_method import BaseSearchMethod
-from topnum.search_methods.constants import DEFAULT_EXPERIMENT_DIR
-from topnum.search_methods.optimize_scores_method import _KEY_SCORE_RESULTS
+from topnum.search_methods.renormalization_method import (
+    ENTROPY_MERGE_METHOD,
+    RANDOM_MERGE_METHOD,
+    KL_MERGE_METHOD,
+    PHI_RENORMALIZATION_MATRIX,
+    THETA_RENORMALIZATION_MATRIX,
+)
 from topnum.tests.data_generator import TestDataGenerator
 
 
@@ -52,7 +48,7 @@ class _DummyTopicScore(BaseTopicScore):
 
 
 @pytest.mark.filterwarnings(f'ignore:{W_DIFF_BATCHES_1}')
-class TestAcceptance:
+class TestRenormalization:
     data_generator = None
 
     dataset = None
@@ -89,56 +85,25 @@ class TestAcceptance:
         if cls.data_generator is not None:
             cls.data_generator.clear()
 
-    def test_optimize_perplexity(self):
-        score = PerplexityScore(
-            'perplexity_score',
-            class_ids=[self.main_modality, self.other_modality]
-        )
-
-        self._test_optimize_score(score)
-
-    def test_optimize_diversity(self):
-        score = DiversityScore(
-            'diversity_score',
-            class_ids=self.main_modality
-        )
-
-        self._test_optimize_score(score)
-
-    def test_optimize_intratext(self):
-        score = IntratextCoherenceScore(
-            name='intratext_coherence',
-            data=self.dataset,
-            documents=self.dataset._data.index[:1],
-            window=2
-        )
-
-        # a bit slow -> just 2 restarts
-        self._test_optimize_score(score, num_restarts=2)
-
-    def test_topic_bank(self):
-        self.optimizer = TopicBankMethod(
-            data=self.dataset,
-            main_modality=self.main_modality,
-            main_topic_score=_DummyTopicScore(),
-            other_topic_scores=list(),
-            max_num_models=5,
-            one_model_num_topics=2,
-            num_fit_iterations=5,
-            topic_score_threshold_percentile=2,
-        )
-
-        self.optimizer.search_for_optimum(self.text_collection)
-
-        # TODO: improve check
-        for result_key in ['optimum', 'optimum_std']:
-            assert result_key in self.optimizer._result
-            assert isinstance(self.optimizer._result[result_key], Number)
-
-    def test_renormalize(self):
+    @pytest.mark.parametrize(
+        'merge_method',
+        [ENTROPY_MERGE_METHOD, RANDOM_MERGE_METHOD, KL_MERGE_METHOD]
+    )
+    @pytest.mark.parametrize(
+        'threshold_factor',
+        [1.0, 0.5, 1e-7, 1e7]
+    )
+    @pytest.mark.parametrize(
+        'matrix_for_renormalization',
+        [PHI_RENORMALIZATION_MATRIX, THETA_RENORMALIZATION_MATRIX]
+    )
+    def test_renormalize(self, merge_method, threshold_factor, matrix_for_renormalization):
         max_num_topics = 10
 
         optimizer = RenormalizationMethod(
+            merge_method=merge_method,
+            matrix_for_renormalization=matrix_for_renormalization,
+            threshold_factor=threshold_factor,
             max_num_topics=max_num_topics,
             num_fit_iterations=10,
             num_restarts=3
@@ -148,45 +113,6 @@ class TestAcceptance:
         optimizer.search_for_optimum(self.text_collection)
 
         self._check_search_result(optimizer._result, optimizer, num_search_points)
-
-    def _test_optimize_score(self, score, num_restarts: int = 3) -> None:
-        min_num_topics = 1
-        max_num_topics = 2
-        num_topics_interval = 1
-
-        num_fit_iterations = 3
-        num_processors = 1
-
-        optimizer = OptimizeScoresMethod(
-            scores=[score],
-            min_num_topics=min_num_topics,
-            max_num_topics=max_num_topics,
-            num_topics_interval=num_topics_interval,
-            num_fit_iterations=num_fit_iterations,
-            num_restarts=num_restarts,
-            one_model_num_processors=num_processors,
-            separate_thread=False,
-            experiment_name=score.name,  # otherwise will be using same folder
-            experiment_directory=DEFAULT_EXPERIMENT_DIR
-        )
-        num_search_points = len(
-            list(range(min_num_topics, max_num_topics + 1, num_topics_interval))
-        )
-
-        optimizer.search_for_optimum(self.text_collection)
-
-        assert len(optimizer._result) == 1
-        assert _KEY_SCORE_RESULTS in optimizer._result
-
-        # TODO: ptobably remove the assert below, because there are many default scores now
-        # assert len(optimizer._result[_KEY_SCORE_RESULTS]) == 1
-        assert score.name in optimizer._result[_KEY_SCORE_RESULTS]
-
-        self._check_search_result(
-            optimizer._result[_KEY_SCORE_RESULTS][score.name],
-            optimizer,
-            num_search_points
-        )
 
     def _check_search_result(
             self,
