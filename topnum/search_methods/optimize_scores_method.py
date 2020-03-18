@@ -84,8 +84,8 @@ class OptimizeScoresMethod(BaseSearchMethod):
 
         dataset = text_collection._to_dataset()
 
-        # seed == -1 is too similar to seed == 0
-        seeds = [-1] + list(range(1, self._num_restarts))
+        # seed == None is too similar to seed == 0
+        seeds = [None] + list(range(0, self._num_restarts - 1))
 
         nums_topics = list(range(
             self._min_num_topics,
@@ -108,7 +108,19 @@ class OptimizeScoresMethod(BaseSearchMethod):
                 )
 
                 model = TopicModel(artm_model)
+
+                _logger.info(
+                    f'Model\'s custom scores before attaching: {list(model.custom_scores.keys())}'
+                )
+
+                # TODO: remove this when TopicNet fixed
+                _logger.info('Making custom scores empty dict')
+
+                model.custom_scores = dict()
+
                 model.set_model_id_as_timestamp()
+                model.model_id = str(uuid.uuid4())
+
                 path_components = [
                     self._experiment_directory,
                     f"{self._experiment_name}_{seed}",

@@ -1,7 +1,7 @@
+import logging
 import numpy as np
 
 from sklearn.metrics import silhouette_score
-
 from topicnet.cooking_machine import Dataset
 from topicnet.cooking_machine.models import (
     BaseScore as BaseTopicNetScore,

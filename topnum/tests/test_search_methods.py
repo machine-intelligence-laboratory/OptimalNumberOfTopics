@@ -320,7 +320,9 @@ class TestSearchMethods:
 
         assert len(optimizer._result) == 1
         assert _KEY_SCORE_RESULTS in optimizer._result
-        assert len(optimizer._result[_KEY_SCORE_RESULTS]) == 1
+
+        # TODO: ptobably remove the assert below, because there are many default scores now
+        # assert len(optimizer._result[_KEY_SCORE_RESULTS]) == 1
         assert score.name in optimizer._result[_KEY_SCORE_RESULTS]
 
         self._check_search_result(
@@ -336,6 +338,8 @@ class TestSearchMethods:
             num_search_points: int):
 
         tiny = 1e-7
+
+        print(search_result)
 
         for key in optimizer._keys_mean_one:
             assert key in search_result
