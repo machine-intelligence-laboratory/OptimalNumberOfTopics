@@ -1,6 +1,8 @@
 import os
 import pandas as pd
 import tempfile
+import warnings
+
 from topicnet.cooking_machine import Dataset
 from typing import (
     Dict,
@@ -10,13 +12,18 @@ from typing import (
 
 from .base_text_collection import BaseTextCollection
 
+WARNING_MAIN_MODALITY_NOT_IN_MODALITIES = (
+    'Main modality "{}" is not in the list of modalities.'
+    'Assuming it is an inadvertent mistake, so appending it to all modalities.'
+)
+
 
 class VowpalWabbitTextCollection(BaseTextCollection):
     def __init__(
             self,
             file_path: str,
             main_modality: str,
-            modalities: Union[None, List[str], Dict[str, float]]):
+            modalities: Union[None, List[str], Dict[str, float]] = None):
 
         super().__init__()
 
@@ -37,8 +44,26 @@ class VowpalWabbitTextCollection(BaseTextCollection):
                 ' So lines can\'t be blank.'
             )
 
-        if isinstance(modalities, list):
+        if modalities is None:
+            modalities = {self._main_modality: 1.0}
+        elif isinstance(modalities, list):
+            if self._main_modality not in modalities:
+                warnings.warn(
+                    WARNING_MAIN_MODALITY_NOT_IN_MODALITIES.format(self._main_modality)
+                )
+
+                modalities = modalities + [self._main_modality]
+
             modalities = {m: 1.0 for m in modalities}
+        elif isinstance(modalities, dict):
+            if self._main_modality not in modalities:
+                warnings.warn(
+                    WARNING_MAIN_MODALITY_NOT_IN_MODALITIES.format(self._main_modality)
+                )
+
+                modalities[self._main_modality] = 1.0
+        else:
+            raise TypeError(f'modalities: {type(modalities)}')
 
         self._modalities = modalities
 
