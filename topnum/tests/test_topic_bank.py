@@ -34,7 +34,7 @@ from topnum.search_methods.topic_bank.phi_initialization.initialize_phi_funcs im
     initialize_randomly,
     initialize_with_copying_topics
 )
-from topnum.tests.test_data_generator import TestDataGenerator
+from topnum.tests.data_generator import TestDataGenerator
 
 
 _Logger = logging.getLogger()
@@ -103,11 +103,11 @@ class TestSearchMethodTopicBank:
         [BankUpdateMethod.JUST_ADD_GOOD_TOPICS, BankUpdateMethod.PROVIDE_NON_LINEARITY]
     )
     @pytest.mark.parametrize(
-        'train_func',
+        'train_funcs',
         [None, background_topics_train_func, default_train_func, regularization_train_func]
     )
-    def test_topic_bank(self, bank_update, train_func):
-        self._test_topic_bank(bank_update, train_func=train_func)
+    def test_topic_bank(self, bank_update, train_funcs):
+        self._test_topic_bank(bank_update, train_func=train_funcs)
 
     @pytest.mark.parametrize(
         'bank_update',
@@ -232,12 +232,14 @@ class TestSearchMethodTopicBank:
         self.optimizer = TopicBankMethod(
             data=self.dataset,
             main_modality=self.main_modality,
+            min_df_rate=0.0,
+            max_df_rate=1.1,
             main_topic_score=_DummyTopicScore(),
             other_topic_scores=list(),
             max_num_models=5,
             one_model_num_topics=one_model_num_topics,
             num_fit_iterations=5,
-            train_func=train_func,
+            train_funcs=train_func,
             topic_score_threshold_percentile=2,
             bank_update=bank_update
         )

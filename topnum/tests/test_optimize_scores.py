@@ -27,21 +27,11 @@ from topnum.scores import (
     SparsityThetaScore,
 )
 from topnum.scores.base_topic_score import BaseTopicScore
-from topnum.search_methods import (
-    OptimizeScoresMethod,
-    RenormalizationMethod
-)
+from topnum.search_methods import OptimizeScoresMethod
 from topnum.search_methods.base_search_method import BaseSearchMethod
 from topnum.search_methods.constants import DEFAULT_EXPERIMENT_DIR
 from topnum.search_methods.optimize_scores_method import _KEY_SCORE_RESULTS
-from topnum.search_methods.renormalization_method import (
-    ENTROPY_MERGE_METHOD,
-    RANDOM_MERGE_METHOD,
-    KL_MERGE_METHOD,
-    PHI_RENORMALIZATION_MATRIX,
-    THETA_RENORMALIZATION_MATRIX,
-)
-from topnum.tests.test_data_generator import TestDataGenerator
+from topnum.tests.data_generator import TestDataGenerator
 
 
 _Logger = logging.getLogger()
@@ -223,35 +213,6 @@ class TestSearchMethods:
         )
 
         self._test_optimize_score(score)
-
-    @pytest.mark.parametrize(
-        'merge_method',
-        [ENTROPY_MERGE_METHOD, RANDOM_MERGE_METHOD, KL_MERGE_METHOD]
-    )
-    @pytest.mark.parametrize(
-        'threshold_factor',
-        [1.0, 0.5, 1e-7, 1e7]
-    )
-    @pytest.mark.parametrize(
-        'matrix_for_renormalization',
-        [PHI_RENORMALIZATION_MATRIX, THETA_RENORMALIZATION_MATRIX]
-    )
-    def test_renormalize(self, merge_method, threshold_factor, matrix_for_renormalization):
-        max_num_topics = 10
-
-        optimizer = RenormalizationMethod(
-            merge_method=merge_method,
-            matrix_for_renormalization=matrix_for_renormalization,
-            threshold_factor=threshold_factor,
-            max_num_topics=max_num_topics,
-            num_fit_iterations=10,
-            num_restarts=3
-        )
-        num_search_points = len(list(range(1, max_num_topics)))
-
-        optimizer.search_for_optimum(self.text_collection)
-
-        self._check_search_result(optimizer._result, optimizer, num_search_points)
 
     def _test_optimize_score(self, score, num_restarts: int = 3) -> None:
         min_num_topics = 1

@@ -1,10 +1,13 @@
 import artm
+import gc
 import json
 import logging
 import numpy as np
 import os
 import pandas as pd
+import sys
 import tempfile
+import tqdm
 import warnings
 
 from collections import defaultdict
@@ -80,6 +83,8 @@ class TopicBankMethod(BaseSearchMethod):
             self,
             data: Union[Dataset, VowpalWabbitTextCollection],
             main_modality: str = None,
+            min_df_rate: float = 0.01,
+            max_df_rate: float = 0.9,
             main_topic_score: BaseTopicScore = None,
             other_topic_scores: List[BaseTopicScore] = None,
             stop_bank_score: BaseScore = None,
@@ -89,7 +94,7 @@ class TopicBankMethod(BaseSearchMethod):
             max_num_models: int = 100,
             one_model_num_topics: Union[int, List[int]] = 100,
             num_fit_iterations: int = DEFAULT_NUM_FIT_ITERATIONS,
-            train_func: Union[
+            train_funcs: Union[
                 Callable[[Dataset, int, int, int], TopicModel],
                 List[Callable[[Dataset, int, int, int], TopicModel]],
                 None] = None,
@@ -112,6 +117,19 @@ class TopicBankMethod(BaseSearchMethod):
             self._dataset = data._to_dataset()
         else:
             raise TypeError(f'data: "{data}", its type: "{type(data)}"')
+
+        _logger.info(
+            f'Filtering dictionary with params:'
+            f' min_df_rate={min_df_rate} and max_df_rate={max_df_rate}'
+        )
+
+        self._dataset._cached_dict = None  # TODO: shouldn't be here
+        self._dictionary = self._dataset.get_dictionary()
+        self._dictionary.filter(min_df_rate=min_df_rate, max_df_rate=max_df_rate)
+
+        # TODO: "workaround". Need this in train funcs
+        self._dataset._min_df_rate = min_df_rate
+        self._dataset._max_df_rate = max_df_rate
 
         self._main_modality = main_modality
 
@@ -170,16 +188,16 @@ class TopicBankMethod(BaseSearchMethod):
                 one_model_num_topics for _ in range(self._max_num_models)
             ]
 
-        if train_func is None:
-            train_func = default_train_func
+        if train_funcs is None:
+            train_funcs = default_train_func
 
-        if not isinstance(train_func, list):
-            train_func = [
-                train_func for _ in range(self._max_num_models)
+        if not isinstance(train_funcs, list):
+            train_funcs = [
+                train_funcs for _ in range(self._max_num_models)
             ]
 
         self._one_model_num_topics: List[int] = one_model_num_topics
-        self._train_func: List[Callable[[Dataset, int, int, int], TopicModel]] = train_func
+        self._train_func: List[Callable[[Dataset, int, int, int], TopicModel]] = train_funcs
 
         if topic_score_threshold_percentile < 1:
             warnings.warn(
@@ -229,6 +247,8 @@ class TopicBankMethod(BaseSearchMethod):
         self._result[_KEY_NUM_BANK_TOPICS] = list()
         self._result[_KEY_NUM_MODEL_TOPICS] = list()
 
+        self._topic_bank: TopicBank = None
+
     @property
     def save_path(self) -> str:
         return self._save_file_path
@@ -253,11 +273,9 @@ class TopicBankMethod(BaseSearchMethod):
         word2index = None
 
         documents_for_coherence = self._select_documents_for_topic_scores()
-        topic_bank = TopicBank()
+        self._topic_bank = TopicBank()
 
-        i = 0
-
-        while i < self._max_num_models:
+        for i in tqdm.tqdm(range(self._max_num_models), total=self._max_num_models, file=sys.stdout):
             # TODO: stop when perplexity stabilizes
 
             _logger.info(f'Building topic model number {i}...')
@@ -310,21 +328,26 @@ class TopicBankMethod(BaseSearchMethod):
                     word: index for index, word in enumerate(phi.index)
                 }
 
+            _logger.info('Finding topics for append and update...')
+
             if self._bank_update == BankUpdateMethod.JUST_ADD_GOOD_TOPICS:
                 topics_for_append = list(range(len(phi.columns)))
                 topics_for_update = dict()
             elif self._bank_update == BankUpdateMethod.PROVIDE_NON_LINEARITY:
                 topics_for_append, topics_for_update = self._extract_hierarchical_relationship(
-                    bank_phi=self._get_phi(topic_bank.topics, word2index),
+                    bank_phi=self._get_phi(self._topic_bank.topics, word2index),
                     new_model_phi=phi,
                     psi_threshold=self._child_parent_relationship_threshold
                 )
             else:
                 raise NotImplementedError(f'BankUpdateMethod: "{self._bank_update}"')
 
+            _logger.info('Finding good new topics, updating topics for append and update')
+
             good_new_topics = [
                 topic_index for topic_index, topic_name in enumerate(phi.columns)
-                if raw_topic_scores[self._main_topic_score.name][topic_name] >= threshold
+                if raw_topic_scores[self._main_topic_score.name][topic_name] is not None and
+                raw_topic_scores[self._main_topic_score.name][topic_name] >= threshold
             ]
             topics_for_append, topics_for_update, topics_for_update_reverse = (
                 self._keep_good_new_topics_only(
@@ -333,6 +356,8 @@ class TopicBankMethod(BaseSearchMethod):
             )
 
             model_topic_current_scores = list()
+
+            _logger.info('Calculating model topic scores...')
 
             for topic_index, topic_name in enumerate(topic_model.get_phi().columns):
                 topic_scores = dict()
@@ -354,19 +379,19 @@ class TopicBankMethod(BaseSearchMethod):
                     old_topic_index = topics_for_update_reverse[topic_index]
                     new_topic_candidates = topics_for_update[old_topic_index]
                     current_topic_score = topic_scores[self._main_topic_score.name]
-                    current_old_topic_score = topic_bank.topic_scores[old_topic_index][self._main_topic_score.name]
+                    current_old_topic_score = self._topic_bank.topic_scores[old_topic_index][self._main_topic_score.name]
 
                     if (len(new_topic_candidates) == 1 and
                             current_topic_score <= current_old_topic_score):
 
                         continue
 
-                if len(topic_bank.topics) == 0:
+                if len(self._topic_bank.topics) == 0:
                     d = self._MINIMUM_TOPIC_DISTANCE
                 else:
                     d = (
                         min(self._jaccard_distance(phi.loc[:, topic_name].to_dict(), bt)
-                            for bt in topic_bank.topics)
+                            for bt in self._topic_bank.topics)
                     )
 
                     if d < self._distance_threshold:
@@ -374,44 +399,46 @@ class TopicBankMethod(BaseSearchMethod):
 
                 topic_scores[_KEY_TOPIC_SCORE_DISTANCE_TO_NEAREST] = d
 
-                topic_bank.add_topic(phi.loc[:, topic_name].to_dict(), topic_scores)
+                self._topic_bank.add_topic(phi.loc[:, topic_name].to_dict(), topic_scores)
 
                 if topic_index in topics_for_update_reverse:
                     # TODO: check this
-                    topic_bank.delete_topic(topics_for_update_reverse[topic_index])
+                    self._topic_bank.delete_topic(topics_for_update_reverse[topic_index])
 
             self._result[_KEY_MODEL_TOPIC_SCORES].append(model_topic_current_scores)
-            self._result[_KEY_BANK_TOPIC_SCORES] = topic_bank.topic_scores  # TODO: append
+            self._result[_KEY_BANK_TOPIC_SCORES] = self._topic_bank.topic_scores  # TODO: append
 
             self.save()
 
             _logger.info('Scoring bank model...')
 
-            bank_phi = self._get_phi(topic_bank.topics, word2index)
-            bank_model = _get_topic_model(
-                self._dataset,
-                phi=bank_phi,
-                scores=self._all_model_scores,
-                num_safe_fit_iterations=1
-            )
-            bank_model._fit(self._dataset.get_batch_vectorizer(), 1)
-
             scores = dict()
 
-            _logger.info('Computing default scores for bank model...')
+            if len(self._topic_bank.topics) == 0:
+                _logger.info('No topics in bank — returning empty default scores for bank model')
+            else:
+                bank_phi = self._get_phi(self._topic_bank.topics, word2index)
 
-            scores.update(self._get_default_scores(bank_model))
+                bank_model = _get_topic_model(
+                    self._dataset,
+                    phi=bank_phi,
+                    scores=self._all_model_scores,
+                    num_safe_fit_iterations=1
+                )
+                bank_model._fit(self._dataset.get_batch_vectorizer(), 1)
+
+                _logger.info('Computing default scores for bank model...')
+
+                scores.update(self._get_default_scores(bank_model))
 
             # Topic scores already calculated
 
             self._result[_KEY_BANK_SCORES].append(scores)
-            self._result[_KEY_NUM_BANK_TOPICS].append(bank_phi.shape[1])
+            self._result[_KEY_NUM_BANK_TOPICS].append(len(self._topic_bank.topics))
 
-            _logger.info(f'Num topics in bank: {len(topic_bank.topics)}')
+            _logger.info(f'Num topics in bank: {len(self._topic_bank.topics)}')
 
             self.save()
-
-            i = i + 1
 
         self._result[_KEY_OPTIMUM] = self._result[_KEY_NUM_BANK_TOPICS][-1]
 
@@ -433,7 +460,7 @@ class TopicBankMethod(BaseSearchMethod):
             self._result[_KEY_OPTIMUM + _STD_KEY_SUFFIX] = float(np.sum(differences))
 
     def _select_documents_for_topic_scores(self) -> List[str]:
-        document_ids = self._dataset._data['id'].values
+        document_ids = list(self._dataset._data.index)
         num_documents = len(document_ids)
 
         selected_documents = self._random.choice(
@@ -462,27 +489,42 @@ class TopicBankMethod(BaseSearchMethod):
 
         # TODO: think about bank_phi.shape[1] == 1: alright to proceed?
 
-        hierarchy = artm.hARTM(cache_theta=True)
+        _logger.debug('Creating hARTM')
+
+        hierarchy = artm.hARTM(num_processors=1)
+
+        _logger.debug(f'Creating first level with {bank_phi.shape[1]} topics')
 
         level0 = hierarchy.add_level(
             num_topics=bank_phi.shape[1]
         )
-        level0.initialize(dictionary=self._dataset.get_dictionary())
-        _safe_copy_phi(
+        level0.initialize(dictionary=self._dictionary)
+
+        _logger.debug(
+            f'Copying phi for the first level.'
+            f' Phi shape: {bank_phi.shape}.'
+            f' First words: {bank_phi.index[:10]}'
+        )
+
+        phi_ref0 = _safe_copy_phi(
             level0, bank_phi, self._dataset,
             small_num_fit_iterations=1
         )
+
+        _logger.debug(f'Creating second level with {new_model_phi.shape[1]} topics')
 
         level1 = hierarchy.add_level(
             num_topics=new_model_phi.shape[1],
             parent_level_weight=1
         )
-        level1.initialize(dictionary=self._dataset.get_dictionary())
+        level1.initialize(dictionary=self._dictionary)
 
         # Regularizer may help to refine new topics a bit
         # in search of parent-child relationship
         # However, the regularizer won't affect the topics themselves,
         # only the ARTM hierarchy defined here.
+
+        _logger.debug('Adding HierarchySparsingThetaRegularizer to second level')
 
         # TODO: or smaller tau? or without regularizer at all? or change the real topics?
         level1.regularizers.add(
@@ -491,7 +533,14 @@ class TopicBankMethod(BaseSearchMethod):
                 tau=1.0
             )
         )
-        _safe_copy_phi(
+
+        _logger.debug(
+            f'Copying phi for the second level.'
+            f' Phi shape: {new_model_phi.shape}.'
+            f' First words: {new_model_phi.index[:10]}'
+        )
+
+        phi_ref1 = _safe_copy_phi(
             level1, new_model_phi, self._dataset,
             small_num_fit_iterations=3
         )
@@ -507,6 +556,8 @@ class TopicBankMethod(BaseSearchMethod):
         topics_for_append: List[int] = list()
         topics_for_update: Dict[int, List[int]] = defaultdict(list)
 
+        _logger.debug('Analyzing Psi for parent-child relationship')
+
         for new_topic in range(level1.get_phi().shape[1]):
             psi_row = psi.iloc[new_topic, :]
             parents = np.where(psi_row > psi_threshold)[0]
@@ -519,6 +570,17 @@ class TopicBankMethod(BaseSearchMethod):
                 topics_for_update[parents[0]].append(new_topic)
             else:
                 assert False
+
+        _logger.debug('Deleting hARTM')
+
+        hierarchy.del_level(1)
+        hierarchy.del_level(0)
+
+        del phi_ref1
+        del phi_ref0
+        del hierarchy
+
+        gc.collect()
 
         return topics_for_append, topics_for_update
 

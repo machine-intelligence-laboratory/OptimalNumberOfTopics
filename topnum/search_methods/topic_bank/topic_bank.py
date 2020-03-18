@@ -1,3 +1,5 @@
+import logging
+import pandas as pd
 import warnings
 
 from typing import (
@@ -6,6 +8,9 @@ from typing import (
     Tuple,
     Union
 )
+
+
+_logger = logging.getLogger()
 
 
 TokenType = Union[str, Tuple[str, str]]
@@ -33,6 +38,11 @@ class TopicBank:
         self._topic_scores.append(scores)
 
     def delete_topic(self, index: int) -> None:
+        _logger.debug(
+            f'Deleting topic number {index}.'
+            f' Number of topics in bank: {len(self._topics)}'
+        )
+
         if index < 0:
             raise ValueError(f'index: {index}')
 
@@ -45,6 +55,22 @@ class TopicBank:
 
         self._topics[index] = None
         self._topic_scores[index] = None
+
+    def view_topics(self) -> pd.DataFrame:
+        return pd.DataFrame.from_dict(
+            {
+                f'topic_{i}': word_probs
+                for i, word_probs in enumerate(self.topics)
+            }
+        )
+
+    def view_topic_scores(self) -> pd.DataFrame:
+        return pd.DataFrame.from_dict(
+            {
+                f'topic_{i}': topic_scores
+                for i, topic_scores in enumerate(self.topic_scores)
+            }
+        )
 
     def save(self):
         raise NotImplementedError()
