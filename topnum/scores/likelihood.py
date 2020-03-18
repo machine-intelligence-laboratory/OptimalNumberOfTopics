@@ -1,20 +1,12 @@
 import numpy as np
-import scipy.stats as stats
-
 
 from topicnet.cooking_machine import Dataset
 from topicnet.cooking_machine.models import (
     BaseScore as BaseTopicNetScore,
     TopicModel
 )
-from typing import (
-    List
-)
 
 from .base_custom_score import BaseCustomScore
-
-
-import pandas as pd
 
 
 def get_log_likelihood(model, modality):
@@ -30,7 +22,7 @@ class LikelihoodBasedScore(BaseCustomScore):
     def __init__(
             self,
             name: str,
-            validation_dataset: Dataset = None,
+            validation_dataset: Dataset,
             modality: str,
             mode: str = 'AIC',
             consider_sparsity: bool = False,
