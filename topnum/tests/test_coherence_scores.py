@@ -89,8 +89,6 @@ class TestIntratextCoherenceScore:
         dataset_table.to_csv(dataset_file_path, index=False)
 
         cls.dataset = Dataset(dataset_file_path)
-        print('!!!!', cls.dataset._data.index)
-        print(cls.dataset._data.head())
 
     @classmethod
     def teardown_class(cls):
