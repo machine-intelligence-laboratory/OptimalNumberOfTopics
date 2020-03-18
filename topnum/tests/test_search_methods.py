@@ -1,9 +1,6 @@
 import logging
 import numpy as np
-import os
 import pytest
-import shutil
-import tempfile
 import warnings
 
 from itertools import combinations
@@ -16,7 +13,6 @@ from typing import (
     List
 )
 
-from topnum.data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
 from topnum.scores import (
     CalinskiHarabaszScore,
     DiversityScore,
@@ -45,6 +41,7 @@ from topnum.search_methods.renormalization_method import (
     PHI_RENORMALIZATION_MATRIX,
     THETA_RENORMALIZATION_MATRIX,
 )
+from topnum.tests.test_data_generator import TestDataGenerator
 
 
 _Logger = logging.getLogger()
@@ -72,78 +69,41 @@ class _DummyTopicScore(BaseTopicScore):
 
 @pytest.mark.filterwarnings(f'ignore:{W_DIFF_BATCHES_1}')
 class TestSearchMethods:
-    text_collection_folder = None
-    vw_file_name = 'collection_vw.txt'
-    main_modality = '@main'
-    other_modality = '@other'
-    num_documents = 10
-    num_words_in_document = 100
-    vocabulary = None
+    data_generator = None
+
+    dataset = None
+    main_modality = None
+    other_modality = None
     text_collection = None
+
+    optimizer = None
 
     @classmethod
     def setup_class(cls):
-        cls.text_collection_folder = tempfile.mkdtemp()
+        cls.data_generator = TestDataGenerator()
 
-        vw_texts = cls.generate_vowpal_wabbit_texts()
-        vw_file_path = os.path.join(cls.text_collection_folder, cls.vw_file_name)
+        cls.data_generator.generate()
 
-        with open(vw_file_path, 'w') as f:
-            f.write('\n'.join(vw_texts))
-
-        cls.text_collection = VowpalWabbitTextCollection(
-            vw_file_path,
-            main_modality=cls.main_modality,
-            modalities=[cls.main_modality, cls.other_modality]
-        )
+        cls.text_collection = cls.data_generator.text_collection
+        cls.main_modality = cls.data_generator.main_modality
+        cls.other_modality = cls.data_generator.other_modality
 
         cls.dataset = cls.text_collection._to_dataset()
 
+        # TODO: "workaround", TopicBank needs raw text
+        cls.dataset._data['raw_text'] = cls.dataset._data['vw_text'].apply(
+            lambda text: ' '.join(
+                w.split(':')[0] for w in text.split()[1:] if not w.startswith('|'))
+        )
+
+    def teardown_method(self):
+        if self.optimizer is not None:
+            self.optimizer.clear()
+
     @classmethod
     def teardown_class(cls):
-        cls.text_collection._remove_dataset()
-        shutil.rmtree(cls.text_collection_folder)
-
-        if os.path.isdir(DEFAULT_EXPERIMENT_DIR):
-            shutil.rmtree(DEFAULT_EXPERIMENT_DIR)
-
-    @classmethod
-    def generate_vowpal_wabbit_texts(cls) -> List[str]:
-        words = list(set([
-            w.lower()
-            for w in 'All work and no play makes Jack a dull boy'.split()
-        ]))
-        frequencies = list(range(1, 13))
-        main_modality_num_words = int(0.7 * cls.num_words_in_document)
-        other_modality_num_words = int(0.3 * cls.num_words_in_document)
-
-        texts = list()
-
-        cls.vocabulary = list()
-
-        for document_index in range(cls.num_documents):
-            text = ''
-            text = text + f'doc_{document_index}'
-
-            for modality_suffix, modality, num_words in zip(
-                    ['m', 'o'],
-                    [cls.main_modality, cls.other_modality],
-                    [main_modality_num_words, other_modality_num_words]):
-
-                text = text + f' |{modality}'
-
-                for _ in range(num_words):
-                    word = np.random.choice(words)
-                    frequency = np.random.choice(frequencies)
-                    token = f'{word}__{modality_suffix}'
-
-                    cls.vocabulary.append(token)
-
-                    text = text + f' {token}:{frequency}'
-
-            texts.append(text)
-
-        return texts
+        if cls.data_generator is not None:
+            cls.data_generator.clear()
 
     def test_optimize_calinski_harabasz(self):
         score = CalinskiHarabaszScore(
@@ -189,7 +149,8 @@ class TestSearchMethods:
     @pytest.mark.parametrize('entropy', ['renyi', 'shannon'])
     @pytest.mark.parametrize('threshold_factor', [1.0, 0.5, 1e-7, 1e7])
     def test_optimize_entropy(self, entropy, threshold_factor):
-        sleep(3)
+        sleep(3)  # TODO: remove
+
         score = EntropyScore(
             name='renyi_entropy',
             entropy=entropy,
@@ -235,7 +196,7 @@ class TestSearchMethods:
         num_unique_words = 5
 
         for i, (w1, w2) in enumerate(
-                combinations(self.vocabulary[:num_unique_words], 2)):
+                combinations(self.data_generator.vocabulary[:num_unique_words], 2)):
 
             cooccurrence_values[(w1, w2)] = i
 
