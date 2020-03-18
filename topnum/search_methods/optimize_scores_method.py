@@ -117,8 +117,6 @@ class OptimizeScoresMethod(BaseSearchMethod):
                 _logger.info('Making custom scores empty dict')
 
                 model.custom_scores = dict()
-
-                model.set_model_id_as_timestamp()
                 model.model_id = str(uuid.uuid4())
 
                 path_components = [
