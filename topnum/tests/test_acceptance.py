@@ -3,9 +3,7 @@ import numpy as np
 import pytest
 import warnings
 
-from itertools import combinations
 from numbers import Number
-from time import sleep
 from topicnet.cooking_machine.dataset import W_DIFF_BATCHES_1
 from topicnet.cooking_machine.models import BaseModel
 from typing import (
@@ -14,33 +12,19 @@ from typing import (
 )
 
 from topnum.scores import (
-    CalinskiHarabaszScore,
     DiversityScore,
-    EntropyScore,
-    HoldoutPerplexityScore,
     IntratextCoherenceScore,
     PerplexityScore,
-    SilhouetteScore,
-    SimpleTopTokensCoherenceScore,
-    SophisticatedTopTokensCoherenceScore,
-    SparsityPhiScore,
-    SparsityThetaScore,
 )
 from topnum.scores.base_topic_score import BaseTopicScore
 from topnum.search_methods import (
     OptimizeScoresMethod,
-    RenormalizationMethod
+    RenormalizationMethod,
+    TopicBankMethod,
 )
 from topnum.search_methods.base_search_method import BaseSearchMethod
 from topnum.search_methods.constants import DEFAULT_EXPERIMENT_DIR
 from topnum.search_methods.optimize_scores_method import _KEY_SCORE_RESULTS
-from topnum.search_methods.renormalization_method import (
-    ENTROPY_MERGE_METHOD,
-    RANDOM_MERGE_METHOD,
-    KL_MERGE_METHOD,
-    PHI_RENORMALIZATION_MATRIX,
-    THETA_RENORMALIZATION_MATRIX,
-)
 from topnum.tests.test_data_generator import TestDataGenerator
 
 
@@ -68,7 +52,7 @@ class _DummyTopicScore(BaseTopicScore):
 
 
 @pytest.mark.filterwarnings(f'ignore:{W_DIFF_BATCHES_1}')
-class TestSearchMethods:
+class TestAcceptance:
     data_generator = None
 
     dataset = None
@@ -105,30 +89,6 @@ class TestSearchMethods:
         if cls.data_generator is not None:
             cls.data_generator.clear()
 
-    def test_optimize_calinski_harabasz(self):
-        score = CalinskiHarabaszScore(
-            'calinski_harabasz_score',
-            validation_dataset=self.dataset
-        )
-
-        self._test_optimize_score(score)
-
-    def test_optimize_diversity(self):
-        score = DiversityScore(
-            'diversity_score',
-            class_ids=self.main_modality
-        )
-
-        self._test_optimize_score(score)
-
-    def test_optimize_silhouette(self):
-        score = SilhouetteScore(
-            'holdout_perplexity_score',
-            validation_dataset=self.dataset
-        )
-
-        self._test_optimize_score(score)
-
     def test_optimize_perplexity(self):
         score = PerplexityScore(
             'perplexity_score',
@@ -137,24 +97,10 @@ class TestSearchMethods:
 
         self._test_optimize_score(score)
 
-    def test_optimize_holdout_perplexity(self):
-        score = HoldoutPerplexityScore(
-            'holdout_perplexity_score',
-            test_dataset=self.dataset,
-            class_ids=[self.main_modality, self.other_modality]
-        )
-
-        self._test_optimize_score(score)
-
-    @pytest.mark.parametrize('entropy', ['renyi', 'shannon'])
-    @pytest.mark.parametrize('threshold_factor', [1.0, 0.5, 1e-7, 1e7])
-    def test_optimize_entropy(self, entropy, threshold_factor):
-        sleep(3)  # TODO: remove
-
-        score = EntropyScore(
-            name='renyi_entropy',
-            entropy=entropy,
-            threshold_factor=threshold_factor
+    def test_optimize_diversity(self):
+        score = DiversityScore(
+            'diversity_score',
+            class_ids=self.main_modality
         )
 
         self._test_optimize_score(score)
@@ -170,79 +116,29 @@ class TestSearchMethods:
         # a bit slow -> just 2 restarts
         self._test_optimize_score(score, num_restarts=2)
 
-    def test_optimize_sophisticated_toptokens(self):
-        score = SophisticatedTopTokensCoherenceScore(
-            name='sophisticated_toptokens_coherence',
+    def test_topic_bank(self):
+        self.optimizer = TopicBankMethod(
             data=self.dataset,
-            documents=self.dataset._data.index[:1]
+            main_modality=self.main_modality,
+            main_topic_score=_DummyTopicScore(),
+            other_topic_scores=list(),
+            max_num_models=5,
+            one_model_num_topics=2,
+            num_fit_iterations=5,
+            topic_score_threshold_percentile=2,
         )
 
-        self._test_optimize_score(score, num_restarts=2)
+        self.optimizer.search_for_optimum(self.text_collection)
 
-    @pytest.mark.parametrize('what_modalities', ['None', 'one', 'many'])
-    def test_optimize_simple_toptokens(self, what_modalities):
-        if what_modalities == 'None':
-            modalities = None
-        elif what_modalities == 'one':
-            modalities = self.main_modality
-        elif what_modalities == 'many':
-            modalities = [self.main_modality]
-        else:
-            assert False
+        # TODO: improve check
+        for result_key in ['optimum', 'optimum_std']:
+            assert result_key in self.optimizer._result
+            assert isinstance(self.optimizer._result[result_key], Number)
 
-        cooccurrence_values = dict()
-        cooccurrence_values[('play__m', 'boy__m')] = 2
-
-        num_unique_words = 5
-
-        for i, (w1, w2) in enumerate(
-                combinations(self.data_generator.vocabulary[:num_unique_words], 2)):
-
-            cooccurrence_values[(w1, w2)] = i
-
-        score = SimpleTopTokensCoherenceScore(
-            name='simple_toptokens_coherence',
-            cooccurrence_values=cooccurrence_values,
-            data=self.dataset,
-            modalities=modalities
-        )
-
-        self._test_optimize_score(score)
-
-    def test_optimize_sparsity_phi(self):
-        score = SparsityPhiScore(
-            'sparsity_phi_score',
-            class_id=self.main_modality,
-        )
-
-        self._test_optimize_score(score)
-
-    def test_optimize_sparsity_theta(self):
-        score = SparsityThetaScore(
-            'sparsity_theta_score'
-        )
-
-        self._test_optimize_score(score)
-
-    @pytest.mark.parametrize(
-        'merge_method',
-        [ENTROPY_MERGE_METHOD, RANDOM_MERGE_METHOD, KL_MERGE_METHOD]
-    )
-    @pytest.mark.parametrize(
-        'threshold_factor',
-        [1.0, 0.5, 1e-7, 1e7]
-    )
-    @pytest.mark.parametrize(
-        'matrix_for_renormalization',
-        [PHI_RENORMALIZATION_MATRIX, THETA_RENORMALIZATION_MATRIX]
-    )
-    def test_renormalize(self, merge_method, threshold_factor, matrix_for_renormalization):
+    def test_renormalize(self):
         max_num_topics = 10
 
         optimizer = RenormalizationMethod(
-            merge_method=merge_method,
-            matrix_for_renormalization=matrix_for_renormalization,
-            threshold_factor=threshold_factor,
             max_num_topics=max_num_topics,
             num_fit_iterations=10,
             num_restarts=3
