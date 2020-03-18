@@ -19,7 +19,8 @@ from topnum.scores import (
     SimpleTopTokensCoherenceScore,
     SophisticatedTopTokensCoherenceScore,
     SilhouetteScore,
-    CalinskiHarabaszScore
+    CalinskiHarabaszScore,
+    LikelihoodBasedScore
 )
 from topnum.model_constructor import KNOWN_MODELS
 from topnum.scores.diversity_score import L2
@@ -149,6 +150,17 @@ def _main():
         'diversity',
         help='Diversity -> max'
     )
+    parser_optimize_likelihood = subparsers_optimize_scores.add_parser(
+        'likelihood',
+        help='AIC / BIC / Approximate MDL -> min'
+    )
+    parser_optimize_likelihood.add_argument(
+        '--mode',
+        help='A type of information criterion',
+        choices=['AIC', 'BIC', 'MDL'],
+        default='AIC'
+    )
+
     parser_optimize_intratext = subparsers_optimize_scores.add_parser(
         'intratext_coherence',
         help='Intratext coherence -> max'
