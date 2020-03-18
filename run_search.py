@@ -268,7 +268,6 @@ def _main():
             )
 
         _optimize_scores(
-
             scores,
             model_family,
             text_collection,
@@ -434,6 +433,7 @@ def _build_score(
 
 def _optimize_scores(
         scores: List[BaseScore],
+        model_family: str,
         text_collection: VowpalWabbitTextCollection,
         output_file_path: str,
         min_num_topics: int,
@@ -444,6 +444,7 @@ def _optimize_scores(
 
     optimizer = OptimizeScoresMethod(
         scores=scores,
+        model_family=model_family,
         min_num_topics=min_num_topics,
         max_num_topics=max_num_topics,
         num_topics_interval=num_topics_interval,

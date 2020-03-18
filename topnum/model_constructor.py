@@ -38,9 +38,14 @@ def init_model_from_family(
         model = init_decorrelated_plsa(dataset, modalities_to_use, main_modality, num_topics)
     elif family == "ARTM":
         model = init_baseline_artm(dataset, modalities_to_use, main_modality, num_topics, 1)
+    else:
+        raise ValueError(f'family: {family}')
 
     model.num_processors = num_processors
-    model.seed = seed
+
+    if seed is not None:
+        model.seed = seed
+
     return model
 
 
