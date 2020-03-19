@@ -50,9 +50,11 @@ def _main():
         help='Path to the file with text collection in vowpal wabbit format'
     )
     parser.add_argument(
-        '--model-family',
+        '-mf', '--model-family',
         help=f'The family of models to optimize the number of topics for',
-        default="PLSA", choices=KNOWN_MODELS
+        default="PLSA",
+        choices=KNOWN_MODELS,
+        required=False
     )
     parser.add_argument(
         'main_modality',
