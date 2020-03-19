@@ -20,7 +20,7 @@ class SparsityThetaScore(BaseDefaultScore):
 
     def _initialize(self) -> SparsityThetaArtmScore:
         return SparsityThetaArtmScore(
-            name=self._fullname,
+            name=self.name,
             topic_names=self._topic_names,
             eps=self._eps
         )

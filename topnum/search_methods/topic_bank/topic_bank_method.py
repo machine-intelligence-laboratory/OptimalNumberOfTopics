@@ -674,7 +674,7 @@ class TopicBankMethod(BaseSearchMethod):
             # TODO: check here
 
             score_values[score.name] = (
-                topic_model.scores[score._fullname][-1]
+                topic_model.scores[score.name][-1]
             )
 
         return score_values

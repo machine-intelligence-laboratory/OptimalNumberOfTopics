@@ -11,7 +11,7 @@ _logger = logging.getLogger()
 
 
 class BaseCustomScore(BaseScore):
-    def __init__(self, name, higher_better=True):
+    def __init__(self, name, higher_better: bool = True):
         super().__init__(name, higher_better)
 
     def _attach(self, model: TopicModel):
@@ -21,6 +21,9 @@ class BaseCustomScore(BaseScore):
                 f' So rewriting it...'
                 f' All model\'s custom scores: {list(model.custom_scores.keys())}'
             )
+
+        # TODO: workaround: maybe a better way is possible
+        setattr(self._score, '_higher_better', self._higher_better)
 
         # TODO: TopicModel should provide ability to add custom scores
         model.custom_scores[self.name] = self._score

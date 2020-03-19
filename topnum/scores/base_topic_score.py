@@ -9,7 +9,7 @@ from .base_custom_score import BaseCustomScore
 
 
 class BaseTopicScore(BaseCustomScore):
-    def __init__(self, name, higher_better=True):
+    def __init__(self, name, higher_better: bool = True):
         super().__init__(name, higher_better)
 
     def _initialize(self) -> TopicNetBaseScore:

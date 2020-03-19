@@ -11,8 +11,7 @@ from .base_custom_score import BaseCustomScore
 
 class HoldoutPerplexityScore(BaseCustomScore):
     def __init__(self, name: str, test_dataset: Dataset, class_ids: List[str] = None):
-        super().__init__(name)
-        # TODO: higher-better = False
+        super().__init__(name, higher_better=False)
 
         self._test_dataset = test_dataset
         self._class_ids = class_ids
