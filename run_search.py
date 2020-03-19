@@ -13,13 +13,16 @@ from topnum.data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
 from topnum.scores import (
     DiversityScore,
     EntropyScore,
+    HoldoutPerplexityScore,
     IntratextCoherenceScore,
     PerplexityScore,
     SimpleTopTokensCoherenceScore,
     SophisticatedTopTokensCoherenceScore,
     SilhouetteScore,
-    CalinskiHarabaszScore
+    CalinskiHarabaszScore,
+    LikelihoodBasedScore
 )
+from topnum.model_constructor import KNOWN_MODELS
 from topnum.scores.diversity_score import L2
 from topnum.scores.entropy_score import RENYI as RENYI_ENTROPY_NAME
 from topnum.scores.base_score import BaseScore
@@ -45,6 +48,11 @@ def _main():
     parser.add_argument(
         'vw_file_path',
         help='Path to the file with text collection in vowpal wabbit format'
+    )
+    parser.add_argument(
+        '--mf', '--model_family',
+        help=f'The family of models to optimize the number of topics for',
+        default="PLSA", choices=KNOWN_MODELS
     )
     parser.add_argument(
         'main_modality',
@@ -117,30 +125,43 @@ def _main():
         dest='score_name'
     )
 
-    subparsers_optimize_scores.add_parser(
+    # TODO: try to run with several identical scores (for testing purposes)
+    parser_optimize_perplexity = subparsers_optimize_scores.add_parser(
         'perplexity',
         help='Perplexity -> min'
     )
-
-    # TODO: try to run with several identical scores
-
+    parser_optimize_holdout_perplexity = subparsers_optimize_scores.add_parser(
+        'holdout_perplexity',
+        help='As usual perplexity, but on holdout sample'
+    )
     parser_optimize_renyi_entropy = subparsers_optimize_scores.add_parser(
         'renyi_entropy',
         help='Renyi entropy -> min'
     )
     subparsers_optimize_scores.add_parser(
-        'calinski_harabasz_score',
-        help='Calinski Harabasz -> max'
+        'calinski_harabasz',
+        help='CH -> max'
     )
     subparsers_optimize_scores.add_parser(
-        'silhouette_score',
-        help='Silhouette -> max'
+        'silhouette',
+        help='SilhouetteScore -> max'
     )
     subparsers_optimize_scores.add_parser(
-        'diversity_score',
+        'diversity',
         help='Diversity -> max'
     )
-    subparsers_optimize_scores.add_parser(
+    parser_optimize_likelihood = subparsers_optimize_scores.add_parser(
+        'likelihood',
+        help='AIC / BIC / Approximate MDL -> min'
+    )
+    parser_optimize_likelihood.add_argument(
+        '--mode',
+        help='A type of information criterion',
+        choices=['AIC', 'BIC', 'MDL'],
+        default='AIC'
+    )
+
+    parser_optimize_intratext = subparsers_optimize_scores.add_parser(
         'intratext_coherence',
         help='Intratext coherence -> max'
     )
@@ -149,6 +170,13 @@ def _main():
         help='Top tokens coherence -> max'
     )
 
+    # TODO: check this score using command line
+    parser_optimize_holdout_perplexity.add_argument(
+        '--test-vw-file-path',
+        help='Path to the holdout data as vw file',
+        type=str,
+        required=True
+    )
     parser_optimize_renyi_entropy.add_argument(
         '-f', '--threshold-factor',
         help='A greater than zero factor'
@@ -238,6 +266,7 @@ def _main():
         num_topics_interval = args.num_topics_interval
         num_fit_iterations = args.num_fit_iterations
         num_restarts = args.num_restarts
+        model_family = args.model_family
 
         scores = list()
         scores.append(_build_score(args, text_collection, modality_names))
@@ -246,10 +275,13 @@ def _main():
             current_args, unparsed_args = parser_optimize_scores.parse_known_args(
                 unparsed_args
             )
-            scores.append(_build_score(current_args, text_collection, modality_names))
+            scores.append(
+                _build_score(current_args, text_collection, modality_names, main_modality_name)
+            )
 
         _optimize_scores(
             scores,
+            model_family,
             text_collection,
             output_file_path,
             min_num_topics=min_num_topics,
@@ -329,13 +361,25 @@ def _parse_modalities(
 def _build_score(
         args: argparse.Namespace,
         text_collection: VowpalWabbitTextCollection,
-        modality_names: List[str]) -> BaseScore:
+        modality_names: List[str],
+        main_modality_name: str) -> BaseScore:
 
     # TODO: modality_names should be available via text_collection
     if args.score_name == 'perplexity':
         return PerplexityScore(
             'perplexity_score',
             class_ids=modality_names
+        )
+    elif args.score_name == 'holdout_perplexity':
+        test_text_collection = VowpalWabbitTextCollection(
+            args.test_vw_file_path,
+            main_modality=main_modality_name,
+            modalities=modality_names
+        )
+
+        return HoldoutPerplexityScore(
+            name='holdout_perplexity_score',
+            test_dataset=test_text_collection._to_dataset()
         )
     elif args.score_name == 'renyi_entropy':
         return EntropyScore(
@@ -344,17 +388,17 @@ def _build_score(
             threshold_factor=args.threshold_factor,
             class_ids=modality_names
         )
-    elif args.score_name == 'calinski_harabasz_score':
+    elif args.score_name == 'calinski_harabasz':
         return CalinskiHarabaszScore(
             'calinski_harabasz_score',
             validation_dataset=text_collection._to_dataset()
         )
-    elif args.score_name == 'silhouette_score':
+    elif args.score_name == 'silhouette':
         return SilhouetteScore(
             'silhouette_score',
             validation_dataset=text_collection._to_dataset()
         )
-    elif args.score_name == 'diversity_score':
+    elif args.score_name == 'diversity':
         return DiversityScore(
             'l2_diversity_score',
             metric=L2,
@@ -401,6 +445,7 @@ def _build_score(
 
 def _optimize_scores(
         scores: List[BaseScore],
+        model_family: str,
         text_collection: VowpalWabbitTextCollection,
         output_file_path: str,
         min_num_topics: int,
@@ -411,6 +456,7 @@ def _optimize_scores(
 
     optimizer = OptimizeScoresMethod(
         scores=scores,
+        model_family=model_family,
         min_num_topics=min_num_topics,
         max_num_topics=max_num_topics,
         num_topics_interval=num_topics_interval,

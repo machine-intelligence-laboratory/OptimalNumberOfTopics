@@ -5,6 +5,9 @@ import numpy as np
 import pandas as pd
 import scipy
 import scipy.stats
+import sys
+import tqdm
+
 from datetime import datetime
 from topicnet.cooking_machine.dataset import Dataset
 from topicnet.cooking_machine.models import TopicModel
@@ -98,7 +101,7 @@ class RenormalizationMethod(BaseSearchMethod):
         dataset = text_collection._to_dataset()
         restart_results = list()
 
-        for i in range(self._num_restarts):
+        for i in tqdm.tqdm(range(self._num_restarts), total=self._num_restarts, file=sys.stdout):
             seed = i - 1  # so as to use also seed = -1 (whoever knows what this means in ARTM)
             need_set_seed = seed >= 0
 
@@ -113,8 +116,7 @@ class RenormalizationMethod(BaseSearchMethod):
 
             artm_model = init_simple_default_model(
                 dataset,
-                modalities_to_use=list(text_collection._modalities.keys()),
-                modalities_weights=text_collection._modalities,  # TODO: remove after release
+                modalities_to_use=text_collection._modalities,
                 main_modality=text_collection._main_modality,
                 specific_topics=self._max_num_topics,
                 background_topics=0  # TODO: or better add ability to specify?

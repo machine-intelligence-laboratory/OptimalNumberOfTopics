@@ -1,0 +1,79 @@
+import logging
+import pandas as pd
+import warnings
+
+from typing import (
+    Dict,
+    List,
+    Tuple,
+    Union
+)
+
+
+_logger = logging.getLogger()
+
+
+TokenType = Union[str, Tuple[str, str]]
+
+
+class TopicBank:
+    def __init__(self):
+        self._topics: List[Union[Dict[TokenType, float], None]] = list()
+        self._topic_scores: List[Union[Dict[str, float], None]] = list()
+
+    @property
+    def topics(self):
+        return [t for t in self._topics if t is not None]
+
+    @property
+    def topic_scores(self):
+        return [s for s in self._topic_scores if s is not None]
+
+    def add_topic(
+            self,
+            topic: Dict[TokenType, float],
+            scores: Dict[str, float]) -> None:
+
+        self._topics.append(topic)
+        self._topic_scores.append(scores)
+
+    def delete_topic(self, index: int) -> None:
+        _logger.debug(
+            f'Deleting topic number {index}.'
+            f' Number of topics in bank: {len(self._topics)}'
+        )
+
+        if index < 0:
+            raise ValueError(f'index: {index}')
+
+        if index >= len(self._topics):
+            warnings.warn(
+                f'Index {index} is greater than the number of topics in the bank!'
+            )
+
+            return
+
+        self._topics[index] = None
+        self._topic_scores[index] = None
+
+    def view_topics(self) -> pd.DataFrame:
+        return pd.DataFrame.from_dict(
+            {
+                f'topic_{i}': word_probs
+                for i, word_probs in enumerate(self.topics)
+            }
+        )
+
+    def view_topic_scores(self) -> pd.DataFrame:
+        return pd.DataFrame.from_dict(
+            {
+                f'topic_{i}': topic_scores
+                for i, topic_scores in enumerate(self.topic_scores)
+            }
+        )
+
+    def save(self):
+        raise NotImplementedError()
+
+    def clear(self):
+        raise NotImplementedError()
