@@ -22,7 +22,7 @@ class SparsityPhiScore(BaseDefaultScore):
 
     def _initialize(self) -> SparsityPhiArtmScore:
         return SparsityPhiArtmScore(
-            name=self._name,
+            name=self.name,
             class_id=self._class_id,
             topic_names=self._topic_names,
             eps=self._eps

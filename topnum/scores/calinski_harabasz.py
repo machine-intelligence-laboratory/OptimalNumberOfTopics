@@ -7,6 +7,7 @@ from topicnet.cooking_machine.models import (
     TopicModel
 )
 
+
 from .base_custom_score import BaseCustomScore
 
 
@@ -14,11 +15,11 @@ _Logger = logging.getLogger()
 
 
 class CalinskiHarabaszScore(BaseCustomScore):
-    '''
+    """
     Uses of Calinski-Harabasz:
 
     https://link.springer.com/article/10.1007/s40815-017-0327-9
-    '''
+    """
     def __init__(
             self,
             name: str,
@@ -33,6 +34,7 @@ class CalinskiHarabaszScore(BaseCustomScore):
 class _CalinskiHarabaszScore(BaseTopicNetScore):
     def __init__(self, validation_dataset):
         super().__init__()
+
         self.validation_dataset = validation_dataset
 
     def call(self, model: TopicModel):

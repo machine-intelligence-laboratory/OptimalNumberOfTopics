@@ -50,9 +50,11 @@ def _main():
         help='Path to the file with text collection in vowpal wabbit format'
     )
     parser.add_argument(
-        '--mf', '--model_family',
+        '-mf', '--model-family',
         help=f'The family of models to optimize the number of topics for',
-        default="PLSA", choices=KNOWN_MODELS
+        default="PLSA",
+        choices=KNOWN_MODELS,
+        required=False
     )
     parser.add_argument(
         'main_modality',
@@ -269,7 +271,7 @@ def _main():
         model_family = args.model_family
 
         scores = list()
-        scores.append(_build_score(args, text_collection, modality_names))
+        scores.append(_build_score(args, text_collection, modality_names, main_modality_name))
 
         while len(unparsed_args) > 0:
             current_args, unparsed_args = parser_optimize_scores.parse_known_args(

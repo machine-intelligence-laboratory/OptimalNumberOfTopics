@@ -120,6 +120,8 @@ class TestAcceptance:
         self.optimizer = TopicBankMethod(
             data=self.dataset,
             main_modality=self.main_modality,
+            min_df_rate=0.0,
+            max_df_rate=1.1,
             main_topic_score=_DummyTopicScore(),
             other_topic_scores=list(),
             max_num_models=5,

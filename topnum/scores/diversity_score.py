@@ -69,9 +69,9 @@ theory. Wiley-Interscience, New York, NY, USA, 1991.
 
 
 class DiversityScore(BaseCustomScore):
-    '''
+    """
     Higher is better
-    '''
+    """
     def __init__(
             self,
             name: str,

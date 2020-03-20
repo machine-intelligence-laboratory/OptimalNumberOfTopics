@@ -2,6 +2,7 @@ import logging
 import os
 import pandas as pd
 import uuid
+import warnings
 
 from topicnet.cooking_machine.models import TopicModel
 from tqdm import tqdm
@@ -146,13 +147,18 @@ class OptimizeScoresMethod(BaseSearchMethod):
         _logger.info('Finished searching!')
 
 
-def _summarize_models(result_models, score_names=None, restarts=None):
+def _summarize_models(
+        result_models: List[TopicModel],
+        score_names: List[str] = None,
+        restarts=None):
+
     detailed_result = dict()
     result = dict()
     result[_KEY_SCORE_RESULTS] = dict()
 
+    any_model = result_models[-1]
+
     if score_names is None:
-        any_model = result_models[-1]
         score_names = any_model.describe_scores().reset_index().score_name.values
 
     nums_topics = sorted(list({len(tm.topic_names) for tm in result_models}))
@@ -161,26 +167,52 @@ def _summarize_models(result_models, score_names=None, restarts=None):
         seeds = list({tm.seed for tm in result_models})
         restarts = "seed=" + pd.Series(seeds, name="restart_id").astype(str)
 
-    for score in score_names:
+    for score_name in score_names:
         score_df = pd.DataFrame(index=restarts, columns=nums_topics)
 
         for model in result_models:
-            score_values = model.scores[score][-1]
+            score_values = model.scores[score_name][-1]
 
             if isinstance(score_values, dict):
                 _logger.warning(
-                    f'Score "{score}" has values as dict. Skipping the score'
+                    f'Score "{score_name}" has values as dict. Skipping the score'
                 )
 
                 continue
 
             score_df.loc[f"seed={model.seed}", len(model.topic_names)] = score_values
 
-        detailed_result[score] = score_df.astype(float)
+        detailed_result[score_name] = score_df.astype(float)
 
-    for score in score_names:
-        score_df = detailed_result[score]
-        optimum_series = score_df.idxmin(axis=1)  # TODO: some scores need to be minimized, some - maximized
+    any_model_all_scores = dict(list(any_model._get_all_scores()))
+    any_model_all_given_score_names = list(any_model_all_scores.keys())
+
+    for score_name in score_names:
+        # last_value workaround stuff for some scores:
+        # score_name       = TopicKernel@main.average_coherence  # not score, strictly speaking
+        # given_score_name = TopicKernel@main                    # real score
+
+        given_score_name = next(
+            name for name in any_model_all_given_score_names
+            if score_name.startswith(name)
+        )
+
+        if hasattr(any_model_all_scores[given_score_name], '_higher_better'):
+            higher_better = any_model_all_scores[given_score_name]._higher_better
+        else:
+            warnings.warn(
+                f'Score "{score_name}" doesn\'t have "_higher_better" attribute!'
+                f' Assuming that higher_better = False'
+            )
+
+            higher_better = False
+
+        score_df = detailed_result[score_name]
+
+        if higher_better is True:
+            optimum_series = score_df.idxmax(axis=1)
+        else:
+            optimum_series = score_df.idxmin(axis=1)
 
         score_result = dict()
 
@@ -190,7 +222,7 @@ def _summarize_models(result_models, score_names=None, restarts=None):
         score_result[_KEY_VALUES.format('score')] = score_df.mean(axis=0).tolist()
         score_result[_KEY_VALUES.format('score') + _STD_KEY_SUFFIX] = score_df.std(axis=0).tolist()
 
-        result[_KEY_SCORE_RESULTS][score] = score_result
+        result[_KEY_SCORE_RESULTS][score_name] = score_result
 
     return result, detailed_result
 
