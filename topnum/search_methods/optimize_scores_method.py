@@ -202,10 +202,10 @@ def _summarize_models(
         else:
             warnings.warn(
                 f'Score "{score_name}" doesn\'t have "_higher_better" attribute!'
-                f' Assuming that higher_better = False'
+                f' Assuming that higher_better = True'
             )
 
-            higher_better = False
+            higher_better = True
 
         score_df = detailed_result[score_name]
 
