@@ -24,12 +24,19 @@ def default_train_func(
         dataset,
         num_topics=num_topics,
         seed=model_number,
-        scores=scores
     )
+
+    num_fit_iterations_with_scores = 1
 
     topic_model._fit(
         dataset.get_batch_vectorizer(),
-        num_iterations=num_fit_iterations
+        num_iterations=max(0, num_fit_iterations - num_fit_iterations_with_scores)
+    )
+    _fit_model_with_scores(
+        topic_model,
+        dataset,
+        scores,
+        num_fit_iterations=num_fit_iterations_with_scores
     )
 
     return topic_model
@@ -47,7 +54,6 @@ def specific_initial_phi_train_func(
         dataset,
         num_topics=num_topics,
         seed=model_number,
-        scores=scores
     )
 
     if initialize_phi_func is None:
@@ -56,9 +62,17 @@ def specific_initial_phi_train_func(
     initial_phi = initialize_phi_func(dataset, model_number, num_topics)
     init_phi_utils._copy_phi(topic_model._model, initial_phi)
 
+    num_fit_iterations_with_scores = 1
+
     topic_model._fit(
         dataset.get_batch_vectorizer(),
-        num_iterations=num_fit_iterations
+        num_iterations=max(0, num_fit_iterations - num_fit_iterations_with_scores)
+    )
+    _fit_model_with_scores(
+        topic_model,
+        dataset,
+        scores,
+        num_fit_iterations=num_fit_iterations_with_scores
     )
 
     return topic_model
@@ -75,7 +89,6 @@ def regularization_train_func(
         dataset,
         num_topics=num_topics,
         seed=model_number,
-        scores=scores
     )
 
     topic_model._model.regularizers.add(
@@ -90,8 +103,13 @@ def regularization_train_func(
             )
         )
 
-    first_num_fit_iterations = int(0.75 * num_fit_iterations)
-    second_num_fit_iterations = num_fit_iterations - first_num_fit_iterations
+    num_fit_iterations_with_scores = 1
+    first_num_fit_iterations = int(
+        0.75 * (num_fit_iterations - num_fit_iterations_with_scores)
+    )
+    second_num_fit_iterations = (
+        num_fit_iterations - num_fit_iterations_with_scores - first_num_fit_iterations
+    )
 
     topic_model._fit(
         dataset.get_batch_vectorizer(),
@@ -104,9 +122,16 @@ def regularization_train_func(
     topic_model._model.regularizers.add(
         artm.regularizers.SmoothSparsePhiRegularizer(tau=1e-5)
     )
+
     topic_model._fit(
         dataset.get_batch_vectorizer(),
-        num_iterations=second_num_fit_iterations
+        num_iterations=max(0, second_num_fit_iterations - num_fit_iterations_with_scores)
+    )
+    _fit_model_with_scores(
+        topic_model,
+        dataset,
+        scores,
+        num_fit_iterations=num_fit_iterations_with_scores
     )
 
     return topic_model
@@ -124,7 +149,6 @@ def background_topics_train_func(
         dataset,
         num_topics=num_topics + num_background_topics,
         seed=model_number,
-        scores=scores
     )
 
     for background_topic_name in list(topic_model.get_phi().columns)[-num_background_topics:]:
@@ -148,17 +172,29 @@ def background_topics_train_func(
         dataset,
         num_topics=num_topics,
         seed=model_number,
-        scores=scores
     )
 
-    for fit_iteration in range(num_fit_iterations):
+    num_fit_iterations_with_scores = 1
+    num_fit_iterations_without_scores = num_fit_iterations - num_fit_iterations_with_scores
+
+    for fit_iteration in range(num_fit_iterations_without_scores):
         init_phi_utils._copy_phi(
             topic_model._model, specific_topics_phi
         )
         topic_model._fit(
             dataset.get_batch_vectorizer(),
-            num_iterations=num_fit_iterations
+            num_iterations=1
         )
+
+    init_phi_utils._copy_phi(
+        topic_model._model, specific_topics_phi
+    )
+    _fit_model_with_scores(
+        topic_model,
+        dataset,
+        scores,
+        num_fit_iterations=num_fit_iterations_with_scores
+    )
 
     # TODO: not very safe here? (if cache_theta us True, Theta not updated here)
     init_phi_utils._copy_phi(
@@ -220,3 +256,19 @@ def _get_topic_model(
             score._attach(topic_model)
 
     return topic_model
+
+
+def _fit_model_with_scores(
+        topic_model: TopicModel,
+        dataset: Dataset,
+        scores: List[BaseScore] = None,
+        num_fit_iterations: int = 1):
+
+    if scores is not None:
+        for score in scores:
+            score._attach(topic_model)
+
+    topic_model._fit(
+        dataset.get_batch_vectorizer(),
+        num_iterations=num_fit_iterations
+    )
