@@ -103,6 +103,8 @@ class TopicBankMethod(BaseSearchMethod):
             bank_update: BankUpdateMethod = BankUpdateMethod.PROVIDE_NON_LINEARITY,
             child_parent_relationship_threshold: float = None,
             save_file_path: str = None,
+            save_bank: bool = False,
+            bank_folder_path: str = None,
             seed: int = None):
 
         super().__init__(
@@ -234,6 +236,9 @@ class TopicBankMethod(BaseSearchMethod):
 
         self._save_file_path = save_file_path
 
+        self._save_bank = save_bank
+        self._bank_folder_path = bank_folder_path
+
         self._random = np.random.RandomState(seed=seed)
 
         self._result = dict()
@@ -261,6 +266,8 @@ class TopicBankMethod(BaseSearchMethod):
         if os.path.isfile(self._save_file_path):
             os.remove(self._save_file_path)
 
+        # Seems the Topic Bank itself should stay untouched
+
     def search_for_optimum(self, text_collection: VowpalWabbitTextCollection = None) -> None:
         """
         Parameters
@@ -273,7 +280,10 @@ class TopicBankMethod(BaseSearchMethod):
         word2index = None
 
         documents_for_coherence = self._select_documents_for_topic_scores()
-        self._topic_bank = TopicBank()
+        self._topic_bank = TopicBank(
+            save=self._save_bank,
+            save_folder_path=self._bank_folder_path
+        )
 
         for i in tqdm.tqdm(range(self._max_num_models), total=self._max_num_models, file=sys.stdout):
             # TODO: stop when perplexity stabilizes

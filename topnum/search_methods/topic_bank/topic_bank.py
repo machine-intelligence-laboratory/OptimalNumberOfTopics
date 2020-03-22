@@ -1,5 +1,10 @@
+import dill
 import logging
+import json
+import os
 import pandas as pd
+import shutil
+import tempfile
 import warnings
 
 from typing import (
@@ -17,9 +22,27 @@ TokenType = Union[str, Tuple[str, str]]
 
 
 class TopicBank:
-    def __init__(self):
+    def __init__(
+            self,
+            save: bool = True,
+            save_folder_path: str = None,
+            num_changes_for_save: int = 1):
+
+        self._save = save
+
+        if save_folder_path is None:
+            self._path = tempfile.mkdtemp(suffix='TopicBank_')
+        elif os.path.isdir(save_folder_path):
+            self._path = save_folder_path
+            self.load()
+        else:
+            raise NotADirectoryError(f'save_folder_path: {save_folder_path}')
+
         self._topics: List[Union[Dict[TokenType, float], None]] = list()
         self._topic_scores: List[Union[Dict[str, float], None]] = list()
+
+        self._num_changes_for_save = num_changes_for_save
+        self._num_changes = 0
 
     @property
     def topics(self):
@@ -36,6 +59,8 @@ class TopicBank:
 
         self._topics.append(topic)
         self._topic_scores.append(scores)
+
+        self._save_if_its_time()
 
     def delete_topic(self, index: int) -> None:
         _logger.debug(
@@ -56,6 +81,8 @@ class TopicBank:
         self._topics[index] = None
         self._topic_scores[index] = None
 
+        self._save_if_its_time()
+
     def view_topics(self) -> pd.DataFrame:
         return pd.DataFrame.from_dict(
             {
@@ -73,7 +100,45 @@ class TopicBank:
         )
 
     def save(self):
-        raise NotImplementedError()
+        with open(os.path.join(self._path, 'topics.bin'), 'wb') as f:
+            f.write(dill.dumps(self._topics))
+        with open(os.path.join(self._path, 'topic_scores.bin'), 'wb') as f:
+            f.write(dill.dumps(self._topic_scores))
+
+    def load(self):
+        file_path = os.path.join(self._path, 'topics.bin')
+
+        if os.path.isfile(file_path):
+            with open(file_path, 'rb') as f:
+                self._topics = dill.loads(f.read())
+
+        file_path = os.path.join(self._path, 'topic_scores.bin')
+
+        if os.path.isfile(file_path):
+            with open(file_path, 'rb') as f:
+                self._topic_scores = dill.loads(f.read())
 
     def clear(self):
-        raise NotImplementedError()
+        del self._topics
+        del self._topic_scores
+
+        self._topics = list()
+        self._topic_scores = list()
+
+        self.save()
+
+    def eliminate(self) -> None:
+        self.clear()
+
+        if os.path.isdir(self._path):
+            shutil.rmtree(self._path)
+            self._path = None
+
+    def _save_if_its_time(self):
+        if not self._save:
+            return
+
+        self._num_changes += 1
+
+        if self._num_changes % self._num_changes_for_save == 0:
+            self.save()

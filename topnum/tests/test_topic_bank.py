@@ -91,6 +91,7 @@ class TestSearchMethodTopicBank:
 
     def teardown_method(self):
         if self.optimizer is not None:
+            self.optimizer._topic_bank.eliminate()
             self.optimizer.clear()
 
     @classmethod
@@ -241,7 +242,8 @@ class TestSearchMethodTopicBank:
             num_fit_iterations=5,
             train_funcs=train_func,
             topic_score_threshold_percentile=2,
-            bank_update=bank_update
+            bank_update=bank_update,
+            save_bank=True,
         )
 
         self.optimizer.search_for_optimum(self.text_collection)
