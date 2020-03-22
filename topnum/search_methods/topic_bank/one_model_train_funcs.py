@@ -177,17 +177,23 @@ def background_topics_train_func(
     num_fit_iterations_with_scores = 1
     num_fit_iterations_without_scores = num_fit_iterations - num_fit_iterations_with_scores
 
+    phi_ref = None
+
     for fit_iteration in range(num_fit_iterations_without_scores):
-        init_phi_utils._copy_phi(
-            topic_model._model, specific_topics_phi
+        phi_ref = init_phi_utils._copy_phi(
+            topic_model._model,
+            specific_topics_phi,
+            phi_ref=phi_ref
         )
         topic_model._fit(
             dataset.get_batch_vectorizer(),
             num_iterations=1
         )
 
-    init_phi_utils._copy_phi(
-        topic_model._model, specific_topics_phi
+    phi_ref = init_phi_utils._copy_phi(
+        topic_model._model,
+        specific_topics_phi,
+        phi_ref=phi_ref
     )
     _fit_model_with_scores(
         topic_model,
@@ -198,7 +204,9 @@ def background_topics_train_func(
 
     # TODO: not very safe here? (if cache_theta us True, Theta not updated here)
     init_phi_utils._copy_phi(
-        topic_model._model, specific_topics_phi
+        topic_model._model,
+        specific_topics_phi,
+        phi_ref=phi_ref
     )
 
     return topic_model
