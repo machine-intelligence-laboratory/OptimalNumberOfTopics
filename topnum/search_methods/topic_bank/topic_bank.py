@@ -1,6 +1,5 @@
 import dill
 import logging
-import json
 import os
 import pandas as pd
 import shutil
@@ -100,6 +99,7 @@ class TopicBank:
         )
 
     def save(self):
+        # TODO: maybe too slow if bank is big and num_changes is one!
         with open(os.path.join(self._path, 'topics.bin'), 'wb') as f:
             f.write(dill.dumps(self._topics))
         with open(os.path.join(self._path, 'topic_scores.bin'), 'wb') as f:
