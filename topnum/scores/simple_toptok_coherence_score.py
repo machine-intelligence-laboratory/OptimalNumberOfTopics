@@ -32,7 +32,7 @@ class SimpleTopTokensCoherenceScore(BaseTopicScore):
             modalities: Union[str, List[str], None] = None,
             topics: List[str] = None,
             num_top_tokens: int = 10,
-            kernel: bool = False,
+            kernel: bool = True,
             average: str = AVERAGE_TYPE_MEAN,
             active_topic_threshold: bool = None):
         # TODO: expand docstring
