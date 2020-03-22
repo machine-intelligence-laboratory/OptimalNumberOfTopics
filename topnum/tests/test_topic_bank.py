@@ -244,6 +244,7 @@ class TestSearchMethodTopicBank:
             topic_score_threshold_percentile=2,
             bank_update=bank_update,
             save_bank=True,
+            save_model_topics=True,
         )
 
         self.optimizer.search_for_optimum(self.text_collection)

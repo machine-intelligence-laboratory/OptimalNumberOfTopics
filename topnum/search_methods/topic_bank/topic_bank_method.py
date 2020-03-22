@@ -104,6 +104,7 @@ class TopicBankMethod(BaseSearchMethod):
             child_parent_relationship_threshold: float = None,
             save_file_path: str = None,
             save_bank: bool = False,
+            save_model_topics: bool = False,
             bank_folder_path: str = None,
             seed: int = None):
 
@@ -237,6 +238,7 @@ class TopicBankMethod(BaseSearchMethod):
         self._save_file_path = save_file_path
 
         self._save_bank = save_bank
+        self._save_model_topics = save_model_topics
         self._bank_folder_path = bank_folder_path
 
         self._random = np.random.RandomState(seed=seed)
@@ -285,15 +287,15 @@ class TopicBankMethod(BaseSearchMethod):
             save_folder_path=self._bank_folder_path
         )
 
-        for i in tqdm.tqdm(range(self._max_num_models), total=self._max_num_models, file=sys.stdout):
+        for model_number in tqdm.tqdm(range(self._max_num_models), total=self._max_num_models, file=sys.stdout):
             # TODO: stop when perplexity stabilizes
 
-            _logger.info(f'Building topic model number {i}...')
+            _logger.info(f'Building topic model number {model_number}...')
 
-            topic_model = self._train_func[i](
+            topic_model = self._train_func[model_number](
                 dataset=self._dataset,
-                model_number=i,
-                num_topics=self._one_model_num_topics[i],
+                model_number=model_number,
+                num_topics=self._one_model_num_topics[model_number],
                 num_fit_iterations=self._num_fit_iterations,
                 scores=self._all_model_scores
             )
@@ -372,8 +374,11 @@ class TopicBankMethod(BaseSearchMethod):
             for topic_index, topic_name in enumerate(topic_model.get_phi().columns):
                 topic_scores = dict()
 
-                v = topic_model.get_phi()[topic_name].values
-                topic_scores[_KEY_TOPIC_SCORE_KERNEL_SIZE] = len(v[v > 1.0 / topic_model.get_phi().shape[0]])
+                topic_word_prob_values = topic_model.get_phi()[topic_name].values
+                num_words = topic_model.get_phi().shape[0]
+                topic_scores[_KEY_TOPIC_SCORE_KERNEL_SIZE] = len(
+                    topic_word_prob_values[topic_word_prob_values > 1.0 / num_words]
+                )
 
                 for score_name in raw_topic_scores:
                     topic_scores[score_name] = raw_topic_scores[score_name][topic_name]
@@ -397,17 +402,17 @@ class TopicBankMethod(BaseSearchMethod):
                         continue
 
                 if len(self._topic_bank.topics) == 0:
-                    d = self._MINIMUM_TOPIC_DISTANCE
+                    distance_to_nearest = self._MINIMUM_TOPIC_DISTANCE
                 else:
-                    d = (
+                    distance_to_nearest = (
                         min(self._jaccard_distance(phi.loc[:, topic_name].to_dict(), bt)
                             for bt in self._topic_bank.topics)
                     )
 
-                    if d < self._distance_threshold:
+                    if distance_to_nearest < self._distance_threshold:
                         continue
 
-                topic_scores[_KEY_TOPIC_SCORE_DISTANCE_TO_NEAREST] = d
+                topic_scores[_KEY_TOPIC_SCORE_DISTANCE_TO_NEAREST] = distance_to_nearest
 
                 self._topic_bank.add_topic(phi.loc[:, topic_name].to_dict(), topic_scores)
 
@@ -419,6 +424,14 @@ class TopicBankMethod(BaseSearchMethod):
             self._result[_KEY_BANK_TOPIC_SCORES] = self._topic_bank.topic_scores  # TODO: append
 
             self.save()
+
+            if self._save_model_topics:
+                self._topic_bank.save_model_topics(
+                    name=f'model_{model_number:0{int(np.log10(self._max_num_models + 1))}}',
+                    model=topic_model,
+                    topic_scores=model_topic_current_scores,
+                    phi=phi,
+                )
 
             _logger.info('Scoring bank model...')
 
@@ -459,12 +472,12 @@ class TopicBankMethod(BaseSearchMethod):
             differences = list()
             max_num_last_values = 5
 
-            i = len(self._result[_KEY_NUM_BANK_TOPICS]) - 1
+            model_number = len(self._result[_KEY_NUM_BANK_TOPICS]) - 1
 
-            while i > 0 and len(differences) < max_num_last_values:
+            while model_number > 0 and len(differences) < max_num_last_values:
                 differences.append(abs(
-                    self._result[_KEY_NUM_BANK_TOPICS][-i] -
-                    self._result[_KEY_NUM_BANK_TOPICS][-i - 1]
+                    self._result[_KEY_NUM_BANK_TOPICS][-model_number] -
+                    self._result[_KEY_NUM_BANK_TOPICS][-model_number - 1]
                 ))
 
             self._result[_KEY_OPTIMUM + _STD_KEY_SUFFIX] = float(np.sum(differences))

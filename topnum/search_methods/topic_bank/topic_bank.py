@@ -6,6 +6,7 @@ import shutil
 import tempfile
 import warnings
 
+from topicnet.cooking_machine.models import TopicModel
 from typing import (
     Dict,
     List,
@@ -44,11 +45,11 @@ class TopicBank:
         self._num_changes = 0
 
     @property
-    def topics(self):
+    def topics(self) -> List[Union[Dict[TokenType, float], None]]:
         return [t for t in self._topics if t is not None]
 
     @property
-    def topic_scores(self):
+    def topic_scores(self) -> List[Union[Dict[str, float], None]]:
         return [s for s in self._topic_scores if s is not None]
 
     def add_topic(
@@ -98,14 +99,33 @@ class TopicBank:
             }
         )
 
-    def save(self):
+    def save_model_topics(
+            self,
+            name: str,
+            model: TopicModel,
+            topic_scores: List[Dict[str, float]] = None,
+            phi: pd.DataFrame = None) -> None:
+
+        if phi is None:
+            phi = model.get_phi()
+
+        with open(os.path.join(self._path, f'{name}__phi.bin'), 'wb') as f:
+            f.write(dill.dumps(phi))
+
+        if topic_scores is None:
+            topic_scores = dict()
+
+        with open(os.path.join(self._path, f'{name}__topic_scores.bin'), 'wb') as f:
+            f.write(dill.dumps(topic_scores))
+
+    def save(self) -> None:
         # TODO: maybe too slow if bank is big and num_changes is one!
         with open(os.path.join(self._path, 'topics.bin'), 'wb') as f:
             f.write(dill.dumps(self._topics))
         with open(os.path.join(self._path, 'topic_scores.bin'), 'wb') as f:
             f.write(dill.dumps(self._topic_scores))
 
-    def load(self):
+    def load(self) -> None:
         file_path = os.path.join(self._path, 'topics.bin')
 
         if os.path.isfile(file_path):
@@ -118,7 +138,7 @@ class TopicBank:
             with open(file_path, 'rb') as f:
                 self._topic_scores = dill.loads(f.read())
 
-    def clear(self):
+    def clear(self) -> None:
         del self._topics
         del self._topic_scores
 
@@ -134,7 +154,7 @@ class TopicBank:
             shutil.rmtree(self._path)
             self._path = None
 
-    def _save_if_its_time(self):
+    def _save_if_its_time(self) -> None:
         if not self._save:
             return
 
