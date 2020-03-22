@@ -89,3 +89,5 @@ def _safe_copy_phi(
     for _ in range(small_num_fit_iterations):
         phi_ref = _copy_phi(model, phi, phi_ref=phi_ref)
         model.fit_offline(dataset.get_batch_vectorizer(), 1)
+
+    return phi_ref
