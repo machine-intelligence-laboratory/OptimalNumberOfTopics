@@ -126,13 +126,19 @@ class OptimizeScoresMethod(BaseSearchMethod):
                     model.model_id
                 ]
 
+                model._fit(
+                    dataset_trainable=dataset_trainable,
+                    num_iterations=self._num_fit_iterations - 1,
+                )
+
                 for score in self._scores:
                     score._attach(model)
 
                 model._fit(
                     dataset_trainable=dataset_trainable,
-                    num_iterations=self._num_fit_iterations,
+                    num_iterations=1,
                 )
+
                 model.save(model_save_path=os.path.join(*path_components))
 
                 del model
