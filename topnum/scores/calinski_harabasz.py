@@ -1,4 +1,5 @@
 import logging
+import dill
 
 from sklearn.metrics import calinski_harabasz_score
 from topicnet.cooking_machine import Dataset
@@ -35,10 +36,10 @@ class _CalinskiHarabaszScore(BaseTopicNetScore):
     def __init__(self, validation_dataset):
         super().__init__()
 
-        self.validation_dataset = validation_dataset
+        self._dataset = validation_dataset
 
     def call(self, model: TopicModel):
-        theta = model.get_theta(dataset=self.validation_dataset)
+        theta = model.get_theta(dataset=self._dataset)
 
         theta.columns = range(len(theta.columns))
         objects_clusters = theta.values.argmax(axis=0)
@@ -52,3 +53,38 @@ class _CalinskiHarabaszScore(BaseTopicNetScore):
             return float('nan')
 
         return calinski_harabasz_score(theta.T.values, objects_clusters)
+
+    # TODO: this piece is copy-pastd among three different scores
+    def save(self, path: str) -> None:
+        dataset = self._dataset
+        self._dataset = None
+
+        with open(path, 'wb') as f:
+            dill.dump(self, f)
+
+        self._dataset = dataset
+
+    @classmethod
+    def load(cls, path: str):
+        """
+
+        Parameters
+        ----------
+        path
+
+        Returns
+        -------
+        an instance of this class
+
+        """
+
+        with open(path, 'rb') as f:
+            score = dill.load(f)
+
+        score._dataset = Dataset(
+            score._dataset_file_path,
+            internals_folder_path=score._dataset_internals_folder_path,
+            keep_in_memory=score._keep_dataset_in_memory,
+        )
+
+        return score
