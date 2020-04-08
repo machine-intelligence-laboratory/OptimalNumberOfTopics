@@ -84,6 +84,9 @@ class _SilhouetteScore(BaseTopicNetScore):
         self.sample_size = sample_size
         self.batches_number = batches_number
         self._dataset = validation_dataset
+        self._keep_dataset_in_memory = validation_dataset._small_data
+        self._dataset_internals_folder_path = validation_dataset._internals_folder_path
+        self._dataset_file_path = validation_dataset._data_path
 
     def call(self, model: TopicModel):
         theta = model.get_theta(dataset=self._dataset)
