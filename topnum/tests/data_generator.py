@@ -18,7 +18,7 @@ class TestDataGenerator:
         self.num_documents = 10
         self.num_words_in_document = 100
         self.vocabulary = None
-        self.text_collection = None
+        self.text_collection: VowpalWabbitTextCollection = None
 
     def generate(self):
         self.text_collection_folder = tempfile.mkdtemp()
