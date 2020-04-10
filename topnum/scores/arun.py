@@ -1,5 +1,6 @@
 import numpy as np
 import scipy.stats as stats
+import dill
 
 
 from topicnet.cooking_machine import Dataset
@@ -99,14 +100,18 @@ class _SpectralDivergenceScore(BaseTopicNetScore):
     def __init__(self, validation_dataset, modalities):
         super().__init__()
 
-        self.validation_dataset = validation_dataset
+        self._dataset = validation_dataset
         document_length_stats = compute_document_details(validation_dataset, modalities)
 
         self.document_lengths = sum(document_length_stats[col_total_len(m)] for m in modalities)
         self.modalities = modalities
+        self._keep_dataset_in_memory = validation_dataset._small_data
+        self._dataset_internals_folder_path = validation_dataset._internals_folder_path
+        self._dataset_file_path = validation_dataset._data_path
+
 
     def call(self, model: TopicModel):
-        theta = model.get_theta(dataset=self.validation_dataset)
+        theta = model.get_theta(dataset=self._dataset)
         phi = model.get_phi(class_ids=self.modalities)
 
         c_m1 = np.linalg.svd(phi, compute_uv=False)
@@ -115,3 +120,38 @@ class _SpectralDivergenceScore(BaseTopicNetScore):
 
         # we do not need to normalize these vectors
         return _symmetric_kl(c_m1, c_m2)
+
+    # TODO: this piece is copy-pastd among three different scores
+    def save(self, path: str) -> None:
+        dataset = self._dataset
+        self._dataset = None
+
+        with open(path, 'wb') as f:
+            dill.dump(self, f)
+
+        self._dataset = dataset
+
+    @classmethod
+    def load(cls, path: str):
+        """
+
+        Parameters
+        ----------
+        path
+
+        Returns
+        -------
+        an instance of this class
+
+        """
+
+        with open(path, 'rb') as f:
+            score = dill.load(f)
+
+        score._dataset = Dataset(
+            score._dataset_file_path,
+            internals_folder_path=score._dataset_internals_folder_path,
+            keep_in_memory=score._keep_dataset_in_memory,
+        )
+
+        return score
