@@ -106,7 +106,8 @@ class TopicBankMethod(BaseSearchMethod):
             save_bank: bool = False,
             save_model_topics: bool = False,
             bank_folder_path: str = None,
-            seed: int = None):
+            seed: int = None,
+            verbose: bool = False):
 
         super().__init__(
             min_num_topics=DEFAULT_MIN_NUM_TOPICS,  # not needed
@@ -240,6 +241,8 @@ class TopicBankMethod(BaseSearchMethod):
         self._save_model_topics = save_model_topics
         self._bank_folder_path = bank_folder_path
 
+        self._verbose = verbose
+
         self._random = np.random.RandomState(seed=seed)
 
         self._result = dict()
@@ -286,8 +289,14 @@ class TopicBankMethod(BaseSearchMethod):
             save_folder_path=self._bank_folder_path
         )
 
-        for model_number in tqdm.tqdm(
-                range(self._max_num_models), total=self._max_num_models, file=sys.stdout):
+        if not self._verbose:
+            model_number_range = range(self._max_num_models)
+        else:
+            model_number_range = tqdm.tqdm(
+                range(self._max_num_models), total=self._max_num_models, file=sys.stdout
+            )
+
+        for model_number in model_number_range:
             # TODO: stop when perplexity stabilizes
 
             _logger.info(f'Building topic model number {model_number}...')
@@ -710,7 +719,14 @@ class TopicBankMethod(BaseSearchMethod):
 
         score_values = dict()
 
-        for score in self._all_topic_scores:
+        if not self._verbose:
+            all_topic_scores_range = self._all_topic_scores
+        else:
+            all_topic_scores_range = tqdm.tqdm(
+                self._all_topic_scores, total=len(self._all_topic_scores), file=sys.stdout
+            )
+
+        for score in all_topic_scores_range:
             score_name = score.name
             score_values[score_name] = score.compute(topic_model, documents=documents)
 
