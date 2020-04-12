@@ -1,6 +1,8 @@
 import logging
 import numpy as np
 import pandas as pd
+import sys
+import tqdm
 
 from collections import defaultdict
 from enum import (
@@ -91,7 +93,8 @@ class _BaseCoherenceScore(TopicNetBaseScore):
             documents: List[str] = None,
             text_type: TextType = TextType.VW_TEXT,
             word_topic_relatedness: WordTopicRelatednessType = WordTopicRelatednessType.PWT,
-            specificity_estimation: SpecificityEstimationMethod = SpecificityEstimationMethod.NONE
+            specificity_estimation: SpecificityEstimationMethod = SpecificityEstimationMethod.NONE,
+            verbose: bool = False,
     ):
         super().__init__()
 
@@ -118,6 +121,8 @@ class _BaseCoherenceScore(TopicNetBaseScore):
         self._text_type = text_type
         self._word_topic_relatedness = word_topic_relatedness
         self._specificity_estimation_method = specificity_estimation
+
+        self._verbose = verbose
 
         if documents is not None:
             self._documents = documents
@@ -164,7 +169,14 @@ class _BaseCoherenceScore(TopicNetBaseScore):
         topic_document_coherences = np.zeros((len(topics), len(documents)))
         document_indices_with_topic_coherence = defaultdict(list)
 
-        for document_index, document in enumerate(documents):
+        if not self._verbose:
+            document_enumeration = enumerate(documents)
+        else:
+            document_enumeration = tqdm.tqdm(
+                enumerate(documents), total=len(documents), file=sys.stdout
+            )
+
+        for document_index, document in document_enumeration:
             for topic_index, topic in enumerate(topics):
                 # TODO: read document text only once for all topics
                 topic_coherence = self._compute_coherence(
