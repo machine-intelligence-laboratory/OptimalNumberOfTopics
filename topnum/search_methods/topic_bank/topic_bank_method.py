@@ -287,7 +287,8 @@ class TopicBankMethod(BaseSearchMethod):
             save_folder_path=self._bank_folder_path
         )
 
-        for model_number in tqdm.tqdm(range(self._max_num_models), total=self._max_num_models, file=sys.stdout):
+        for model_number in tqdm.tqdm(
+                range(self._max_num_models), total=self._max_num_models, file=sys.stdout):
             # TODO: stop when perplexity stabilizes
 
             _logger.info(f'Building topic model number {model_number}...')
@@ -431,6 +432,7 @@ class TopicBankMethod(BaseSearchMethod):
                     model=topic_model,
                     topic_scores=model_topic_current_scores,
                     phi=phi,
+                    dataset=self._dataset,
                 )
 
             _logger.info('Scoring bank model...')

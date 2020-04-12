@@ -6,13 +6,15 @@ import shutil
 import tempfile
 import warnings
 
-from topicnet.cooking_machine.models import TopicModel
 from typing import (
     Dict,
     List,
     Tuple,
     Union
 )
+
+from topicnet.cooking_machine import Dataset
+from topicnet.cooking_machine.models import TopicModel
 
 
 _logger = logging.getLogger()
@@ -31,7 +33,7 @@ class TopicBank:
         self._save = save
 
         if save_folder_path is None:
-            self._path = tempfile.mkdtemp(suffix='TopicBank_')
+            self._path = tempfile.mkdtemp(prefix='TopicBank__')
         elif os.path.isdir(save_folder_path):
             self._path = save_folder_path
             self.load()
@@ -104,13 +106,22 @@ class TopicBank:
             name: str,
             model: TopicModel,
             topic_scores: List[Dict[str, float]] = None,
-            phi: pd.DataFrame = None) -> None:
+            phi: pd.DataFrame = None,
+            dataset: Dataset = None) -> None:
 
         if phi is None:
             phi = model.get_phi()
 
         with open(os.path.join(self._path, f'{name}__phi.bin'), 'wb') as f:
             f.write(dill.dumps(phi))
+
+        try:
+            theta = model.get_theta(dataset=dataset)
+        except ValueError:
+            pass
+        else:
+            with open(os.path.join(self._path, f'{name}__theta.bin'), 'wb') as f:
+                f.write(dill.dumps(theta))
 
         if topic_scores is None:
             topic_scores = dict()
