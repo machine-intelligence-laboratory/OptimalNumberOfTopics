@@ -1,4 +1,3 @@
-import copy
 import itertools
 import numpy as np
 import pandas as pd
@@ -93,7 +92,7 @@ class SophisticatedTopTokensCoherenceScore(BaseTopicScore):
         if word_cooccurrences is None:
             self._word_cooccurrences = None
         else:
-            self._word_cooccurrences = copy.deepcopy(word_cooccurrences)
+            self._word_cooccurrences = word_cooccurrences
 
         self._num_top_words = num_top_words
         self._window = window
@@ -209,6 +208,8 @@ class _TopTokensCoherenceScore(_BaseCoherenceScore):
         document_words = self._get_words(document)
         top_words = self._get_top_words(topic, word_topic_relatednesses)
         top_words_cooccurrences = self._get_top_words_cooccurrences(top_words, document_words)
+
+        print('LEN of COOCS: ', len(top_words_cooccurrences))
 
         return self._compute_newman_coherence(
             top_words,
