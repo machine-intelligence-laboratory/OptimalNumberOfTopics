@@ -209,8 +209,6 @@ class _TopTokensCoherenceScore(_BaseCoherenceScore):
         top_words = self._get_top_words(topic, word_topic_relatednesses)
         top_words_cooccurrences = self._get_top_words_cooccurrences(top_words, document_words)
 
-        print('LEN of COOCS: ', len(top_words_cooccurrences))
-
         return self._compute_newman_coherence(
             top_words,
             top_words_cooccurrences,
