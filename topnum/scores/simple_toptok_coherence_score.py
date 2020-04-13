@@ -1,5 +1,6 @@
 import logging
 import numpy as np
+import warnings
 
 from itertools import combinations
 from topicnet.cooking_machine.dataset import Dataset
@@ -90,7 +91,7 @@ class SimpleTopTokensCoherenceScore(BaseTopicScore):
         self._average = average
         self._active_topic_threshold = active_topic_threshold
 
-        self._score = self._initialize()
+        self._score: _TopTokensCoherenceScore = self._initialize()
 
     def _initialize(self) -> BaseTopicNetScore:
         if isinstance(self._data, Dataset):
@@ -107,6 +108,20 @@ class SimpleTopTokensCoherenceScore(BaseTopicScore):
             average=self._average,
             active_topic_threshold=self._active_topic_threshold
         )
+
+    def compute(
+            self,
+            model: TopicModel,  # not BaseModel, because need access to ._model
+            topics: List[str] = None,
+            documents: List[str] = None) -> Dict[str, float]:
+
+        if documents is not None:
+            warnings.warn(
+                'The parameter `documents` is not used by SimpleTopTokensCoherenceScore'
+                ' (it is kept for compatibility purposes)'
+            )
+
+        return self._score.compute(model, topics, documents)
 
 
 class _TopTokensCoherenceScore(BaseTopicNetScore):
@@ -148,10 +163,14 @@ class _TopTokensCoherenceScore(BaseTopicNetScore):
 
     def compute(
             self,
-            model: TopicModel) -> Dict[str, float]:  # not BaseModel, because need access to ._model
+            model: TopicModel,
+            topics: List[str] = None,
+            documents: List[str] = None) -> Dict[str, float]:
 
         phi = model.get_phi()
 
+        if topics is not None:
+            pass
         if self._topics is not None:
             topics = self._topics
         else:
