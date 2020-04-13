@@ -312,8 +312,8 @@ class _TopTokensCoherenceScore(_BaseCoherenceScore):
             top_words: List[WordType]) -> None:
 
         for w, u in itertools.combinations(top_words, 2):
-            coocs_num_for_pair = cooccurrences[(w, u)]
-            coocs_num_for_reversed_pair = cooccurrences[(u, w)]
+            coocs_num_for_pair = cooccurrences.get((w, u), 0)
+            coocs_num_for_reversed_pair = cooccurrences.get((u, w), 0)
 
             cooccurrences[(w, u)] = coocs_num_for_pair + coocs_num_for_reversed_pair
             cooccurrences[(u, w)] = cooccurrences[(w, u)]
