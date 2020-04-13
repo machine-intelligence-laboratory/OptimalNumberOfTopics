@@ -158,7 +158,7 @@ class _TopTokensCoherenceScore(_BaseCoherenceScore):
         else:
             first_key, first_value = next(iter(word_cooccurrences.items()))
 
-            if not isinstance(first_value, int) or not isinstance(first_value, float):
+            if not isinstance(first_value, int) and not isinstance(first_value, float):
                 raise TypeError(
                     f'Expect int or float as values in cooccurrences dictionary,'
                     f' got "{first_value}"'
