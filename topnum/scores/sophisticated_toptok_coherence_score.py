@@ -90,7 +90,7 @@ class SophisticatedTopTokensCoherenceScore(BaseTopicScore):
         self._word_topic_relatedness = word_topic_relatedness
         self._specificity_estimation = specificity_estimation
 
-        if self._word_cooccurrences is None:
+        if word_cooccurrences is None:
             self._word_cooccurrences = None
         else:
             self._word_cooccurrences = copy.deepcopy(word_cooccurrences)
