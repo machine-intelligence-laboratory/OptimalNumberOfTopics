@@ -89,6 +89,7 @@ class TopicBankMethod(BaseSearchMethod):
             other_topic_scores: List[BaseTopicScore] = None,
             stop_bank_score: BaseScore = None,
             other_scores: List[BaseScore] = None,
+            documents: List[str] = None,
             documents_fraction_for_topic_scores: float = 0.2,
             max_num_documents_for_topic_scores: int = 100,
             max_num_models: int = 100,
@@ -182,6 +183,7 @@ class TopicBankMethod(BaseSearchMethod):
 
         self._all_model_scores = [self._stop_bank_score] + self._other_scores
 
+        self._documents = documents
         self._documents_fraction_for_topic_scores = documents_fraction_for_topic_scores
         self._max_num_documents_for_topic_scores = max_num_documents_for_topic_scores
         self._max_num_models = max_num_models
@@ -493,6 +495,9 @@ class TopicBankMethod(BaseSearchMethod):
             self._result[_KEY_OPTIMUM + _STD_KEY_SUFFIX] = float(np.sum(differences))
 
     def _select_documents_for_topic_scores(self) -> List[str]:
+        if self._documents is not None:
+            return self._documents
+
         document_ids = list(self._dataset._data.index)
         num_documents = len(document_ids)
 
@@ -504,9 +509,9 @@ class TopicBankMethod(BaseSearchMethod):
             ),
             replace=False
         )
-        selected_documents = list(selected_documents)
+        self._documents = list(selected_documents)
 
-        return selected_documents
+        return self._documents
 
     def _extract_hierarchical_relationship(
             self,
