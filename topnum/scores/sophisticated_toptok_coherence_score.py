@@ -1,3 +1,4 @@
+import copy
 import itertools
 import numpy as np
 import pandas as pd
@@ -89,7 +90,11 @@ class SophisticatedTopTokensCoherenceScore(BaseTopicScore):
         self._word_topic_relatedness = word_topic_relatedness
         self._specificity_estimation = specificity_estimation
 
-        self._word_cooccurrences = word_cooccurrences
+        if self._word_cooccurrences is None:
+            self._word_cooccurrences = None
+        else:
+            self._word_cooccurrences = copy.deepcopy(word_cooccurrences)
+
         self._num_top_words = num_top_words
         self._window = window
 
@@ -257,10 +262,10 @@ class _TopTokensCoherenceScore(_BaseCoherenceScore):
             top_words: List[WordType],
             document_words: List[WordType]) -> Dict[Tuple[WordType, WordType], float]:
 
-        cooccurrences = defaultdict(int)
+        cooccurrences = defaultdict(float)
 
         if self._word_cooccurrences is not None:
-            cooccurrences = self._word_cooccurrences
+            cooccurrences.update(self._word_cooccurrences)
             self._remove_discrepancies_for_reversed_pairs(cooccurrences, top_words)
 
             return cooccurrences
