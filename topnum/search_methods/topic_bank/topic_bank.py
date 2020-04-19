@@ -36,7 +36,7 @@ class TopicBank:
             self._path = tempfile.mkdtemp(prefix='TopicBank__')
         elif os.path.isdir(save_folder_path):
             self._path = save_folder_path
-            self.load()
+            self._load()
         else:
             raise NotADirectoryError(f'save_folder_path: {save_folder_path}')
 
@@ -136,7 +136,7 @@ class TopicBank:
         with open(os.path.join(self._path, 'topic_scores.bin'), 'wb') as f:
             f.write(dill.dumps(self._topic_scores))
 
-    def load(self) -> None:
+    def _load(self) -> None:
         file_path = os.path.join(self._path, 'topics.bin')
 
         if os.path.isfile(file_path):

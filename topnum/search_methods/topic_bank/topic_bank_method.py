@@ -232,7 +232,9 @@ class TopicBankMethod(BaseSearchMethod):
                 raise NotADirectoryError(f'Directory not found "{save_file_path}"')
 
             if os.path.isfile(save_file_path):
-                warnings.warn(f'File "{save_file_path}" already exists! Overwriting')
+                warnings.warn(f'File "{save_file_path}" already exists. Loading')
+
+                self._load()
         else:
             file_descriptor, save_file_path = tempfile.mkstemp(prefix='topic_bank_result__')
             os.close(file_descriptor)
@@ -267,6 +269,11 @@ class TopicBankMethod(BaseSearchMethod):
     def save(self) -> None:
         with open(self._save_file_path, 'w') as f:
             f.write(json.dumps(self._result))
+
+    def _load(self) -> None:
+        if os.path.isfile(self._save_file_path):
+            with open(self._save_file_path, 'rb') as f:
+                self._result = json.loads(f.read())
 
     def clear(self) -> None:
         if os.path.isfile(self._save_file_path):
