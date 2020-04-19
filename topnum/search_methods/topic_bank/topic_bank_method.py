@@ -229,17 +229,17 @@ class TopicBankMethod(BaseSearchMethod):
         self._bank_update = bank_update
         self._child_parent_relationship_threshold = child_parent_relationship_threshold
 
-        if save_file_path is not None:
-            if not os.path.isdir(os.path.dirname(save_file_path)):
-                raise NotADirectoryError(f'Directory not found "{save_file_path}"')
+        need_to_load_results = False
 
-            if os.path.isfile(save_file_path):
-                warnings.warn(f'File "{save_file_path}" already exists. Loading')
-
-                self._load(save_file_path)
-        else:
+        if save_file_path is None:
             file_descriptor, save_file_path = tempfile.mkstemp(prefix='topic_bank_result__')
             os.close(file_descriptor)
+        elif not os.path.isdir(os.path.dirname(save_file_path)):
+            raise NotADirectoryError(f'Directory not found "{save_file_path}"')
+        elif os.path.isfile(save_file_path):
+            need_to_load_results = True
+        else:
+            assert False
 
         self._save_file_path = save_file_path
 
@@ -253,16 +253,24 @@ class TopicBankMethod(BaseSearchMethod):
 
         self._result = dict()
 
-        self._result[_KEY_OPTIMUM] = None
-        self._result[_KEY_OPTIMUM + _STD_KEY_SUFFIX] = None
-        self._result[_KEY_BANK_SCORES] = list()
-        self._result[_KEY_BANK_TOPIC_SCORES] = list()
-        self._result[_KEY_MODEL_SCORES] = list()
-        self._result[_KEY_MODEL_TOPIC_SCORES] = list()
-        self._result[_KEY_NUM_BANK_TOPICS] = list()
-        self._result[_KEY_NUM_MODEL_TOPICS] = list()
+        if need_to_load_results:
+            warnings.warn(f'File "{save_file_path}" already exists. Loading')
 
-        self._topic_bank: TopicBank = None
+            self._load()
+        else:
+            self._result[_KEY_OPTIMUM] = None
+            self._result[_KEY_OPTIMUM + _STD_KEY_SUFFIX] = None
+            self._result[_KEY_BANK_SCORES] = list()
+            self._result[_KEY_BANK_TOPIC_SCORES] = list()
+            self._result[_KEY_MODEL_SCORES] = list()
+            self._result[_KEY_MODEL_TOPIC_SCORES] = list()
+            self._result[_KEY_NUM_BANK_TOPICS] = list()
+            self._result[_KEY_NUM_MODEL_TOPICS] = list()
+
+        self._topic_bank = TopicBank(
+            save=self._save_bank,
+            save_folder_path=self._bank_folder_path
+        )
 
     @property
     def save_path(self) -> str:
@@ -272,8 +280,8 @@ class TopicBankMethod(BaseSearchMethod):
         with open(self._save_file_path, 'w') as f:
             f.write(json.dumps(self._result))
 
-    def _load(self, save_file_path: str) -> None:
-        with open(save_file_path, 'rb') as f:
+    def _load(self) -> None:
+        with open(self._save_file_path, 'rb') as f:
             self._result = json.loads(f.read())
 
     def clear(self) -> None:
@@ -294,10 +302,6 @@ class TopicBankMethod(BaseSearchMethod):
         word2index = None
 
         documents_for_coherence = self._select_documents_for_topic_scores()
-        self._topic_bank = TopicBank(
-            save=self._save_bank,
-            save_folder_path=self._bank_folder_path
-        )
 
         if not self._verbose:
             model_number_range = range(self._start_model_number, self._max_num_models)
