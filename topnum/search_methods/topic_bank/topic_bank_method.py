@@ -239,7 +239,7 @@ class TopicBankMethod(BaseSearchMethod):
         elif os.path.isfile(save_file_path):
             need_to_load_results = True
         else:
-            assert False
+            pass
 
         self._save_file_path = save_file_path
 
