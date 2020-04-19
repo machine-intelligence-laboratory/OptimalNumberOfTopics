@@ -32,16 +32,21 @@ class TopicBank:
 
         self._save = save
 
+        need_to_load_topics = False
+
         if save_folder_path is None:
             self._path = tempfile.mkdtemp(prefix='TopicBank__')
         elif os.path.isdir(save_folder_path):
             self._path = save_folder_path
-            self._load()
+            need_to_load_topics = True
         else:
             raise NotADirectoryError(f'save_folder_path: {save_folder_path}')
 
         self._topics: List[Union[Dict[TokenType, float], None]] = list()
         self._topic_scores: List[Union[Dict[str, float], None]] = list()
+
+        if need_to_load_topics is True:
+            self._load()
 
         self._num_changes_for_save = num_changes_for_save
         self._num_changes = 0
