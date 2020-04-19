@@ -92,6 +92,7 @@ class TopicBankMethod(BaseSearchMethod):
             documents: List[str] = None,
             documents_fraction_for_topic_scores: float = 0.2,
             max_num_documents_for_topic_scores: int = 100,
+            start_model_number: int = 0,
             max_num_models: int = 100,
             one_model_num_topics: Union[int, List[int]] = 100,
             num_fit_iterations: int = DEFAULT_NUM_FIT_ITERATIONS,
@@ -186,6 +187,7 @@ class TopicBankMethod(BaseSearchMethod):
         self._documents = documents
         self._documents_fraction_for_topic_scores = documents_fraction_for_topic_scores
         self._max_num_documents_for_topic_scores = max_num_documents_for_topic_scores
+        self._start_model_number = start_model_number
         self._max_num_models = max_num_models
 
         if not isinstance(one_model_num_topics, list):
@@ -299,10 +301,12 @@ class TopicBankMethod(BaseSearchMethod):
         )
 
         if not self._verbose:
-            model_number_range = range(self._max_num_models)
+            model_number_range = range(self._start_model_number, self._max_num_models)
         else:
             model_number_range = tqdm.tqdm(
-                range(self._max_num_models), total=self._max_num_models, file=sys.stdout
+                range(self._start_model_number, self._max_num_models),
+                total=max(0, self._max_num_models - self._start_model_number),
+                file=sys.stdout,
             )
 
         for model_number in model_number_range:
