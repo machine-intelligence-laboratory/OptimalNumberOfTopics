@@ -1,5 +1,7 @@
 from scipy.spatial.distance import pdist
 import numpy as np
+from scipy.spatial.distance import squareform
+import pandas as pd
 from topicnet.cooking_machine.models import (
     BaseScore as BaseTopicNetScore,
     TopicModel
@@ -71,12 +73,28 @@ theory. Wiley-Interscience, New York, NY, USA, 1991.
 class DiversityScore(BaseCustomScore):
     """
     Higher is better
+
     """
     def __init__(
             self,
             name: str,
             metric: str = L2,
-            class_ids: Union[List[str], str] = None):
+            class_ids: Union[List[str], str] = None,
+            closest: bool = False):
+        '''
+        Parameters
+        ----------
+        metric
+            What metric to use when computing pairwise topic similarity
+            Acceptable values are anything inside KNOWN_METRICS
+
+            (Actually, supports anything implemented in scipy.spatial.distance,
+            but not everything is sanity-checked)
+        class_ids
+        closest
+            if False, the score will calculate average pairwise distance (default)
+            if True, will calculate the average distance to the closest topic
+        '''
 
         super().__init__(name)
 
@@ -85,14 +103,15 @@ class DiversityScore(BaseCustomScore):
         self._metric = metric
         self._class_ids = class_ids
 
+        self.closest = closest
         self._score = self._initialize()
 
     def _initialize(self) -> BaseTopicNetScore:
-        return _DiversityScore(self._metric, self._class_ids)
+        return _DiversityScore(self._metric, self._class_ids, self.closest)
 
 
 class _DiversityScore(BaseTopicNetScore):
-    def __init__(self, metric: str, class_ids: Union[List[str], str] = None):
+    def __init__(self, metric: str, class_ids: Union[List[str], str] = None, closest: bool = False):
         super().__init__()
 
         metric = metric.lower()
@@ -109,6 +128,7 @@ class _DiversityScore(BaseTopicNetScore):
 
         self._metric = metric
         self._class_ids = class_ids
+        self.closest = closest
 
     def call(self, model: TopicModel):
         phi = model.get_phi(class_ids=self._class_ids).values
@@ -119,13 +139,15 @@ class _DiversityScore(BaseTopicNetScore):
         else:
             condensed_distances = pdist(phi.T, metric=self._metric)
 
-        '''
-        # if one needs a DataFrame:
-        from scipy.spatial.distance import squareform
-        df = pd.DataFrame(
-            index=phi.columns, columns=phi.columns,
-            data=squareform(condensed_distances)
-        )
-        '''
+        if self.closest:
+            df = pd.DataFrame(
+                index=phi.columns, columns=phi.columns,
+                data=squareform(condensed_distances)
+            )
+            # get rid of zeros on the diagonals
+            N = df.shape[0]
+            df = df + np.eye(N) * float("inf")
+
+            return df.min(axis=0).mean()
 
         return condensed_distances.mean()
