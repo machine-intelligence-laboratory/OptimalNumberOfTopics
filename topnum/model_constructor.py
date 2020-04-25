@@ -1,29 +1,37 @@
+import artm
+
+from enum import Enum
+from typing import List
+
+from topicnet.cooking_machine import Dataset
 from topicnet.cooking_machine.rel_toolbox_lite import count_vocab_size, transform_regularizer
 from topicnet.cooking_machine.model_constructor import (
     create_default_topics, add_standard_scores, init_model
 )
-import artm
-
-# change log style
-lc = artm.messages.ConfigureLoggingArgs()
-lc.minloglevel = 3
-lib = artm.wrapper.LibArtm(logging_config=lc)
 
 
-KNOWN_MODELS = "LDA PLSA sparse decorrelation ARTM".split()
+class KnownModel(Enum):
+    LDA = 'LDA'
+    PLSA = 'PLSA'
+    SPARSE = 'sparse'
+    DECORRELATION = 'decorrelation'
+    ARTM = 'ARTM'
 
 
 def init_model_from_family(
-            family,
-            dataset,
-            main_modality,
-            num_topics,
-            seed,
-            modalities_to_use=None,
-            num_processors=3
+            family: str or KnownModel,
+            dataset: Dataset,
+            main_modality: str,
+            num_topics: int,
+            seed: int,
+            modalities_to_use: List[str] = None,
+            num_processors: int = 3
 ):
     """
     """
+    if isinstance(family, KnownModel):
+        family = family.value
+
     if modalities_to_use is None:
         modalities_to_use = [main_modality]
 
