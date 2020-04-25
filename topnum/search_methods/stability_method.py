@@ -288,12 +288,21 @@ class StabilitySearchMethod(BaseSearchMethod):
         topic_distances = np.zeros(shape=(num_topics, num_topics))
         topic_indices = list(range(num_topics))
 
-        for topic_index_a, topic_index_b in zip(topic_indices, topic_indices):
-            topic_distance = StabilitySearchMethod._compute_topic_distance(
-                phi_a.iloc[:, topic_index_a],
-                phi_b.iloc[:, topic_index_b],
-            )
-            topic_distances[topic_index_a, topic_index_b] = topic_distance
+        topics_a = [
+            phi_a.iloc[:, phi_col].sort_values(ascending=False)[:100]
+            for phi_col in topic_indices
+        ]
+        topics_b = [
+            phi_b.iloc[:, phi_col].sort_values(ascending=False)[:100]
+            for phi_col in topic_indices
+        ]
+
+        for topic_index_a, topic_a in enumerate(topics_a):
+            for topic_index_b, topic_b in enumerate(topics_b):
+                topic_distance = StabilitySearchMethod._compute_topic_distance(
+                    topic_a, topic_b
+                )
+                topic_distances[topic_index_a, topic_index_b] = topic_distance
 
         row_ids, column_ids = solve_dense(topic_distances)
 
