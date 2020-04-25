@@ -184,7 +184,7 @@ class StabilitySearchMethod(BaseSearchMethod):
             self._max_num_topics + 1,
             self._num_topics_interval))
 
-        print('Training models for different number of topics...')
+        print('Training models for different numbers of topics...')
 
         for num_topics in tqdm.tqdm(
                 numbers_of_topics,
@@ -195,7 +195,13 @@ class StabilitySearchMethod(BaseSearchMethod):
                 self._folder_path_num_topics(num_topics)
             )
 
-            for subsample_number, data_path in enumerate(self._get_dataset_subsample_file_paths()):
+            subsample_data_paths = self._get_dataset_subsample_file_paths()
+
+            for subsample_number, data_path in tqdm.tqdm(
+                    enumerate(subsample_data_paths),
+                    total=len(subsample_data_paths),
+                    file=sys.stdout):
+
                 dataset = Dataset(data_path=data_path)
 
                 dataset_trainable = dataset.get_batch_vectorizer()
@@ -232,7 +238,7 @@ class StabilitySearchMethod(BaseSearchMethod):
 
         stabilities = dict()
 
-        print('Estimating stability for different number of topics...')
+        print('Estimating stability for different numbers of topics...')
 
         for num_topics in tqdm.tqdm(
                 numbers_of_topics,
