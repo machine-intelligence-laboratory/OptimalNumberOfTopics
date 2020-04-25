@@ -7,6 +7,7 @@ import os
 import pandas as pd
 import scipy as sp
 import scipy.stats
+import shutil
 import sys
 import tempfile
 import tqdm
@@ -41,6 +42,7 @@ from ..model_constructor import (
 
 
 _LOGGER = logging.getLogger()
+_DATASET_FILE_EXTENSION = '.csv'
 
 
 class StabilitySearchMethod(BaseSearchMethod):
@@ -76,7 +78,9 @@ class StabilitySearchMethod(BaseSearchMethod):
         os.makedirs(datasets_folder_path, exist_ok=True)
 
     def _get_dataset_subsample_file_paths(self) -> List[str]:
-        return glob.glob(self._datasets_folder_path + '*.csv')
+        return glob.glob(
+            os.path.join(self._datasets_folder_path, f'*{_DATASET_FILE_EXTENSION}')
+        )
 
     def _folder_path_num_topics(self, num_topics: int) -> str:
         return os.path.join(
@@ -90,25 +94,56 @@ class StabilitySearchMethod(BaseSearchMethod):
             f'model_{subsample_number}',
         )
 
-    def subsample_datasets(
+    def search_for_optimum(
             self,
-            text_collection: BaseTextCollection,
+            text_collection: VowpalWabbitTextCollection,
             num_dataset_subsamples: int = 10,
             dataset_subsample_size: int or float = 0.5,
-            seed: int = 11221963) -> None:
+            seed_for_sampling: int = 11221963) -> None:
         """
 
         Parameters
         ----------
+        text_collection
+            Not used for training: just provides some info about data
+        num_dataset_subsamples
+            Number of subsamplings to be done
         dataset_subsample_size
             If `int`, then is treated like a number of documents.
             If `float`, then is considered to be a fraction of total number of documents.
+        seed_for_sampling
+            Randomness in subsample process
         """
+        _LOGGER.info('Starting to search for optimum...')
+
+        if len(self._get_dataset_subsample_file_paths()) == 0:
+            print(
+                f'Folder "{self._datasets_folder_path}"'
+                f' has no sub-datasets for training! Subsampling data...'
+            )
+            self._subsample_datasets(
+                text_collection,
+                num_dataset_subsamples=num_dataset_subsamples,
+                dataset_subsample_size=dataset_subsample_size,
+                seed=seed_for_sampling,
+            )
+
+        assert len(self._get_dataset_subsample_file_paths()) > 0
+
+        self._train_models(text_collection)
+        self._estimate_stability()
+
+    def _subsample_datasets(
+            self,
+            text_collection: BaseTextCollection,
+            num_dataset_subsamples: int,
+            dataset_subsample_size: int or float,
+            seed: int) -> None:
 
         dataset = text_collection._to_dataset()
         total_num_documents = dataset._data.shape[0]
 
-        if isinstance(float, dataset_subsample_size):
+        if isinstance(dataset_subsample_size, float):
             dataset_subsample_size = int(total_num_documents * dataset_subsample_size)
 
         document_indices = list(range(total_num_documents))
@@ -128,7 +163,7 @@ class StabilitySearchMethod(BaseSearchMethod):
             )
             subsample_dataset_file_path = os.path.join(
                 self._datasets_folder_path,
-                f'dataset_{i}',
+                f'dataset_{i}{_DATASET_FILE_EXTENSION}',
             )
 
             with open(subsample_dataset_file_path, 'w') as f:
@@ -140,28 +175,7 @@ class StabilitySearchMethod(BaseSearchMethod):
 
         _LOGGER.info('Subsampling finished')
 
-    def search_for_optimum(self, text_collection: VowpalWabbitTextCollection) -> None:
-        """
-
-        Parameters
-        ----------
-        text_collection
-            Not used for training: just provides some info about data
-
-        """
-        _LOGGER.info('Starting to search for optimum...')
-
-        self._train_models(text_collection)
-        self._estimate_stability()
-
     def _train_models(self, text_collection: VowpalWabbitTextCollection) -> None:
-        if len(self._get_dataset_subsample_file_paths()) == 0:
-            raise RuntimeError(
-                f'Folder "{self._datasets_folder_path}"'
-                f' has no sub-datasets for training!'
-                f' Create them first'
-            )
-
         modalities_to_use = list(text_collection._modalities.keys())
         main_modality = text_collection._main_modality
 
@@ -175,7 +189,7 @@ class StabilitySearchMethod(BaseSearchMethod):
         for num_topics in tqdm.tqdm(
                 numbers_of_topics,
                 total=len(numbers_of_topics),
-                fily=sys.stdout):
+                file=sys.stdout):
 
             os.makedirs(
                 self._folder_path_num_topics(num_topics)
@@ -206,7 +220,7 @@ class StabilitySearchMethod(BaseSearchMethod):
                 topic_model.save(
                     model_save_path=model_save_path,
                     phi=True,
-                    theta=True,  # TODO: or without Theta?
+                    theta=False,
                 )
 
     def _estimate_stability(self):
@@ -216,14 +230,14 @@ class StabilitySearchMethod(BaseSearchMethod):
             self._num_topics_interval))
         subsample_numbers = list(range(len(self._get_dataset_subsample_file_paths())))
 
-        stabilities: Dict[int, Dict[float]] = dict()
+        stabilities = dict()
 
         print('Estimating stability for different number of topics...')
 
         for num_topics in tqdm.tqdm(
                 numbers_of_topics,
                 total=len(numbers_of_topics),
-                fily=sys.stdout):
+                file=sys.stdout):
 
             distances = list()
 
@@ -245,12 +259,17 @@ class StabilitySearchMethod(BaseSearchMethod):
 
             stability_metrics = dict()
             stability_metrics['std'] = np.std(distances, ddof=_DDOF)
+            stability_metrics['var'] = np.var(distances, ddof=_DDOF)
             stability_metrics['range'] = np.ptp(distances)
-            stability_metrics['iqr'] = sp.stats.iqr(distances)
+            stability_metrics['interquartile_range'] = sp.stats.iqr(distances)
 
             stabilities[num_topics] = stability_metrics
 
-        self._result['stability_metrics'] = stabilities
+        self._result['stability_metrics_for_num_topics'] = stabilities
+
+    def clear(self):
+        shutil.rmtree(self._datasets_folder_path)
+        shutil.rmtree(self._models_folder_path)
 
     @staticmethod
     def _compute_distance(topic_model_a: TopicModel, topic_model_b: TopicModel) -> float:
