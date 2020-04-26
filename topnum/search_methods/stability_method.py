@@ -200,7 +200,7 @@ class StabilitySearchMethod(BaseSearchMethod):
         document_indices = list(range(total_num_documents))
         random = np.random.RandomState(seed)
 
-        _LOGGER.info('Subsampling documents...')
+        print('Subsampling documents...')
 
         for i in tqdm.tqdm(
                 range(num_dataset_subsamples),
