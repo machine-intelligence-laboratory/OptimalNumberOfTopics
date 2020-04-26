@@ -6,6 +6,7 @@ import numpy as np
 import os
 import pandas as pd
 import scipy as sp
+import scipy.special
 import scipy.stats
 import shutil
 import sys
@@ -219,7 +220,7 @@ class StabilitySearchMethod(BaseSearchMethod):
             self._max_num_topics + 1,
             self._num_topics_interval))
 
-        print('Training models for different numbers of topics...')
+        print('\nTraining models for different numbers of topics...')
 
         for num_topics in tqdm.tqdm(
                 numbers_of_topics,
@@ -280,7 +281,7 @@ class StabilitySearchMethod(BaseSearchMethod):
 
         stabilities = dict()
 
-        print('Estimating stability for different numbers of topics...')
+        print('\nEstimating stability for different numbers of topics...')
 
         for num_topics in tqdm.tqdm(
                 numbers_of_topics,
@@ -289,9 +290,11 @@ class StabilitySearchMethod(BaseSearchMethod):
 
             distances = list()
 
-            for subsample_number_a, subsample_number_b in itertools.combinations(
-                    subsample_numbers, 2):
-                # or, if needed:
+            for subsample_number_a, subsample_number_b in tqdm.tqdm(
+                    itertools.combinations(subsample_numbers, 2),
+                    total=sp.special.binom(len(subsample_numbers), 2),
+                    file=sys.stdout):
+                # or, if will needed:
                 # TopicModel.load(
                 #     self._folder_path_model(
                 #         num_topics,subsample_number=subsample_number_a
