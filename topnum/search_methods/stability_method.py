@@ -368,9 +368,6 @@ class StabilitySearchMethod(BaseSearchMethod):
         ))
 
     def _compute_topic_distance(self, topic_a: pd.Series, topic_b: pd.Series) -> float:
-        print(topic_a)
-        print()
-        print(topic_a.to_dict())
         return TopicBankMethod._jaccard_distance(
             topic_a.to_dict(),
             topic_b.to_dict(),
