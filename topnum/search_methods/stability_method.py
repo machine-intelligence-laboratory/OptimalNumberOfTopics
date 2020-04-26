@@ -55,6 +55,7 @@ class StabilitySearchMethod(BaseSearchMethod):
             model_num_processors: int = 3,
             model_seed: int = 0,
             model_family: str or KnownModel = KnownModel.PLSA,
+            max_num_top_words: int = 1000,  # TODO: if none, also Ok
             datasets_folder_path: str = None):
 
         super().__init__(
@@ -67,6 +68,7 @@ class StabilitySearchMethod(BaseSearchMethod):
         self._model_family = model_family
         self._model_num_processors = model_num_processors
         self._model_seed = model_seed
+        self._max_num_top_words = max_num_top_words
 
         self._models_folder_path = tempfile.mkdtemp()
 
@@ -99,7 +101,9 @@ class StabilitySearchMethod(BaseSearchMethod):
             text_collection: VowpalWabbitTextCollection,
             num_dataset_subsamples: int = 10,
             dataset_subsample_size: int or float = 0.5,
-            seed_for_sampling: int = 11221963) -> None:
+            seed_for_sampling: int = 11221963,
+            min_df_rate: float = 0.01,
+            max_df_rate: float = 0.9) -> None:
         """
 
         Parameters
@@ -113,6 +117,10 @@ class StabilitySearchMethod(BaseSearchMethod):
             If `float`, then is considered to be a fraction of total number of documents.
         seed_for_sampling
             Randomness in subsample process
+        min_df_rate
+            For dictionary filtering
+        max_df_rate
+            For dictionary filtering
         """
         _LOGGER.info('Starting to search for optimum...')
 
@@ -130,7 +138,11 @@ class StabilitySearchMethod(BaseSearchMethod):
 
         assert len(self._get_dataset_subsample_file_paths()) > 0
 
-        self._train_models(text_collection)
+        self._train_models(
+            text_collection,
+            min_df_rate=min_df_rate,
+            max_df_rate=max_df_rate,
+        )
         self._estimate_stability()
 
     def _subsample_datasets(
@@ -175,7 +187,12 @@ class StabilitySearchMethod(BaseSearchMethod):
 
         _LOGGER.info('Subsampling finished')
 
-    def _train_models(self, text_collection: VowpalWabbitTextCollection) -> None:
+    def _train_models(
+            self,
+            text_collection: VowpalWabbitTextCollection,
+            min_df_rate: float,
+            max_df_rate: float) -> None:
+
         modalities_to_use = list(text_collection._modalities.keys())
         main_modality = text_collection._main_modality
 
@@ -204,7 +221,11 @@ class StabilitySearchMethod(BaseSearchMethod):
 
                 dataset = Dataset(data_path=data_path)
 
-                dataset_trainable = dataset.get_batch_vectorizer()
+                dictionary = dataset.get_dictionary()
+                dictionary.filter(
+                    min_df_rate=min_df_rate,
+                    max_df_rate=max_df_rate,
+                )
 
                 artm_model = init_model_from_family(
                     family=self._model_family,
@@ -218,7 +239,7 @@ class StabilitySearchMethod(BaseSearchMethod):
                 topic_model = TopicModel(artm_model)
 
                 topic_model._fit(
-                    dataset_trainable=dataset_trainable,
+                    dataset_trainable=dataset.get_batch_vectorizer(),
                     num_iterations=self._num_fit_iterations,
                 )
 
@@ -233,8 +254,11 @@ class StabilitySearchMethod(BaseSearchMethod):
         numbers_of_topics = list(range(
             self._min_num_topics,
             self._max_num_topics + 1,
-            self._num_topics_interval))
-        subsample_numbers = list(range(len(self._get_dataset_subsample_file_paths())))
+            self._num_topics_interval
+        ))
+        subsample_numbers = list(range(
+            len(self._get_dataset_subsample_file_paths())
+        ))
 
         stabilities = dict()
 
@@ -249,18 +273,29 @@ class StabilitySearchMethod(BaseSearchMethod):
 
             for subsample_number_a, subsample_number_b in itertools.combinations(
                     subsample_numbers, 2):
-                topic_model_a = TopicModel.load(
-                    self._folder_path_model(
-                        num_topics,subsample_number=subsample_number_a
-                    )
+                # or, if needed:
+                # TopicModel.load(
+                #     self._folder_path_model(
+                #         num_topics,subsample_number=subsample_number_a
+                #     )
+                # )
+                topic_model_a = pd.read_csv(
+                    os.path.join(
+                        self._folder_path_model(num_topics, subsample_number_a),
+                        'phi.csv',
+                    ),
+                    index_col=0, # TODO
                 )
-                topic_model_b = TopicModel.load(
-                    self._folder_path_model(
-                        num_topics, subsample_number=subsample_number_a
-                    )
+                topic_model_b = pd.read_csv(
+                    os.path.join(
+                        self._folder_path_model(num_topics, subsample_number_b),
+                        'phi.csv',
+                    ),
+                    index_col=0, # TODO
                 )
+
                 distances.append(
-                    StabilitySearchMethod._compute_distance(topic_model_a, topic_model_b)
+                    self._compute_distance(topic_model_a, topic_model_b)
                 )
 
             stability_metrics = dict()
@@ -277,29 +312,33 @@ class StabilitySearchMethod(BaseSearchMethod):
         shutil.rmtree(self._datasets_folder_path)
         shutil.rmtree(self._models_folder_path)
 
-    @staticmethod
-    def _compute_distance(topic_model_a: TopicModel, topic_model_b: TopicModel) -> float:
-        phi_a = topic_model_a.get_phi()
-        phi_b = topic_model_b.get_phi()
-
+    def _compute_distance(self, phi_a: pd.DataFrame, phi_b: pd.DataFrame) -> float:
         assert phi_a.shape == phi_b.shape
 
         num_topics = phi_a.shape[1]
         topic_distances = np.zeros(shape=(num_topics, num_topics))
         topic_indices = list(range(num_topics))
 
-        topics_a = [
-            phi_a.iloc[:, phi_col].sort_values(ascending=False)[:100]
-            for phi_col in topic_indices
-        ]
-        topics_b = [
-            phi_b.iloc[:, phi_col].sort_values(ascending=False)[:100]
-            for phi_col in topic_indices
-        ]
+        if self._max_num_top_words is None:
+            topics_a = [
+                phi_a.iloc[:, phi_col] for phi_col in topic_indices
+            ]
+            topics_b = [
+                phi_b.iloc[:, phi_col] for phi_col in topic_indices
+            ]
+        else:
+            topics_a = [
+                phi_a.iloc[:, phi_col].sort_values(ascending=False)[:self._max_num_top_words]
+                for phi_col in topic_indices
+            ]
+            topics_b = [
+                phi_b.iloc[:, phi_col].sort_values(ascending=False)[:self._max_num_top_words]
+                for phi_col in topic_indices
+            ]
 
         for topic_index_a, topic_a in enumerate(topics_a):
             for topic_index_b, topic_b in enumerate(topics_b):
-                topic_distance = StabilitySearchMethod._compute_topic_distance(
+                topic_distance = self._compute_topic_distance(
                     topic_a, topic_b
                 )
                 topic_distances[topic_index_a, topic_index_b] = topic_distance
@@ -310,9 +349,12 @@ class StabilitySearchMethod(BaseSearchMethod):
             topic_distances[row_ids, column_ids]
         ))
 
-    @staticmethod
-    def _compute_topic_distance(topic_a: pd.Series, topic_b: pd.Series) -> float:
+    def _compute_topic_distance(self, topic_a: pd.Series, topic_b: pd.Series) -> float:
+        print(topic_a)
+        print()
+        print(topic_a.to_dict())
         return TopicBankMethod._jaccard_distance(
             topic_a.to_dict(),
             topic_b.to_dict(),
+            kernel_only=self._max_num_top_words is None,
         )
