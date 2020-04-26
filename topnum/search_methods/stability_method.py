@@ -56,7 +56,7 @@ class StabilitySearchMethod(BaseSearchMethod):
             model_num_processors: int = 1,
             model_seed: int = 0,
             model_family: str or KnownModel = KnownModel.PLSA,
-            max_num_top_words: Optional[int] = 1000,  # TODO: if none, also Ok
+            max_num_top_words: Optional[int] = 1000,
             datasets_folder_path: str = None,
             models_folder_path: str = None):
         """
