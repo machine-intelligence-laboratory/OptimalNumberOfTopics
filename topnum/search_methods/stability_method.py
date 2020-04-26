@@ -275,7 +275,7 @@ class StabilitySearchMethod(BaseSearchMethod):
             self._num_topics_interval
         ))
         subsample_numbers = list(range(
-            len(self._get_dataset_subsample_file_paths())
+            len(os.listdir(self._folder_path_num_topics(numbers_of_topics[0])))
         ))
 
         stabilities = dict()
