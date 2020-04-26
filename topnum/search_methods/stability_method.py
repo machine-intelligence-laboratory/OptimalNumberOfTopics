@@ -15,8 +15,8 @@ import tqdm
 
 from lapsolver import solve_dense
 from typing import (
-    Dict,
     List,
+    Optional,
 )
 
 from topicnet.cooking_machine import Dataset
@@ -56,10 +56,30 @@ class StabilitySearchMethod(BaseSearchMethod):
             model_num_processors: int = 1,
             model_seed: int = 0,
             model_family: str or KnownModel = KnownModel.PLSA,
-            max_num_top_words: int = 1000,  # TODO: if none, also Ok
+            max_num_top_words: Optional[int] = 1000,  # TODO: if none, also Ok
             datasets_folder_path: str = None,
             models_folder_path: str = None):
+        """
 
+        Parameters
+        ----------
+        max_num_top_words
+            How many topic top words ot take into account
+            when comparing topics.
+            If None, all topic words will be used.
+        datasets_folder_path
+            Folder where to save data subsamples.
+            If the folder is not empty,
+            then it is assumed that it contains already prepared subsamples.
+        models_folder_path
+            Folder to save models in.
+            If the folder is not empty,
+            it should contain saved info about trained models
+            (in the format used by the search method).
+            So, no model training is going to happen
+            in the case of non empty `models_folder_path`.
+
+        """
         super().__init__(
             min_num_topics=min_num_topics,
             max_num_topics=max_num_topics,
@@ -269,7 +289,7 @@ class StabilitySearchMethod(BaseSearchMethod):
                     theta=False,
                 )
 
-    def _estimate_stability(self):
+    def _estimate_stability(self) -> None:
         numbers_of_topics = list(range(
             self._min_num_topics,
             self._max_num_topics + 1,
@@ -292,28 +312,11 @@ class StabilitySearchMethod(BaseSearchMethod):
 
             for subsample_number_a, subsample_number_b in tqdm.tqdm(
                     itertools.combinations(subsample_numbers, 2),
-                    total=sp.special.binom(len(subsample_numbers), 2),
+                    total=int(sp.special.binom(len(subsample_numbers), 2)),
                     file=sys.stdout):
-                # or, if will needed:
-                # TopicModel.load(
-                #     self._folder_path_model(
-                #         num_topics,subsample_number=subsample_number_a
-                #     )
-                # )
-                topic_model_a = pd.read_csv(
-                    os.path.join(
-                        self._folder_path_model(num_topics, subsample_number_a),
-                        'phi.csv',
-                    ),
-                    index_col=0, # TODO
-                )
-                topic_model_b = pd.read_csv(
-                    os.path.join(
-                        self._folder_path_model(num_topics, subsample_number_b),
-                        'phi.csv',
-                    ),
-                    index_col=0, # TODO
-                )
+
+                topic_model_a = self._load_phi(num_topics, subsample_number_a)
+                topic_model_b = self._load_phi(num_topics, subsample_number_b)
 
                 distances.append(
                     self._compute_distance(topic_model_a, topic_model_b)
@@ -329,7 +332,22 @@ class StabilitySearchMethod(BaseSearchMethod):
 
         self._result['stability_metrics_for_num_topics'] = stabilities
 
-    def clear(self):
+    def _load_phi(self, num_topics: int, subsample_number: int) -> pd.DataFrame:
+        # or, if might be needed (to load all model):
+        # TopicModel.load(
+        #     self._folder_path_model(
+        #         num_topics,subsample_number=subsample_number_a
+        #     )
+        # )
+        return pd.read_csv(
+            os.path.join(
+                self._folder_path_model(num_topics, subsample_number),
+                'phi.csv',
+            ),
+            index_col=0,  # TODO: phi is saved with index
+        )
+
+    def clear(self) -> None:
         shutil.rmtree(self._datasets_folder_path)
         shutil.rmtree(self._models_folder_path)
 
@@ -341,21 +359,14 @@ class StabilitySearchMethod(BaseSearchMethod):
         topic_indices = list(range(num_topics))
 
         if self._max_num_top_words is None:
-            topics_a = [
-                phi_a.iloc[:, phi_col] for phi_col in topic_indices
-            ]
-            topics_b = [
-                phi_b.iloc[:, phi_col] for phi_col in topic_indices
-            ]
+            def col_to_topic(phi: pd.DataFrame, col: int) -> pd.Series:
+                return phi.iloc[:, col]
         else:
-            topics_a = [
-                phi_a.iloc[:, phi_col].sort_values(ascending=False)[:self._max_num_top_words]
-                for phi_col in topic_indices
-            ]
-            topics_b = [
-                phi_b.iloc[:, phi_col].sort_values(ascending=False)[:self._max_num_top_words]
-                for phi_col in topic_indices
-            ]
+            def col_to_topic(phi: pd.DataFrame, col: int) -> pd.Series:
+                return phi.iloc[:, col].sort_values(ascending=False)[:self._max_num_top_words]
+
+        topics_a = [col_to_topic(phi_a, phi_col) for phi_col in topic_indices]
+        topics_b = [col_to_topic(phi_b, phi_col) for phi_col in topic_indices]
 
         for topic_index_a, topic_a in enumerate(topics_a):
             for topic_index_b, topic_b in enumerate(topics_b):
