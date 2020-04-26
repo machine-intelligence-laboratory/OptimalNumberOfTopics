@@ -164,7 +164,7 @@ class StabilitySearchMethod(BaseSearchMethod):
         else:
             print(
                 f'Folder "{self._datasets_folder_path}"'
-                f' has no sub-datasets for training! Subsampling data...'
+                f' has no sub-datasets for training!'
             )
 
             self._subsample_datasets(
