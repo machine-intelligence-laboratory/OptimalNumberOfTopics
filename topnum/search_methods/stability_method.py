@@ -52,11 +52,12 @@ class StabilitySearchMethod(BaseSearchMethod):
             max_num_topics: int = DEFAULT_MAX_NUM_TOPICS,
             num_topics_interval: int = 1,
             num_fit_iterations: int = DEFAULT_NUM_FIT_ITERATIONS,
-            model_num_processors: int = 3,
+            model_num_processors: int = 1,
             model_seed: int = 0,
             model_family: str or KnownModel = KnownModel.PLSA,
             max_num_top_words: int = 1000,  # TODO: if none, also Ok
-            datasets_folder_path: str = None):
+            datasets_folder_path: str = None,
+            models_folder_path: str = None):
 
         super().__init__(
             min_num_topics=min_num_topics,
@@ -70,7 +71,10 @@ class StabilitySearchMethod(BaseSearchMethod):
         self._model_seed = model_seed
         self._max_num_top_words = max_num_top_words
 
-        self._models_folder_path = tempfile.mkdtemp()
+        if models_folder_path is None:
+            models_folder_path = tempfile.mkdtemp()
+
+        self._models_folder_path = models_folder_path
 
         if datasets_folder_path is None:
             datasets_folder_path = tempfile.mkdtemp(prefix='stability_approach__')
@@ -124,11 +128,24 @@ class StabilitySearchMethod(BaseSearchMethod):
         """
         _LOGGER.info('Starting to search for optimum...')
 
-        if len(self._get_dataset_subsample_file_paths()) == 0:
+        if len(os.listdir(self._models_folder_path)) > 0:
+            print(
+                f'Models folder "{self._models_folder_path}" is not empty.'
+                f' Assuming, that no training is needed.'
+                f' Going straight to estimating stability'
+            )
+        elif len(self._get_dataset_subsample_file_paths()) > 0:
+            self._train_models(
+                text_collection,
+                min_df_rate=min_df_rate,
+                max_df_rate=max_df_rate,
+            )
+        else:
             print(
                 f'Folder "{self._datasets_folder_path}"'
                 f' has no sub-datasets for training! Subsampling data...'
             )
+
             self._subsample_datasets(
                 text_collection,
                 num_dataset_subsamples=num_dataset_subsamples,
@@ -136,13 +153,14 @@ class StabilitySearchMethod(BaseSearchMethod):
                 seed=seed_for_sampling,
             )
 
-        assert len(self._get_dataset_subsample_file_paths()) > 0
+            assert len(self._get_dataset_subsample_file_paths()) > 0
 
-        self._train_models(
-            text_collection,
-            min_df_rate=min_df_rate,
-            max_df_rate=max_df_rate,
-        )
+            self._train_models(
+                text_collection,
+                min_df_rate=min_df_rate,
+                max_df_rate=max_df_rate,
+            )
+
         self._estimate_stability()
 
     def _subsample_datasets(
@@ -313,7 +331,7 @@ class StabilitySearchMethod(BaseSearchMethod):
         shutil.rmtree(self._models_folder_path)
 
     def _compute_distance(self, phi_a: pd.DataFrame, phi_b: pd.DataFrame) -> float:
-        assert phi_a.shape == phi_b.shape
+        assert phi_a.shape[1] == phi_b.shape[1]
 
         num_topics = phi_a.shape[1]
         topic_distances = np.zeros(shape=(num_topics, num_topics))
