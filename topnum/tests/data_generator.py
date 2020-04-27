@@ -69,7 +69,6 @@ class TestDataGenerator:
 
             if document_index == 0 and use_empty_text:
                 text = text + f' |{self.main_modality}'
-                text = text + f' |{self.main_modality}'
                 texts.append(text)
 
                 continue
