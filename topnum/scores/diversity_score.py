@@ -86,7 +86,7 @@ class DiversityScore(BaseCustomScore):
         ----------
         metric
             What metric to use when computing pairwise topic similarity
-            Acceptable values are anything inside KNOWN_METRICS
+            Acceptable values are anything inside `KNOWN_METRICS`
 
             (Actually, supports anything implemented in scipy.spatial.distance,
             but not everything is sanity-checked)
@@ -103,11 +103,11 @@ class DiversityScore(BaseCustomScore):
         self._metric = metric
         self._class_ids = class_ids
 
-        self.closest = closest
+        self._closest = closest
         self._score = self._initialize()
 
     def _initialize(self) -> BaseTopicNetScore:
-        return _DiversityScore(self._metric, self._class_ids, self.closest)
+        return _DiversityScore(self._metric, self._class_ids, self._closest)
 
 
 class _DiversityScore(BaseTopicNetScore):
@@ -145,8 +145,7 @@ class _DiversityScore(BaseTopicNetScore):
                 data=squareform(condensed_distances)
             )
             # get rid of zeros on the diagonals
-            N = df.shape[0]
-            df = df + np.eye(N) * float("inf")
+            np.fill_diagonal(df.values, float("inf"))
 
             return df.min(axis=0).mean()
 
