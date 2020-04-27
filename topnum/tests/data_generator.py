@@ -61,9 +61,18 @@ class TestDataGenerator:
 
         self.vocabulary = list()
 
+        use_empty_text = True
+
         for document_index in range(self.num_documents):
             text = ''
             text = text + f'doc_{document_index}'
+
+            if document_index == 0 and use_empty_text:
+                text = text + f' |{self.main_modality}'
+                text = text + f' |{self.main_modality}'
+                texts.append(text)
+
+                continue
 
             for modality_suffix, modality, num_words in zip(
                     ['m', 'o'],
