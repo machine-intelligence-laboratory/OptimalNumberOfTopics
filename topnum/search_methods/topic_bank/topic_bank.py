@@ -112,7 +112,8 @@ class TopicBank:
             model: TopicModel,
             topic_scores: List[Dict[str, float]] = None,
             phi: pd.DataFrame = None,
-            dataset: Dataset = None) -> None:
+            dataset: Dataset = None,
+            theta: bool = False) -> None:
 
         if phi is None:
             phi = model.get_phi()
@@ -120,13 +121,16 @@ class TopicBank:
         with open(os.path.join(self._path, f'{name}__phi.bin'), 'wb') as f:
             f.write(dill.dumps(phi))
 
-        try:
-            theta = model.get_theta(dataset=dataset)
-        except ValueError:
+        if not theta:
             pass
         else:
-            with open(os.path.join(self._path, f'{name}__theta.bin'), 'wb') as f:
-                f.write(dill.dumps(theta))
+            try:
+                theta = model.get_theta(dataset=dataset)
+            except ValueError:
+                pass
+            else:
+                with open(os.path.join(self._path, f'{name}__theta.bin'), 'wb') as f:
+                    f.write(dill.dumps(theta))
 
         if topic_scores is None:
             topic_scores = dict()
