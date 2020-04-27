@@ -18,7 +18,7 @@ class TestDataGenerator:
         self.num_documents = 10
         self.num_words_in_document = 100
         self.vocabulary = None
-        self.text_collection = None
+        self.text_collection: VowpalWabbitTextCollection = None
 
     def generate(self):
         self.text_collection_folder = tempfile.mkdtemp()
@@ -61,9 +61,17 @@ class TestDataGenerator:
 
         self.vocabulary = list()
 
+        use_empty_text = True
+
         for document_index in range(self.num_documents):
             text = ''
             text = text + f'doc_{document_index}'
+
+            if document_index == 0 and use_empty_text:
+                text = text + f' |{self.main_modality}'
+                texts.append(text)
+
+                continue
 
             for modality_suffix, modality, num_words in zip(
                     ['m', 'o'],

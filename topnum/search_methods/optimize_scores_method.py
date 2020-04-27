@@ -86,7 +86,7 @@ class OptimizeScoresMethod(BaseSearchMethod):
         dataset = text_collection._to_dataset()
 
         # seed == None is too similar to seed == 0
-        seeds = [None] + list(range(0, self._num_restarts - 1))
+        seeds = [None] + list(range(1, self._num_restarts))
 
         nums_topics = list(range(
             self._min_num_topics,
@@ -239,7 +239,11 @@ def load_models_from_disk(experiment_directory, base_experiment_name, scores=Non
 
     result_models = []
 
-    for folder in glob.glob(f"{experiment_directory}/{base_experiment_name}_*"):
+    mask = f"{experiment_directory}/{base_experiment_name}_*"
+    msg = (f'Trying to load models from {mask}.'
+           f' {len(glob.glob(mask))} models found.')
+    _logger.info(msg)
+    for folder in glob.glob(mask):
         model_pathes = [
             f.path for f in os.scandir(folder)
             if f.is_dir() and f.name != START

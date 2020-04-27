@@ -1,5 +1,6 @@
 import logging
 import numpy as np
+import dill
 
 from sklearn.metrics import silhouette_score
 from topicnet.cooking_machine import Dataset
@@ -82,10 +83,13 @@ class _SilhouetteScore(BaseTopicNetScore):
 
         self.sample_size = sample_size
         self.batches_number = batches_number
-        self.validation_dataset = validation_dataset
+        self._dataset = validation_dataset
+        self._keep_dataset_in_memory = validation_dataset._small_data
+        self._dataset_internals_folder_path = validation_dataset._internals_folder_path
+        self._dataset_file_path = validation_dataset._data_path
 
     def call(self, model: TopicModel):
-        theta = model.get_theta(dataset=self.validation_dataset)
+        theta = model.get_theta(dataset=self._dataset)
 
         theta.columns = range(len(theta.columns))
         objects_clusters = theta.values.argmax(axis=0)
@@ -102,3 +106,38 @@ class _SilhouetteScore(BaseTopicNetScore):
             theta.T.values, objects_clusters,
             sample_size=self.sample_size, batches_number=self.batches_number
         )
+
+    # TODO: this piece is copy-pastd among three different scores
+    def save(self, path: str) -> None:
+        dataset = self._dataset
+        self._dataset = None
+
+        with open(path, 'wb') as f:
+            dill.dump(self, f)
+
+        self._dataset = dataset
+
+    @classmethod
+    def load(cls, path: str):
+        """
+
+        Parameters
+        ----------
+        path
+
+        Returns
+        -------
+        an instance of this class
+
+        """
+
+        with open(path, 'rb') as f:
+            score = dill.load(f)
+
+        score._dataset = Dataset(
+            score._dataset_file_path,
+            internals_folder_path=score._dataset_internals_folder_path,
+            keep_in_memory=score._keep_dataset_in_memory,
+        )
+
+        return score

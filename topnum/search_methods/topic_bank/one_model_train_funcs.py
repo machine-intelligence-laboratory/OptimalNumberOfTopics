@@ -220,7 +220,6 @@ def _get_topic_model(
         scores: List[BaseScore] = None,
         num_safe_fit_iterations: int = 3) -> TopicModel:
 
-    dataset._cached_dict = None  # TODO: shouldn't be here
     dictionary = dataset.get_dictionary()
 
     # TODO: "workaround"
