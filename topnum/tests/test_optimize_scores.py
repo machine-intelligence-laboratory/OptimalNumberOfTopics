@@ -58,7 +58,7 @@ class _DummyTopicScore(BaseTopicScore):
 
 
 @pytest.mark.filterwarnings(f'ignore:{W_DIFF_BATCHES_1}')
-class TestSearchMethods:
+class TestOptimizeScores:
     data_generator = None
 
     dataset = None

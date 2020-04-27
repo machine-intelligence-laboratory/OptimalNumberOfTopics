@@ -1,3 +1,4 @@
+import dill
 import logging
 import numpy as np
 import pandas as pd
@@ -123,6 +124,10 @@ class _BaseCoherenceScore(TopicNetBaseScore):
             self._documents = documents
         else:
             self._documents = list(self._dataset.get_dataset().index)
+
+        self._dataset_file_path = dataset._data_path
+        self._dataset_internals_folder_path = dataset._internals_folder_path
+        self._keep_dataset_in_memory = dataset._small_data
 
     def call(self, model: BaseModel) -> float:
         topic_coherences = self.compute(model, None)
@@ -322,3 +327,26 @@ class _BaseCoherenceScore(TopicNetBaseScore):
         )
 
         return float(np.mean(word_topic_relatednesses.values))
+
+    # TODO: DRY
+    def save(self, path: str) -> None:
+        dataset = self._dataset
+        self._dataset = None
+
+        with open(path, 'wb') as f:
+            dill.dump(self, f)
+
+        self._dataset = dataset
+
+    @classmethod
+    def load(cls, path: str):
+        with open(path, 'rb') as f:
+            score = dill.load(f)
+
+        score._dataset = Dataset(
+            score._dataset_file_path,
+            internals_folder_path=score._dataset_internals_folder_path,
+            keep_in_memory=score._keep_dataset_in_memory,
+        )
+
+        return score
