@@ -6,6 +6,7 @@ import pandas as pd
 import scipy
 import scipy.stats
 import sys
+import warnings
 
 from datetime import datetime
 from tqdm import tqdm
@@ -297,6 +298,14 @@ class RenormalizationMethod(BaseSearchMethod):
         if self._verbose:
             print(message)
 
+        if original_num_topics == 0:
+            warnings.warn(
+                'Already no topics in the model!'
+                ' Nothing to renormalize'
+            )
+
+            return nums_topics, entropies, densities, energies
+
         threshold = self._threshold_factor * 1.0 / num_words
 
         num_renormalization_iterations = original_num_topics - 1
@@ -306,7 +315,10 @@ class RenormalizationMethod(BaseSearchMethod):
             file=sys.stdout
         )
         num_progress_updates = 10
-        num_iterations_for_progress_update = num_renormalization_iterations // num_progress_updates
+        num_iterations_for_progress_update = max(
+            1,
+            num_renormalization_iterations // num_progress_updates,
+        )
 
         for renormalization_iteration in range(num_renormalization_iterations):
             if (renormalization_iteration + 1) % num_iterations_for_progress_update == 0:
