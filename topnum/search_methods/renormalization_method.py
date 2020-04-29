@@ -299,14 +299,16 @@ class RenormalizationMethod(BaseSearchMethod):
 
         threshold = self._threshold_factor * 1.0 / num_words
 
+        num_renormalization_iterations = original_num_topics - 1
         progress = tqdm(
-            range(original_num_topics - 1),
-            total=original_num_topics - 1,
+            range(num_renormalization_iterations),
+            total=num_renormalization_iterations,
             file=sys.stdout
         )
-        num_iterations_for_progress_update = 10
+        num_progress_updates = 10
+        num_iterations_for_progress_update = num_renormalization_iterations // num_progress_updates
 
-        for renormalization_iteration in range(original_num_topics - 1):
+        for renormalization_iteration in range(num_renormalization_iterations):
             if (renormalization_iteration + 1) % num_iterations_for_progress_update == 0:
                 progress.update(num_iterations_for_progress_update)
 
