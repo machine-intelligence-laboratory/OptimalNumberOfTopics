@@ -11,9 +11,9 @@ import scipy.stats
 import shutil
 import sys
 import tempfile
-import tqdm
 
 from lapsolver import solve_dense
+from tqdm.auto import tqdm
 from typing import (
     List,
     Optional,
@@ -213,7 +213,7 @@ class StabilitySearchMethod(BaseSearchMethod):
 
         print('Subsampling documents...')
 
-        for i in tqdm.tqdm(
+        for i in tqdm(
                 range(num_dataset_subsamples),
                 total=num_dataset_subsamples,
                 file=sys.stdout):
@@ -253,7 +253,7 @@ class StabilitySearchMethod(BaseSearchMethod):
 
         print('\nTraining models for different numbers of topics...')
 
-        for num_topics in tqdm.tqdm(
+        for num_topics in tqdm(
                 numbers_of_topics,
                 total=len(numbers_of_topics),
                 file=sys.stdout):
@@ -264,7 +264,7 @@ class StabilitySearchMethod(BaseSearchMethod):
 
             subsample_data_paths = self._get_dataset_subsample_file_paths()
 
-            for subsample_number, data_path in tqdm.tqdm(
+            for subsample_number, data_path in tqdm(
                     enumerate(subsample_data_paths),
                     total=len(subsample_data_paths),
                     file=sys.stdout):
@@ -319,14 +319,14 @@ class StabilitySearchMethod(BaseSearchMethod):
 
         print('\nEstimating stability for different numbers of topics...')
 
-        for num_topics in tqdm.tqdm(
+        for num_topics in tqdm(
                 numbers_of_topics,
                 total=len(numbers_of_topics),
                 file=sys.stdout):
 
             distances = list()
 
-            for i, (subsample_number_a, subsample_number_b) in tqdm.tqdm(
+            for i, (subsample_number_a, subsample_number_b) in tqdm(
                     enumerate(itertools.combinations(subsample_numbers, 2)),
                     total=subsample_combinations_number,
                     file=sys.stdout):
