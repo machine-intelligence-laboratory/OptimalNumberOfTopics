@@ -57,6 +57,7 @@ class StabilitySearchMethod(BaseSearchMethod):
             model_seed: int = 0,
             model_family: str or KnownModel = KnownModel.PLSA,
             max_num_top_words: Optional[int] = 1000,
+            max_num_model_pairs: Optional[int] = 10,
             datasets_folder_path: str = None,
             models_folder_path: str = None):
         """
@@ -66,7 +67,16 @@ class StabilitySearchMethod(BaseSearchMethod):
         max_num_top_words
             How many topic top words ot take into account
             when comparing topics.
-            If None, all topic words will be used.
+            If None, all topic words from topic kernel (`p(w | t) > 1/|W|`)
+            will be used (not to mention that it most likely is not necessary,
+            this also may be way too slow if the size of vocabulary is big).
+        max_num_model_pairs
+            How many model pairs ot consider when computing stability.
+            The process in as follows:
+            take `model_a`, take `model_b`, compare distances between their topics
+            (i.e. ``num_topics * num_topics`` distances) and average.
+            Overall process may take much time, so `max_num_model_pairs` may help
+            by limiting the number of model comparisons.
         datasets_folder_path
             Folder where to save data subsamples.
             If the folder is not empty,
@@ -91,6 +101,7 @@ class StabilitySearchMethod(BaseSearchMethod):
         self._model_num_processors = model_num_processors
         self._model_seed = model_seed
         self._max_num_top_words = max_num_top_words
+        self._max_num_model_pairs = max_num_model_pairs
 
         if models_folder_path is None:
             models_folder_path = tempfile.mkdtemp()
@@ -299,6 +310,11 @@ class StabilitySearchMethod(BaseSearchMethod):
             len(os.listdir(self._folder_path_num_topics(numbers_of_topics[0])))
         ))
 
+        if self._max_num_model_pairs is not None:
+            subsample_combinations_number = self._max_num_model_pairs
+        else:
+            subsample_combinations_number = int(sp.special.binom(len(subsample_numbers), 2))
+
         stabilities = dict()
 
         print('\nEstimating stability for different numbers of topics...')
@@ -310,9 +326,9 @@ class StabilitySearchMethod(BaseSearchMethod):
 
             distances = list()
 
-            for subsample_number_a, subsample_number_b in tqdm.tqdm(
-                    itertools.combinations(subsample_numbers, 2),
-                    total=int(sp.special.binom(len(subsample_numbers), 2)),
+            for i, (subsample_number_a, subsample_number_b) in tqdm.tqdm(
+                    enumerate(itertools.combinations(subsample_numbers, 2)),
+                    total=subsample_combinations_number,
                     file=sys.stdout):
 
                 topic_model_a = self._load_phi(num_topics, subsample_number_a)
@@ -321,6 +337,11 @@ class StabilitySearchMethod(BaseSearchMethod):
                 distances.append(
                     self._compute_distance(topic_model_a, topic_model_b)
                 )
+
+                if i + 1 == subsample_combinations_number:
+                    break
+
+            assert len(distances) == subsample_combinations_number
 
             stability_metrics = dict()
 
