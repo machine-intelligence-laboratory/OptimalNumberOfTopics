@@ -299,10 +299,16 @@ class RenormalizationMethod(BaseSearchMethod):
 
         threshold = self._threshold_factor * 1.0 / num_words
 
-        for renormalization_iteration in tqdm(
-                range(original_num_topics - 1),
-                total=original_num_topics - 1,
-                file=sys.stdout):
+        progress = tqdm(
+            range(original_num_topics - 1),
+            total=original_num_topics - 1,
+            file=sys.stdout
+        )
+        num_iterations_for_progress_update = 10
+
+        for renormalization_iteration in range(original_num_topics - 1):
+            if (renormalization_iteration + 1) % num_iterations_for_progress_update == 0:
+                progress.update(num_iterations_for_progress_update)
 
             num_words, num_topics = pwt.shape
             nums_topics.append(num_topics)
@@ -391,6 +397,7 @@ class RenormalizationMethod(BaseSearchMethod):
 
             pwt = update_callback(pwt, topic_a, topic_b)
 
+        progress.close()
         finish_time = datetime.now()
 
         if self._verbose:
