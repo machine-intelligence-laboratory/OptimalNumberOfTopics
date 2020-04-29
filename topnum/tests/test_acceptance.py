@@ -4,12 +4,13 @@ import pytest
 import warnings
 
 from numbers import Number
-from topicnet.cooking_machine.dataset import W_DIFF_BATCHES_1
-from topicnet.cooking_machine.models import BaseModel
 from typing import (
     Dict,
-    List
+    List,
 )
+
+from topicnet.cooking_machine.dataset import W_DIFF_BATCHES_1
+from topicnet.cooking_machine.models import BaseModel
 
 from topnum.scores import (
     DiversityScore,
@@ -20,6 +21,7 @@ from topnum.scores.base_topic_score import BaseTopicScore
 from topnum.search_methods import (
     OptimizeScoresMethod,
     RenormalizationMethod,
+    StabilitySearchMethod,
     TopicBankMethod,
 )
 from topnum.search_methods.base_search_method import BaseSearchMethod
@@ -136,6 +138,26 @@ class TestAcceptance:
         for result_key in ['optimum', 'optimum_std']:
             assert result_key in self.optimizer._result
             assert isinstance(self.optimizer._result[result_key], Number)
+
+    def test_stability(self):
+        min_num_topics = 1
+        max_num_topics = 5
+        num_topics_interval = 1
+
+        self.optimizer = StabilitySearchMethod(
+            min_num_topics=min_num_topics,
+            max_num_topics=max_num_topics,
+            num_topics_interval=num_topics_interval,
+        )
+
+        self.optimizer.search_for_optimum(self.text_collection)
+
+        assert len(list(self.optimizer._result.keys())) > 0
+
+        result_value = list(self.optimizer._result.values())[0]
+        num_topics_values = list(range(min_num_topics, max_num_topics + 1, num_topics_interval))
+
+        assert len(list(result_value.values())) == len(num_topics_values)
 
     def test_renormalize(self):
         max_num_topics = 10

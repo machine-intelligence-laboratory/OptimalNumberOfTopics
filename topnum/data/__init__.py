@@ -1,1 +1,2 @@
+from .base_text_collection import BaseTextCollection
 from .vowpal_wabbit_text_collection import VowpalWabbitTextCollection
