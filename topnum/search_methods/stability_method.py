@@ -13,7 +13,7 @@ import sys
 import tempfile
 
 from lapsolver import solve_dense
-from tqdm.auto import tqdm
+from tqdm import tqdm_notebook as tqdm
 from typing import (
     List,
     Optional,
