@@ -131,7 +131,7 @@ class _DiversityScore(BaseTopicNetScore):
         self.closest = closest
 
     def call(self, model: TopicModel):
-        phi = model.get_phi(class_ids=self._class_ids).values
+        phi = model.get_phi(class_ids=self._class_ids)
 
         if self._metric == "hellinger":
             matrix = np.sqrt(phi.T)

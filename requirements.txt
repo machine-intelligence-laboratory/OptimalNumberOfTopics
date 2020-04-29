@@ -9,3 +9,4 @@ scikit-learn==0.22.1
 scipy==1.4.1
 topicnet>=0.7.0
 tqdm==4.42.1
+lapsolver
