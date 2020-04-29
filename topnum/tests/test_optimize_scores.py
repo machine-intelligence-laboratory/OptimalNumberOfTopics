@@ -19,12 +19,14 @@ from topnum.scores import (
     EntropyScore,
     HoldoutPerplexityScore,
     IntratextCoherenceScore,
+    LikelihoodBasedScore,
     PerplexityScore,
     SilhouetteScore,
     SimpleTopTokensCoherenceScore,
     SophisticatedTopTokensCoherenceScore,
     SparsityPhiScore,
     SparsityThetaScore,
+    SpectralDivergenceScore,
 )
 from topnum.scores.base_topic_score import BaseTopicScore
 from topnum.search_methods import OptimizeScoresMethod
@@ -58,7 +60,7 @@ class _DummyTopicScore(BaseTopicScore):
 
 
 @pytest.mark.filterwarnings(f'ignore:{W_DIFF_BATCHES_1}')
-class TestSearchMethods:
+class TestOptimizeScores:
     data_generator = None
 
     dataset = None
@@ -113,8 +115,26 @@ class TestSearchMethods:
 
     def test_optimize_silhouette(self):
         score = SilhouetteScore(
-            'holdout_perplexity_score',
+            'silhouette_score',
             validation_dataset=self.dataset
+        )
+
+        self._test_optimize_score(score)
+
+    def test_optimize_likelihood(self):
+        score = LikelihoodBasedScore(
+            'likelihood_score',
+            validation_dataset=self.dataset,
+            modality=self.main_modality,
+        )
+
+        self._test_optimize_score(score)
+
+    def test_optimize_divergence(self):
+        score = SpectralDivergenceScore(
+            'divergence_score',
+            validation_dataset=self.dataset,
+            modalities=[self.main_modality],
         )
 
         self._test_optimize_score(score)
