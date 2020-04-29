@@ -323,6 +323,12 @@ class StabilitySearchMethod(BaseSearchMethod):
                 )
 
             stability_metrics = dict()
+
+            stability_metrics['mean'] = np.mean(distances)
+            stability_metrics['median'] = np.median(distances)
+            stability_metrics['max'] = np.max(distances)
+            stability_metrics['min'] = np.min(distances)
+
             stability_metrics['std'] = np.std(distances, ddof=_DDOF)
             stability_metrics['var'] = np.var(distances, ddof=_DDOF)
             stability_metrics['range'] = np.ptp(distances)
