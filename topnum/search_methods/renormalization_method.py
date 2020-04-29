@@ -298,7 +298,11 @@ class RenormalizationMethod(BaseSearchMethod):
 
         threshold = self._threshold_factor * 1.0 / num_words
 
-        for renormalization_iteration in range(original_num_topics - 1):
+        for renormalization_iteration in tqdm.tqdm(
+                range(original_num_topics - 1),
+                total=original_num_topics - 1,
+                file=sys.stdout):
+
             num_words, num_topics = pwt.shape
             nums_topics.append(num_topics)
 
