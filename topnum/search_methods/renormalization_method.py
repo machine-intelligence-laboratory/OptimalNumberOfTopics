@@ -6,17 +6,18 @@ import pandas as pd
 import scipy
 import scipy.stats
 import sys
-import tqdm
 
 from datetime import datetime
-from topicnet.cooking_machine.dataset import Dataset
-from topicnet.cooking_machine.models import TopicModel
-from topicnet.cooking_machine.model_constructor import init_simple_default_model
+from tqdm.auto import tqdm
 from typing import (
     Callable,
     List,
     Tuple
 )
+
+from topicnet.cooking_machine.dataset import Dataset
+from topicnet.cooking_machine.models import TopicModel
+from topicnet.cooking_machine.model_constructor import init_simple_default_model
 
 from .base_search_method import (
     BaseSearchMethod,
@@ -101,7 +102,7 @@ class RenormalizationMethod(BaseSearchMethod):
         dataset = text_collection._to_dataset()
         restart_results = list()
 
-        for seed in tqdm.tqdm(range(self._num_restarts), total=self._num_restarts, file=sys.stdout):
+        for seed in tqdm(range(self._num_restarts), total=self._num_restarts, file=sys.stdout):
             # seed -1 is somewhat similar to seed 0 ?
             # so skipping -1
             _logger.info(f'Seed is {seed}')
@@ -298,7 +299,7 @@ class RenormalizationMethod(BaseSearchMethod):
 
         threshold = self._threshold_factor * 1.0 / num_words
 
-        for renormalization_iteration in tqdm.tqdm(
+        for renormalization_iteration in tqdm(
                 range(original_num_topics - 1),
                 total=original_num_topics - 1,
                 file=sys.stdout):
