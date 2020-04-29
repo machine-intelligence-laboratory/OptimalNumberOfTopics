@@ -8,7 +8,7 @@ import scipy.stats
 import sys
 
 from datetime import datetime
-from tqdm.auto import tqdm
+from tqdm.notebook import tqdm
 from typing import (
     Callable,
     List,
