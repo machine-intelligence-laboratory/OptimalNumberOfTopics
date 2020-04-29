@@ -101,10 +101,9 @@ class RenormalizationMethod(BaseSearchMethod):
         dataset = text_collection._to_dataset()
         restart_results = list()
 
-        for i in tqdm.tqdm(range(self._num_restarts), total=self._num_restarts, file=sys.stdout):
-            seed = i - 1  # so as to use also seed = -1 (whoever knows what this means in ARTM)
-            need_set_seed = seed >= 0
-
+        for seed in tqdm.tqdm(range(self._num_restarts), total=self._num_restarts, file=sys.stdout):
+            # seed -1 is somewhat similar to seed 0 ?
+            # so skipping -1
             _logger.info(f'Seed is {seed}')
 
             restart_result = dict()
@@ -122,8 +121,7 @@ class RenormalizationMethod(BaseSearchMethod):
                 background_topics=0  # TODO: or better add ability to specify?
             )
 
-            if need_set_seed:
-                artm_model.seed = seed  # TODO: seed -> init_simple_default_model
+            artm_model.seed = seed  # TODO: seed -> init_simple_default_model
 
             model = TopicModel(artm_model)
             model._fit(
