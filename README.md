@@ -195,7 +195,7 @@ with open('result.json', 'w') as f:
     f.write(json.dumps(optimizer._result))
 ```
 
-More about available scores one can find [here](https://github.com/machine-intelligence-laboratory/OptimalNumberOfTopics/tree/feature/coherences/topnum/scores) in the module.
+More about available scores one can find [here](https://github.com/machine-intelligence-laboratory/OptimalNumberOfTopics/tree/master/topnum/scores) in the module.
 
 ## TopicBank
 
