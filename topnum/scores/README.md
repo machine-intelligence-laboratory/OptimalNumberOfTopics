@@ -13,11 +13,12 @@ Here are the scores available for using for finding an appropriate number of top
             │   ├── intratext_coherence_score.py             # Coherence score (intratext)
             │   ├── simple_toptok_coherence_score.py         # Coherence score (top tokens, #1)
             │   └── sophisticated_toptok_coherence_score.py  # Coherence score (top tokens, #2)
+            ├── arun.py
             ├── calinski_harabasz.py
             ├── diversity_score.py
             ├── entropy_score.py
-            ├── entropy_score.py
             ├── holdout_perplexity_score.py
+            ├── likelihood.py
             └── silhouette.py
 
 

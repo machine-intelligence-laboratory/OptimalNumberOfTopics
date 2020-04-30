@@ -195,14 +195,7 @@ with open('result.json', 'w') as f:
     f.write(json.dumps(optimizer._result))
 ```
 
-Scores currenly available are:
-* perplexity
-* renyi_entropy
-* diversity_score
-* intratext_coherence
-* top_tokens_coherence
-
-More about scores one can find [here](https://github.com/machine-intelligence-laboratory/OptimalNumberOfTopics/tree/feature/coherences/topnum/scores) in the module.
+More about available scores one can find [here](https://github.com/machine-intelligence-laboratory/OptimalNumberOfTopics/tree/feature/coherences/topnum/scores) in the module.
 
 ## TopicBank
 
@@ -240,7 +233,7 @@ python run_search.py \
 By assumption, optimal number of topics is supposed provide some *stability* in model training, when models trained on *different subsets of documents* from the same corpus are alike.
 
 The idea is similar to the one described in the following paper:  
-[Derek Greene, Derek O’Callaghan, and Pádraig Cunningham. "How many topics? stability analysis for topic models", 2014.](https://arxiv.org/abs/1404.4606).
+[Derek Greene, Derek O’Callaghan, and Pádraig Cunningham. "How many topics? stability analysis for topic models", 2014](https://arxiv.org/abs/1404.4606).
 However, here we are not using such notion as *reference ranking set*.
 We just train several topic models on different parts of the corpus and compare them all in pairs.
 
