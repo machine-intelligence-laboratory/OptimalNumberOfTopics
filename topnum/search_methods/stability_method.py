@@ -404,9 +404,11 @@ class StabilitySearchMethod(BaseSearchMethod):
 
         row_ids, column_ids = solve_dense(topic_distances)
 
-        return float(np.sum(
-            topic_distances[row_ids, column_ids]
-        ))
+        return float(
+            np.sum(
+                topic_distances[row_ids, column_ids]
+            ) / max(1.0, num_topics)
+        )
 
     def _compute_topic_distance(self, topic_a: pd.Series, topic_b: pd.Series) -> float:
         return TopicBankMethod._jaccard_distance(
