@@ -18,7 +18,10 @@ from typing import (
 
 from topicnet.cooking_machine.dataset import Dataset
 from topicnet.cooking_machine.models import TopicModel
-from topicnet.cooking_machine.model_constructor import init_simple_default_model
+from ..model_constructor import (
+    init_model_from_family,
+    KnownModel,
+)
 
 from .base_search_method import (
     BaseSearchMethod,
@@ -55,7 +58,10 @@ class RenormalizationMethod(BaseSearchMethod):
             num_restarts: int = 3,
             min_num_topics: int = DEFAULT_MIN_NUM_TOPICS,
             max_num_topics: int = DEFAULT_MAX_NUM_TOPICS,
-            num_fit_iterations: int = DEFAULT_NUM_FIT_ITERATIONS):
+            num_fit_iterations: int = DEFAULT_NUM_FIT_ITERATIONS,
+            model_num_processors: int = 1,
+            model_seed: int = 0,
+            model_family: str or KnownModel = KnownModel.PLSA):
 
         super().__init__(min_num_topics, max_num_topics, num_fit_iterations)
 
@@ -76,6 +82,9 @@ class RenormalizationMethod(BaseSearchMethod):
         self._threshold_factor = threshold_factor
         self._verbose = verbose
         self._num_restarts = num_restarts
+        self._model_num_processors = model_num_processors
+        self._model_seed = model_seed
+        self._model_family = model_family
 
         self._result = dict()
 
@@ -115,12 +124,14 @@ class RenormalizationMethod(BaseSearchMethod):
             restart_result[self._key_shannon_entropy_values] = list()
             restart_result[self._key_energy_values] = list()
 
-            artm_model = init_simple_default_model(
-                dataset,
+            artm_model = init_model_from_family(
+                family=self._model_family,
+                dataset=dataset,
                 modalities_to_use=text_collection._modalities,
                 main_modality=text_collection._main_modality,
-                specific_topics=self._max_num_topics,
-                background_topics=0  # TODO: or better add ability to specify?
+                num_topics=self._max_num_topics,
+                seed=self._model_seed,
+                num_processors=self._model_num_processors,
             )
 
             artm_model.seed = seed  # TODO: seed -> init_simple_default_model
