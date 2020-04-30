@@ -140,42 +140,43 @@ from topnum.scores import (
     EntropyScore,
     IntratextCoherenceScore,
     PerplexityScore,
-    SophisticatedTopTokensCoherenceScore
+    SophisticatedTopTokensCoherenceScore,
 )
 from topnum.search_methods import OptimizeScoresMethod
+
 
 modalities={
     '@text': 1,
     '@title': 3,
-    '@publisher': 2
+    '@publisher': 2,
 }
 text_collection = VowpalWabbitTextCollection(
     'sample/vw.txt',
     main_modality='@text',
-    modalities=modalities
+    modalities=modalities,
 )
 modality_names = list(modalities.keys())
 
 scores = [
     PerplexityScore(
         'perplexity_score',
-        class_ids=modality_names
+        class_ids=modality_names,
     ),
     EntropyScore(
         'renyi_entropy_score',
-        class_ids=modality_names
+        class_ids=modality_names,
     ),
     DiversityScore(
         'diversity_score',
-        class_ids=modality_names
+        class_ids=modality_names,
     ),
     IntratextCoherenceScore(
         'intratext_coherence_score',
-        data=text_collection
+        data=text_collection,
     ),
     SophisticatedTopTokensCoherenceScore(
         'top_tokens_coherence_score',
-        data=text_collection
+        data=text_collection,
     )
 ]
 
@@ -185,7 +186,7 @@ optimizer = OptimizeScoresMethod(
     max_num_topics=10,
     num_topics_interval=2,
     num_fit_iterations=2,
-    num_restarts=3
+    num_restarts=3,
 )
 
 optimizer.search_for_optimum(text_collection)
@@ -234,11 +235,24 @@ python run_search.py \
     --matrix phi                # matrix to use for renormalization
 ```
 
+## Stability
+
+By assumption, optimal number of topics is supposed provide some *stability* in model training, when models trained on *different subsets of documents* from the same corpus are alike.
+
+The idea is similar to the one described in the following paper:  
+[Derek Greene, Derek O’Callaghan, and Pádraig Cunningham. "How many topics? stability analysis for topic models", 2014.](https://arxiv.org/abs/1404.4606).
+However, here we are not using such notion as *reference ranking set*.
+We just train several topic models on different parts of the corpus and compare them all in pairs.
+
+Also one may take a look at this [demo notebook](demos/Stability-Demo.ipynb) about the stability approach used in the library.
+
 ## Structure
 
     .
     ├── run_search.py       # Main script which handles all the methods and their parameters and provides a way to run the process through the command line
-    └── topnum              # Core
+    ├── demos               # Demo notebooks with experiments on real data
+    ├── sample              # Toy data sample and scripts to try
+    └── topnum              # Core library functionality
         ├── data            # Train data handling (eg. Vowpal Wabbit files)
         ├── scores          # Scores that are available for optimizing or tracking
         └── search_methods  # Some techniques and ideas that can be used for finding an appropriate number of topics
