@@ -104,16 +104,23 @@ class StabilitySearchMethod(BaseSearchMethod):
         self._max_num_model_pairs = max_num_model_pairs
 
         if models_folder_path is None:
-            models_folder_path = tempfile.mkdtemp()
+            models_folder_path = tempfile.mkdtemp(
+                prefix='stability_approach_models__'
+            )
 
         self._models_folder_path = models_folder_path
 
         if datasets_folder_path is None:
-            datasets_folder_path = tempfile.mkdtemp(prefix='stability_approach__')
+            datasets_folder_path = tempfile.mkdtemp(
+                prefix='stability_approach_datasets__'
+            )
 
         self._datasets_folder_path = datasets_folder_path
 
         os.makedirs(datasets_folder_path, exist_ok=True)
+
+        _LOGGER.info(f'Models folder: "{self._models_folder_path}"')
+        _LOGGER.info(f'Datasets folder: "{self._datasets_folder_path}"')
 
     def _get_dataset_subsample_file_paths(self) -> List[str]:
         return glob.glob(
@@ -125,6 +132,24 @@ class StabilitySearchMethod(BaseSearchMethod):
             self._models_folder_path,
             f'num_topics_{num_topics:03}'
         )
+
+    def _extract_num_topics_for_trained_models(self) -> List[int]:
+        numbers_of_topics = list()
+
+        for folder_name in os.listdir(self._models_folder_path):
+            if '_' not in folder_name:
+                continue
+
+            num_topics_as_string = folder_name.split('_')[-1]
+
+            try:
+                num_topics = int(num_topics_as_string)
+            except ValueError:
+                continue
+            else:
+                numbers_of_topics.append(num_topics)
+
+        return numbers_of_topics
 
     def _folder_path_model(self, num_topics: int, subsample_number: int) -> str:
         return os.path.join(
@@ -162,9 +187,18 @@ class StabilitySearchMethod(BaseSearchMethod):
 
         if len(os.listdir(self._models_folder_path)) > 0:
             print(
-                f'Models folder "{self._models_folder_path}" is not empty.'
-                f' Assuming, that no training is needed.'
-                f' Going straight to estimating stability'
+                f'Models folder "{self._models_folder_path}" is not empty!'
+                f' Some num_topics may be skipped'
+                f' (if there is a folder with such num_topics)'
+            )
+
+            processed_num_topics = self._extract_num_topics_for_trained_models()
+
+            self._train_models(
+                text_collection,
+                min_df_rate=min_df_rate,
+                max_df_rate=max_df_rate,
+                num_topics_to_skip=processed_num_topics,
             )
         elif len(self._get_dataset_subsample_file_paths()) > 0:
             self._train_models(
@@ -174,8 +208,7 @@ class StabilitySearchMethod(BaseSearchMethod):
             )
         else:
             print(
-                f'Folder "{self._datasets_folder_path}"'
-                f' has no sub-datasets for training!'
+                'Datasets folder has no sub-datasets for training!'
             )
 
             self._subsample_datasets(
@@ -211,6 +244,7 @@ class StabilitySearchMethod(BaseSearchMethod):
         document_indices = list(range(total_num_documents))
         random = np.random.RandomState(seed)
 
+        print(f'\nFolder for sub-datasets saving: "{self._datasets_folder_path}"')
         print('Subsampling documents...')
 
         for i in tqdm(
@@ -241,7 +275,8 @@ class StabilitySearchMethod(BaseSearchMethod):
             self,
             text_collection: VowpalWabbitTextCollection,
             min_df_rate: float,
-            max_df_rate: float) -> None:
+            max_df_rate: float,
+            num_topics_to_skip: List[int] = None) -> None:
 
         modalities_to_use = list(text_collection._modalities.keys())
         main_modality = text_collection._main_modality
@@ -251,7 +286,20 @@ class StabilitySearchMethod(BaseSearchMethod):
             self._max_num_topics + 1,
             self._num_topics_interval))
 
-        print('\nTraining models for different numbers of topics...')
+        if num_topics_to_skip is not None:
+            numbers_of_topics = [
+                n for n in numbers_of_topics if n not in num_topics_to_skip
+            ]
+
+        num_topics_for_message = ', '.join(
+            [str(n) for n in numbers_of_topics[:10]]
+        )
+
+        print(f'\n Folder for models saving: "{self._models_folder_path}"')
+        print(
+            f'Training models for {len(numbers_of_topics)}'
+            f' numbers of topics: {num_topics_for_message}...'
+        )
 
         for num_topics in tqdm(
                 numbers_of_topics,
