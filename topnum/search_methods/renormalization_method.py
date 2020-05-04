@@ -6,16 +6,21 @@ import pandas as pd
 import scipy
 import scipy.stats
 import sys
-import tqdm
+import warnings
 
 from datetime import datetime
-from topicnet.cooking_machine.dataset import Dataset
-from topicnet.cooking_machine.models import TopicModel
-from topicnet.cooking_machine.model_constructor import init_simple_default_model
+from tqdm import tqdm
 from typing import (
     Callable,
     List,
     Tuple
+)
+
+from topicnet.cooking_machine.dataset import Dataset
+from topicnet.cooking_machine.models import TopicModel
+from ..model_constructor import (
+    init_model_from_family,
+    KnownModel,
 )
 
 from .base_search_method import (
@@ -53,7 +58,10 @@ class RenormalizationMethod(BaseSearchMethod):
             num_restarts: int = 3,
             min_num_topics: int = DEFAULT_MIN_NUM_TOPICS,
             max_num_topics: int = DEFAULT_MAX_NUM_TOPICS,
-            num_fit_iterations: int = DEFAULT_NUM_FIT_ITERATIONS):
+            num_fit_iterations: int = DEFAULT_NUM_FIT_ITERATIONS,
+            model_num_processors: int = 1,
+            model_seed: int = 0,
+            model_family: str or KnownModel = KnownModel.PLSA):
 
         super().__init__(min_num_topics, max_num_topics, num_fit_iterations)
 
@@ -74,6 +82,9 @@ class RenormalizationMethod(BaseSearchMethod):
         self._threshold_factor = threshold_factor
         self._verbose = verbose
         self._num_restarts = num_restarts
+        self._model_num_processors = model_num_processors
+        self._model_seed = model_seed
+        self._model_family = model_family
 
         self._result = dict()
 
@@ -101,10 +112,9 @@ class RenormalizationMethod(BaseSearchMethod):
         dataset = text_collection._to_dataset()
         restart_results = list()
 
-        for i in tqdm.tqdm(range(self._num_restarts), total=self._num_restarts, file=sys.stdout):
-            seed = i - 1  # so as to use also seed = -1 (whoever knows what this means in ARTM)
-            need_set_seed = seed >= 0
-
+        for seed in tqdm(range(self._num_restarts), total=self._num_restarts, file=sys.stdout):
+            # seed -1 is somewhat similar to seed 0 ?
+            # so skipping -1
             _logger.info(f'Seed is {seed}')
 
             restart_result = dict()
@@ -114,16 +124,17 @@ class RenormalizationMethod(BaseSearchMethod):
             restart_result[self._key_shannon_entropy_values] = list()
             restart_result[self._key_energy_values] = list()
 
-            artm_model = init_simple_default_model(
-                dataset,
+            artm_model = init_model_from_family(
+                family=self._model_family,
+                dataset=dataset,
                 modalities_to_use=text_collection._modalities,
                 main_modality=text_collection._main_modality,
-                specific_topics=self._max_num_topics,
-                background_topics=0  # TODO: or better add ability to specify?
+                num_topics=self._max_num_topics,
+                seed=self._model_seed,
+                num_processors=self._model_num_processors,
             )
 
-            if need_set_seed:
-                artm_model.seed = seed  # TODO: seed -> init_simple_default_model
+            artm_model.seed = seed  # TODO: seed -> init_simple_default_model
 
             model = TopicModel(artm_model)
             model._fit(
@@ -298,9 +309,32 @@ class RenormalizationMethod(BaseSearchMethod):
         if self._verbose:
             print(message)
 
+        if original_num_topics == 0:
+            warnings.warn(
+                'Already no topics in the model!'
+                ' Nothing to renormalize'
+            )
+
+            return nums_topics, entropies, densities, energies
+
         threshold = self._threshold_factor * 1.0 / num_words
 
-        for renormalization_iteration in range(original_num_topics - 1):
+        num_renormalization_iterations = original_num_topics - 1
+        progress = tqdm(
+            range(num_renormalization_iterations),
+            total=num_renormalization_iterations,
+            file=sys.stdout
+        )
+        num_progress_updates = 10
+        num_iterations_for_progress_update = max(
+            1,
+            num_renormalization_iterations // num_progress_updates,
+        )
+
+        for renormalization_iteration in range(num_renormalization_iterations):
+            if (renormalization_iteration + 1) % num_iterations_for_progress_update == 0:
+                progress.update(num_iterations_for_progress_update)
+
             num_words, num_topics = pwt.shape
             nums_topics.append(num_topics)
 
@@ -388,6 +422,7 @@ class RenormalizationMethod(BaseSearchMethod):
 
             pwt = update_callback(pwt, topic_a, topic_b)
 
+        progress.close()
         finish_time = datetime.now()
 
         if self._verbose:
