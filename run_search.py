@@ -22,7 +22,7 @@ from topnum.scores import (
     CalinskiHarabaszScore,
     LikelihoodBasedScore
 )
-from topnum.model_constructor import KNOWN_MODELS
+from topnum.model_constructor import KnownModel
 from topnum.scores.diversity_score import L2
 from topnum.scores.entropy_score import RENYI as RENYI_ENTROPY_NAME
 from topnum.scores.base_score import BaseScore
@@ -52,8 +52,8 @@ def _main():
     parser.add_argument(
         '-mf', '--model-family',
         help=f'The family of models to optimize the number of topics for',
-        default="PLSA",
-        choices=KNOWN_MODELS,
+        default=KnownModel.PLSA.value,
+        choices=[m.value for m in KnownModel],
         required=False
     )
     parser.add_argument(
