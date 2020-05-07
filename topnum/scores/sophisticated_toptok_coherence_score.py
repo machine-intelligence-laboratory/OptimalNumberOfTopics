@@ -221,6 +221,8 @@ class _TopTokensCoherenceScore(_BaseCoherenceScore):
             top_words_cooccurrences: Dict[Tuple[WordType, WordType], float],
             num_windows: int) -> Union[float, None]:
 
+        # top_words_cooccurrences is defaultdict(int), so no .get() is needed
+
         pair_estimates = np.array([
             np.log2(
                 max(1,
@@ -267,6 +269,9 @@ class _TopTokensCoherenceScore(_BaseCoherenceScore):
             cooccurrences.update(self._word_cooccurrences)
             self._remove_discrepancies_for_reversed_pairs(cooccurrences, top_words)
 
+            return cooccurrences
+
+        if len(document_words) == 0:
             return cooccurrences
 
         start_window = document_words[:self._window]

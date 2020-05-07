@@ -1,5 +1,12 @@
+import artm
 import logging
 import os
+
+
+# change log style
+lc = artm.messages.ConfigureLoggingArgs()
+lc.minloglevel = 3
+lib = artm.wrapper.LibArtm(logging_config=lc)
 
 
 logs_folder = os.path.join(

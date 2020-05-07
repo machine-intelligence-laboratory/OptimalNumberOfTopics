@@ -1,7 +1,8 @@
 import numpy as np
+
 from typing import (
     Dict,
-    List
+    List,
 )
 
 from ..data.base_text_collection import BaseTextCollection
@@ -15,7 +16,12 @@ _STD_KEY_SUFFIX = '_std'
 
 
 class BaseSearchMethod:
-    def __init__(self, min_num_topics, max_num_topics, num_fit_iterations):
+    def __init__(
+            self,
+            min_num_topics: int,
+            max_num_topics: int,
+            num_fit_iterations: int):
+
         self._min_num_topics = min_num_topics
         self._max_num_topics = max_num_topics
         self._num_fit_iterations = num_fit_iterations

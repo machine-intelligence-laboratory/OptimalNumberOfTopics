@@ -4,9 +4,10 @@ import pandas as pd
 import uuid
 import warnings
 
-from topicnet.cooking_machine.models import TopicModel
 from tqdm import tqdm
 from typing import List
+
+from topicnet.cooking_machine.models import TopicModel
 
 from .base_search_method import (
     BaseSearchMethod,
@@ -23,7 +24,10 @@ from .constants import (
 from ..data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
 from ..scores.base_score import BaseScore
 
-from ..model_constructor import init_model_from_family
+from ..model_constructor import (
+    init_model_from_family,
+    KnownModel,
+)
 
 _KEY_SCORE_RESULTS = 'score_results'
 _KEY_SCORE_VALUES = 'score_values'
@@ -35,7 +39,7 @@ class OptimizeScoresMethod(BaseSearchMethod):
     def __init__(
             self,
             scores: List[BaseScore],  # TODO: Union[BaseScore, List[BaseScore]]
-            model_family: str = "LDA",
+            model_family: str or KnownModel = KnownModel.PLSA,
             num_restarts: int = 3,
             num_topics_interval: int = 10,
             min_num_topics: int = DEFAULT_MIN_NUM_TOPICS,
