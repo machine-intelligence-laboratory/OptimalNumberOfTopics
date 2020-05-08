@@ -61,7 +61,7 @@ class _DummyTopicScore(BaseTopicScore):
 
 
 @pytest.mark.filterwarnings(f'ignore:{W_DIFF_BATCHES_1}')
-class TestSearchMethodTopicBank:
+class TestTopicBank:
     data_generator = None
 
     dataset = None
@@ -98,6 +98,9 @@ class TestSearchMethodTopicBank:
     def teardown_class(cls):
         if cls.data_generator is not None:
             cls.data_generator.clear()
+
+    def test_topic_bank_smoke(self):
+        self._test_topic_bank(BankUpdateMethod.PROVIDE_NON_LINEARITY)
 
     @pytest.mark.parametrize(
         'bank_update',

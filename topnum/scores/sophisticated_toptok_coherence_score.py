@@ -42,8 +42,9 @@ class SophisticatedTopTokensCoherenceScore(BaseTopicScore):
             word_topic_relatedness: WordTopicRelatednessType = WordTopicRelatednessType.PWT,
             specificity_estimation: SpecificityEstimationMethod = SpecificityEstimationMethod.NONE,
             word_cooccurrences: Dict[Tuple[WordType, WordType], float] = None,
-            num_top_words=10,
-            window=20):
+            num_top_words: int = 10,
+            window: int = 20,
+            verbose: bool = False):
         """
         Parameters
         ----------
@@ -75,6 +76,10 @@ class SophisticatedTopTokensCoherenceScore(BaseTopicScore):
             In case computation_method = ComputationMethod.SUM_OVER_WINDOW:
             Window width. So the window will be the words with positions
             in [current position - window / 2, current position + window / 2)
+        verbose
+            Whether to show progress bar for documents or not.
+            As the score is not very fast, it might be helpful to see how many documents
+            are yet to be processed
         """
         super().__init__(name)
 
@@ -84,9 +89,15 @@ class SophisticatedTopTokensCoherenceScore(BaseTopicScore):
         self._word_topic_relatedness = word_topic_relatedness
         self._specificity_estimation = specificity_estimation
 
-        self._word_cooccurrences = word_cooccurrences
+        if word_cooccurrences is None:
+            self._word_cooccurrences = None
+        else:
+            self._word_cooccurrences = word_cooccurrences
+
         self._num_top_words = num_top_words
         self._window = window
+
+        self._verbose = verbose
 
         self._score = self._initialize()
 
@@ -104,7 +115,8 @@ class SophisticatedTopTokensCoherenceScore(BaseTopicScore):
             specificity_estimation=self._specificity_estimation,
             word_cooccurrences=self._word_cooccurrences,
             num_top_words=self._num_top_words,
-            window=self._window
+            window=self._window,
+            verbose=self._verbose,
         )
 
     def compute(
@@ -125,15 +137,17 @@ class _TopTokensCoherenceScore(_BaseCoherenceScore):
             word_topic_relatedness: WordTopicRelatednessType = WordTopicRelatednessType.PWT,
             specificity_estimation: SpecificityEstimationMethod = SpecificityEstimationMethod.NONE,
             word_cooccurrences: Dict[Tuple[WordType, WordType], float] = None,
-            num_top_words=10,
-            window=20):
+            num_top_words: int = 10,
+            window: int = 20,
+            verbose: bool = False):
 
         super().__init__(
             dataset=dataset,
             documents=documents,
             text_type=text_type,
             word_topic_relatedness=word_topic_relatedness,
-            specificity_estimation=specificity_estimation
+            specificity_estimation=specificity_estimation,
+            verbose=verbose,
         )
 
         if word_cooccurrences is not None and not isinstance(word_cooccurrences, dict):
@@ -148,7 +162,7 @@ class _TopTokensCoherenceScore(_BaseCoherenceScore):
         else:
             first_key, first_value = next(iter(word_cooccurrences.items()))
 
-            if not isinstance(first_value, int) or not isinstance(first_value, float):
+            if not isinstance(first_value, int) and not isinstance(first_value, float):
                 raise TypeError(
                     f'Expect int or float as values in cooccurrences dictionary,'
                     f' got "{first_value}"'
@@ -249,10 +263,10 @@ class _TopTokensCoherenceScore(_BaseCoherenceScore):
             top_words: List[WordType],
             document_words: List[WordType]) -> Dict[Tuple[WordType, WordType], float]:
 
-        cooccurrences = defaultdict(int)
+        cooccurrences = defaultdict(float)
 
         if self._word_cooccurrences is not None:
-            cooccurrences = self._word_cooccurrences
+            cooccurrences.update(self._word_cooccurrences)
             self._remove_discrepancies_for_reversed_pairs(cooccurrences, top_words)
 
             return cooccurrences
@@ -307,8 +321,8 @@ class _TopTokensCoherenceScore(_BaseCoherenceScore):
             top_words: List[WordType]) -> None:
 
         for w, u in itertools.combinations(top_words, 2):
-            coocs_num_for_pair = cooccurrences[(w, u)]
-            coocs_num_for_reversed_pair = cooccurrences[(u, w)]
+            coocs_num_for_pair = cooccurrences.get((w, u), 0)
+            coocs_num_for_reversed_pair = cooccurrences.get((u, w), 0)
 
             cooccurrences[(w, u)] = coocs_num_for_pair + coocs_num_for_reversed_pair
             cooccurrences[(u, w)] = cooccurrences[(w, u)]

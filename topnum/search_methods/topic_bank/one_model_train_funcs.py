@@ -18,12 +18,21 @@ def default_train_func(
         model_number: int,
         num_topics: int,
         num_fit_iterations: int,
-        scores: List[BaseScore] = None) -> TopicModel:
+        scores: List[BaseScore] = None,
+        **kwargs) -> TopicModel:
+    """
+
+    Additional Parameters
+    ---------------------
+    kwargs
+        Some params for `_get_topic_model`, such as `cache_theta` and `num_processors`
+    """
 
     topic_model = _get_topic_model(
         dataset,
         num_topics=num_topics,
         seed=model_number,
+        **kwargs,
     )
 
     num_fit_iterations_with_scores = 1
@@ -48,12 +57,14 @@ def specific_initial_phi_train_func(
         num_topics: int,
         num_fit_iterations: int,
         scores: List[BaseScore] = None,
-        initialize_phi_func: Callable[[Dataset, int, int], pd.DataFrame] = None) -> TopicModel:
+        initialize_phi_func: Callable[[Dataset, int, int], pd.DataFrame] = None,
+        **kwargs) -> TopicModel:
 
     topic_model = _get_topic_model(
         dataset,
         num_topics=num_topics,
         seed=model_number,
+        **kwargs,
     )
 
     if initialize_phi_func is None:
@@ -83,22 +94,27 @@ def regularization_train_func(
         model_number: int,
         num_topics: int,
         num_fit_iterations: int,
-        scores: List[BaseScore] = None) -> TopicModel:
+        scores: List[BaseScore] = None,
+        decorrelating_tau: float = 10**5,
+        smoothing_tau: float = 1e-5,
+        sparsing_tau: float = -0.01,
+        **kwargs) -> TopicModel:
 
     topic_model = _get_topic_model(
         dataset,
         num_topics=num_topics,
         seed=model_number,
+        **kwargs,
     )
 
     topic_model._model.regularizers.add(
-        artm.regularizers.DecorrelatorPhiRegularizer(tau=10**5)
+        artm.regularizers.DecorrelatorPhiRegularizer(tau=decorrelating_tau)
     )
 
     for topic_name in list(topic_model.get_phi().columns):
         topic_model._model.regularizers.add(
             artm.regularizers.SmoothSparsePhiRegularizer(
-                tau=1e-5,
+                tau=smoothing_tau,
                 topic_names=topic_name
             )
         )
@@ -120,7 +136,7 @@ def regularization_train_func(
         topic_model._model.regularizers[regularizer_name].tau = 0
 
     topic_model._model.regularizers.add(
-        artm.regularizers.SmoothSparsePhiRegularizer(tau=1e-5)
+        artm.regularizers.SmoothSparsePhiRegularizer(tau=sparsing_tau)
     )
 
     topic_model._fit(
@@ -143,18 +159,21 @@ def background_topics_train_func(
         num_topics: int,
         num_fit_iterations: int,
         scores: List[BaseScore] = None,
-        num_background_topics: int = 2) -> TopicModel:
+        num_background_topics: int = 2,
+        smoothing_tau: float = 0.01,
+        **kwargs) -> TopicModel:
 
     topic_model = _get_topic_model(
         dataset,
         num_topics=num_topics + num_background_topics,
         seed=model_number,
+        **kwargs,
     )
 
     for background_topic_name in list(topic_model.get_phi().columns)[-num_background_topics:]:
         topic_model._model.regularizers.add(
             artm.regularizers.SmoothSparsePhiRegularizer(
-                tau=0.01,
+                tau=smoothing_tau,
                 topic_names=background_topic_name  # TODO: why not list?
             )
         )
@@ -218,7 +237,9 @@ def _get_topic_model(
         num_topics: int = None,
         seed: int = None,
         scores: List[BaseScore] = None,
-        num_safe_fit_iterations: int = 3) -> TopicModel:
+        num_safe_fit_iterations: int = 3,
+        num_processors: int = 3,
+        cache_theta: bool = False) -> TopicModel:
 
     dictionary = dataset.get_dictionary()
 
@@ -242,6 +263,7 @@ def _get_topic_model(
     else:
         artm_model = artm.ARTM(topic_names=topic_names, seed=seed)
 
+    artm_model.num_processors = num_processors
     artm_model.initialize(dictionary)
 
     if phi is None:
@@ -254,7 +276,7 @@ def _get_topic_model(
     topic_model = TopicModel(
         artm_model=artm_model,
         model_id='0',
-        cache_theta=True,
+        cache_theta=cache_theta,
         theta_columns_naming='title'
     )
 

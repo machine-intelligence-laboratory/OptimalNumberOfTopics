@@ -89,8 +89,10 @@ class TopicBankMethod(BaseSearchMethod):
             other_topic_scores: List[BaseTopicScore] = None,
             stop_bank_score: BaseScore = None,
             other_scores: List[BaseScore] = None,
+            documents: List[str] = None,
             documents_fraction_for_topic_scores: float = 0.2,
             max_num_documents_for_topic_scores: int = 100,
+            start_model_number: int = 0,
             max_num_models: int = 100,
             one_model_num_topics: Union[int, List[int]] = 100,
             num_fit_iterations: int = DEFAULT_NUM_FIT_ITERATIONS,
@@ -106,7 +108,8 @@ class TopicBankMethod(BaseSearchMethod):
             save_bank: bool = False,
             save_model_topics: bool = False,
             bank_folder_path: str = None,
-            seed: int = None):
+            seed: int = None,
+            verbose: bool = False):
 
         super().__init__(
             min_num_topics=DEFAULT_MIN_NUM_TOPICS,  # not needed
@@ -181,8 +184,10 @@ class TopicBankMethod(BaseSearchMethod):
 
         self._all_model_scores = [self._stop_bank_score] + self._other_scores
 
+        self._documents = documents
         self._documents_fraction_for_topic_scores = documents_fraction_for_topic_scores
         self._max_num_documents_for_topic_scores = max_num_documents_for_topic_scores
+        self._start_model_number = start_model_number
         self._max_num_models = max_num_models
 
         if not isinstance(one_model_num_topics, list):
@@ -224,15 +229,17 @@ class TopicBankMethod(BaseSearchMethod):
         self._bank_update = bank_update
         self._child_parent_relationship_threshold = child_parent_relationship_threshold
 
-        if save_file_path is not None:
-            if not os.path.isdir(os.path.dirname(save_file_path)):
-                raise NotADirectoryError(f'Directory not found "{save_file_path}"')
+        need_to_load_results = False
 
-            if os.path.isfile(save_file_path):
-                warnings.warn(f'File "{save_file_path}" already exists! Overwriting')
-        else:
+        if save_file_path is None:
             file_descriptor, save_file_path = tempfile.mkstemp(prefix='topic_bank_result__')
             os.close(file_descriptor)
+        elif not os.path.isdir(os.path.dirname(save_file_path)):
+            raise NotADirectoryError(f'Directory not found "{save_file_path}"')
+        elif os.path.isfile(save_file_path):
+            need_to_load_results = True
+        else:
+            pass
 
         self._save_file_path = save_file_path
 
@@ -240,20 +247,30 @@ class TopicBankMethod(BaseSearchMethod):
         self._save_model_topics = save_model_topics
         self._bank_folder_path = bank_folder_path
 
+        self._verbose = verbose
+
         self._random = np.random.RandomState(seed=seed)
 
         self._result = dict()
 
-        self._result[_KEY_OPTIMUM] = None
-        self._result[_KEY_OPTIMUM + _STD_KEY_SUFFIX] = None
-        self._result[_KEY_BANK_SCORES] = list()
-        self._result[_KEY_BANK_TOPIC_SCORES] = list()
-        self._result[_KEY_MODEL_SCORES] = list()
-        self._result[_KEY_MODEL_TOPIC_SCORES] = list()
-        self._result[_KEY_NUM_BANK_TOPICS] = list()
-        self._result[_KEY_NUM_MODEL_TOPICS] = list()
+        if need_to_load_results:
+            warnings.warn(f'File "{save_file_path}" already exists. Loading')
 
-        self._topic_bank: TopicBank = None
+            self._load()
+        else:
+            self._result[_KEY_OPTIMUM] = None
+            self._result[_KEY_OPTIMUM + _STD_KEY_SUFFIX] = None
+            self._result[_KEY_BANK_SCORES] = list()
+            self._result[_KEY_BANK_TOPIC_SCORES] = list()
+            self._result[_KEY_MODEL_SCORES] = list()
+            self._result[_KEY_MODEL_TOPIC_SCORES] = list()
+            self._result[_KEY_NUM_BANK_TOPICS] = list()
+            self._result[_KEY_NUM_MODEL_TOPICS] = list()
+
+        self._topic_bank = TopicBank(
+            save=self._save_bank,
+            save_folder_path=self._bank_folder_path
+        )
 
     @property
     def save_path(self) -> str:
@@ -262,6 +279,10 @@ class TopicBankMethod(BaseSearchMethod):
     def save(self) -> None:
         with open(self._save_file_path, 'w') as f:
             f.write(json.dumps(self._result))
+
+    def _load(self) -> None:
+        with open(self._save_file_path, 'rb') as f:
+            self._result = json.loads(f.read())
 
     def clear(self) -> None:
         if os.path.isfile(self._save_file_path):
@@ -281,12 +302,17 @@ class TopicBankMethod(BaseSearchMethod):
         word2index = None
 
         documents_for_coherence = self._select_documents_for_topic_scores()
-        self._topic_bank = TopicBank(
-            save=self._save_bank,
-            save_folder_path=self._bank_folder_path
-        )
 
-        for model_number in tqdm.tqdm(range(self._max_num_models), total=self._max_num_models, file=sys.stdout):
+        if not self._verbose:
+            model_number_range = range(self._start_model_number, self._max_num_models)
+        else:
+            model_number_range = tqdm.tqdm(
+                range(self._start_model_number, self._max_num_models),
+                total=max(0, self._max_num_models - self._start_model_number),
+                file=sys.stdout,
+            )
+
+        for model_number in model_number_range:
             # TODO: stop when perplexity stabilizes
 
             _logger.info(f'Building topic model number {model_number}...')
@@ -430,6 +456,7 @@ class TopicBankMethod(BaseSearchMethod):
                     model=topic_model,
                     topic_scores=model_topic_current_scores,
                     phi=phi,
+                    dataset=self._dataset,
                 )
 
             _logger.info('Scoring bank model...')
@@ -482,6 +509,9 @@ class TopicBankMethod(BaseSearchMethod):
             self._result[_KEY_OPTIMUM + _STD_KEY_SUFFIX] = float(np.sum(differences))
 
     def _select_documents_for_topic_scores(self) -> List[str]:
+        if self._documents is not None:
+            return self._documents
+
         document_ids = list(self._dataset._data.index)
         num_documents = len(document_ids)
 
@@ -493,9 +523,9 @@ class TopicBankMethod(BaseSearchMethod):
             ),
             replace=False
         )
-        selected_documents = list(selected_documents)
+        self._documents = list(selected_documents)
 
-        return selected_documents
+        return self._documents
 
     def _extract_hierarchical_relationship(
             self,
@@ -708,7 +738,14 @@ class TopicBankMethod(BaseSearchMethod):
 
         score_values = dict()
 
-        for score in self._all_topic_scores:
+        if not self._verbose:
+            all_topic_scores_range = self._all_topic_scores
+        else:
+            all_topic_scores_range = tqdm.tqdm(
+                self._all_topic_scores, total=len(self._all_topic_scores), file=sys.stdout
+            )
+
+        for score in all_topic_scores_range:
             score_name = score.name
             score_values[score_name] = score.compute(topic_model, documents=documents)
 
