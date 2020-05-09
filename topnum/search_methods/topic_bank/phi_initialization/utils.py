@@ -67,7 +67,7 @@ def _copy_phi(model: artm.ARTM, phi: pd.DataFrame, phi_ref: np.ndarray = None) -
             model=model.model_pwt
         )
 
-    phi_ref[target_indices, :phi.shape[1]] = phi.iloc[target_indices].values
+    phi_ref[target_indices, :phi.shape[1]] = phi.loc[target_indices].values
 
     return phi_ref
 
