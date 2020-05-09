@@ -33,15 +33,18 @@ def _copy_phi(model: artm.ARTM, phi: pd.DataFrame, phi_ref: np.ndarray = None) -
     # TODO: faster?
     source_indices = list(phi.index)
     target_indices = list()
+    found_indices = list()
     not_found_indices = list()
     not_found_indices_fraction_threshold = 0.5
 
     for index in source_indices:
         try:
             target_index = base_phi_index.get_loc(index)
-            target_indices.append(target_index)
         except KeyError:
             not_found_indices.append(index)
+        else:
+            target_indices.append(target_index)
+            found_indices.append(index)
 
     if len(not_found_indices) == 0:
         pass
@@ -67,7 +70,7 @@ def _copy_phi(model: artm.ARTM, phi: pd.DataFrame, phi_ref: np.ndarray = None) -
             model=model.model_pwt
         )
 
-    phi_ref[target_indices, :phi.shape[1]] = phi.values[target_indices, :]
+    phi_ref[target_indices, :phi.shape[1]] = phi.values[found_indices, :]
 
     return phi_ref
 
