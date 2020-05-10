@@ -50,8 +50,8 @@ def _copy_phi(model: artm.ARTM, phi: pd.DataFrame, phi_ref: np.ndarray = None) -
         pass
     elif len(not_found_indices) < not_found_indices_fraction_threshold * len(source_indices):
         warnings.warn(
-            f'There are {not_found_indices_fraction_threshold * 100}% of words'
-            f' (i.e. {not_found_indices_fraction_threshold * len(source_indices)} words)'
+            f'There are {len(not_found_indices) / (1e-7 + len(source_indices)) * 100}% of words'
+            f' (i.e. {len(not_found_indices)} words)'
             f' in the given Phi matrix'
             f' which were not found in the model\'s Phi matrix'
         )
