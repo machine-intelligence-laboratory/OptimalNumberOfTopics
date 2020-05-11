@@ -8,10 +8,10 @@ from collections import Counter
 from topicnet.cooking_machine import Dataset
 from typing import Dict
 
-import topnum.search_methods.topic_bank.phi_initialization.utils as utils
-
-
-_COL_DOCUMENT_TEXT = 'raw_text'
+from . import (
+    utils,
+    _COL_DOCUMENT_TEXT,
+)
 
 
 def compute_phi(

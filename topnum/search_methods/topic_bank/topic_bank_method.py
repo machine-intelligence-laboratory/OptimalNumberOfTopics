@@ -508,6 +508,8 @@ class TopicBankMethod(BaseSearchMethod):
 
             self._result[_KEY_OPTIMUM + _STD_KEY_SUFFIX] = float(np.sum(differences))
 
+        self.save()
+
     def _select_documents_for_topic_scores(self) -> List[str]:
         if self._documents is not None:
             return self._documents
