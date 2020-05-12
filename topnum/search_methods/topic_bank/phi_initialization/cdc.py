@@ -13,13 +13,14 @@ from typing import (
     Dict,
     List,
     Tuple,
-    Union
+    Union,
 )
 
-import topnum.search_methods.topic_bank.phi_initialization.utils as utils
+from . import (
+    utils,
+    _COL_DOCUMENT_TEXT,
+)
 
-
-_COL_DOCUMENT_TEXT = 'raw_text'
 
 _Logger = logging.getLogger()
 

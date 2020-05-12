@@ -71,7 +71,8 @@ class IntratextCoherenceScore(BaseTopicScore):
             word_topic_relatedness: WordTopicRelatednessType = WordTopicRelatednessType.PWT,
             specificity_estimation: SpecificityEstimationMethod = SpecificityEstimationMethod.NONE,
             max_num_out_of_topic_words=10,
-            window=10
+            window=10,
+            verbose: bool = False,
     ):
         """
         Parameters
@@ -101,6 +102,10 @@ class IntratextCoherenceScore(BaseTopicScore):
             In case computation_method = ComputationMethod.SUM_OVER_WINDOW:
             Window width. So the window will be the words with positions
             in [current position - window / 2, current position + window / 2)
+        verbose
+            Whether to show progress bar for documents or not.
+            As the score is not very fast, it might be helpful to see how many documents
+            are yet to be processed
         """
         super().__init__(name)
 
@@ -113,6 +118,8 @@ class IntratextCoherenceScore(BaseTopicScore):
         self._computation_method = computation_method
         self._max_num_out_of_topic_words = max_num_out_of_topic_words
         self._window = window
+
+        self._verbose = verbose
 
         self._score = self._initialize()
 
@@ -130,7 +137,8 @@ class IntratextCoherenceScore(BaseTopicScore):
             word_topic_relatedness=self._word_topic_relatedness,
             specificity_estimation=self._specificity_estimation,
             max_num_out_of_topic_words=self._max_num_out_of_topic_words,
-            window=self._window
+            window=self._window,
+            verbose=self._verbose,
         )
 
     def compute(
@@ -154,8 +162,9 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
             computation_method: ComputationMethod = ComputationMethod.SEGMENT_LENGTH,
             word_topic_relatedness: WordTopicRelatednessType = WordTopicRelatednessType.PWT,
             specificity_estimation: SpecificityEstimationMethod = SpecificityEstimationMethod.NONE,
-            max_num_out_of_topic_words=10,
-            window=10):
+            max_num_out_of_topic_words: int = 10,
+            window: int = 10,
+            verbose: bool = False):
 
         # TODO: word_topic_relatedness seems to be connected with TopTokensViewer stuff
         super().__init__(
@@ -163,7 +172,8 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
             documents=documents,
             text_type=text_type,
             word_topic_relatedness=word_topic_relatedness,
-            specificity_estimation=specificity_estimation
+            specificity_estimation=specificity_estimation,
+            verbose=verbose,
         )
 
         if not isinstance(computation_method, ComputationMethod):
