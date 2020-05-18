@@ -1,9 +1,13 @@
+import csv
 import os
-import pandas as pd
 import tempfile
 import warnings
 
 from topicnet.cooking_machine import Dataset
+from topicnet.cooking_machine.dataset import (
+    VW_TEXT_COL,
+    RAW_TEXT_COL,
+)
 from typing import (
     Dict,
     List,
@@ -13,6 +17,8 @@ from typing import (
 
 from .base_text_collection import BaseTextCollection
 
+
+DOC_ID_COL = 'id'
 WARNING_MAIN_MODALITY_NOT_IN_MODALITIES = (
     'Main modality "{}" is not in the list of modalities.'
     'Assuming it is an inadvertent mistake, so appending it to all modalities.'
@@ -24,7 +30,8 @@ class VowpalWabbitTextCollection(BaseTextCollection):
             self,
             file_path: str,
             main_modality: str,
-            modalities: Union[None, List[str], Dict[str, float]] = None):
+            modalities: Union[None, List[str], Dict[str, float]] = None,
+            **dataset_kwargs):
 
         super().__init__()
 
@@ -71,40 +78,54 @@ class VowpalWabbitTextCollection(BaseTextCollection):
 
         self._modalities = modalities
         self._dataset: Optional[Dataset] = None
+        self._dataset_kwargs = dataset_kwargs
+
+    def _set_dataset_kwargs(self, **kwargs) -> None:
+        self._dataset_kwargs = kwargs
 
     def _to_dataset(self) -> Dataset:
+        """
+
+        Additional Parameters
+        ---------------------
+        kwargs
+            Optional init parameters of `Dataset`
+        """
         if self._dataset is not None:
             return self._dataset
 
-        # TODO: may be memory consuming here
-        vw_texts = [
-            line.strip() for line in open(self._file_path).readlines()
-            if len(line.strip()) != 0
-        ]
-
-        dataset_table = pd.DataFrame(
-            columns=['id', 'raw_text', 'vw_text'],
-        )
-
-        dataset_table['id'] = [text.split()[0] for text in vw_texts]
-        dataset_table['raw_text'] = [None for _ in vw_texts]  # TODO: check if this OK
-        dataset_table['vw_text'] = vw_texts
-
-        if self._dataset_folder is None:
+        if self._dataset_folder is not None:
+            assert os.path.isdir(self._dataset_folder)
+        else:
             self._dataset_folder = tempfile.mkdtemp(
                 prefix='_dataset_',
                 dir=os.path.dirname(self._file_path)
             )
-        else:
-            assert os.path.isdir(self._dataset_folder)
 
-        dataset_table_path = os.path.join(self._dataset_folder, 'dataset.csv')
-        dataset_table.to_csv(
-            dataset_table_path,
-            index=False
+        dataset_table_path = os.path.join(
+            self._dataset_folder, 'dataset.csv'
         )
 
-        self._dataset = Dataset(dataset_table_path)
+        with open(self._file_path, 'r') as f_in, open(dataset_table_path, 'w') as f_out:
+            writer = csv.writer(f_out)
+
+            writer.writerow([DOC_ID_COL, VW_TEXT_COL, RAW_TEXT_COL])
+
+            for raw_vw_text in f_in:
+                vw_text = raw_vw_text.strip()
+
+                if len(vw_text) == 0:
+                    continue
+
+                doc_id = vw_text.split()[0]
+                raw_text = None  # TODO: check if this OK
+
+                writer.writerow([doc_id, vw_text, raw_text])
+
+        self._dataset = Dataset(dataset_table_path, **self._dataset_kwargs)
+
+        # TODO: remove this after TopicNet new release
+        setattr(self._dataset, 'documents', list(self._dataset._data.index))
 
         return self._dataset
 
