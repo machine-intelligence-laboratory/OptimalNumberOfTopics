@@ -140,6 +140,7 @@ class VowpalWabbitTextCollection(BaseTextCollection):
         Returns
         -------
         VowpalWabbitTextCollection
+
         """
         file_descriptor = None
         text_collection: VowpalWabbitTextCollection = None
