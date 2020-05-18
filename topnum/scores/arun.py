@@ -53,7 +53,8 @@ def compute_document_details(demo_data, all_mods):
     if demo_data._small_data:
         is_raw_tokenized = not demo_data._data.vw_text.str.contains(":").any()
     else:
-        documents = list(demo_data._data.index)[:100]  # TODO: maybe slow here
+        small_num_documents = 10
+        documents = list(demo_data._data.index)[:small_num_documents]  # TODO: maybe slow here
         small_subdata = demo_data._data.loc[documents, :].compute()
         is_raw_tokenized = not small_subdata.vw_text.str.contains(":").any()
 

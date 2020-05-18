@@ -1,3 +1,3 @@
-from topicnet.cooking_machine.dataset import VW_TEXT_COL
-
-_COL_DOCUMENT_TEXT = VW_TEXT_COL  # TODO: say somewhere, that VW is used
+WARNING_VW_TEXT_WRONG_FORMAT = (
+    'Vowpal Wabbit text is probably not in natural but in bag-of-words order!'
+)
