@@ -6,12 +6,16 @@ import warnings
 from itertools import combinations
 from numbers import Number
 from time import sleep
-from topicnet.cooking_machine.dataset import W_DIFF_BATCHES_1
-from topicnet.cooking_machine.models import BaseModel
 from typing import (
     Dict,
-    List
+    List,
 )
+
+from topicnet.cooking_machine.dataset import (
+    Dataset,
+    W_DIFF_BATCHES_1,
+)
+from topicnet.cooking_machine.models import BaseModel
 
 from topnum.scores import (
     CalinskiHarabaszScore,
@@ -63,7 +67,6 @@ class _DummyTopicScore(BaseTopicScore):
 class TestOptimizeScores:
     data_generator = None
 
-    dataset = None
     main_modality = None
     other_modality = None
     text_collection = None
@@ -76,19 +79,19 @@ class TestOptimizeScores:
 
         cls.data_generator.generate()
 
+        cls.data_generator.text_collection._dataset = None
+
         cls.text_collection = cls.data_generator.text_collection
         cls.main_modality = cls.data_generator.main_modality
         cls.other_modality = cls.data_generator.other_modality
 
-        cls.dataset = cls.text_collection._to_dataset()
-
-        # TODO: "workaround", TopicBank needs raw text
-        cls.dataset._data['raw_text'] = cls.dataset._data['vw_text'].apply(
-            lambda text: ' '.join(
-                w.split(':')[0] for w in text.split()[1:] if not w.startswith('|'))
-        )
+    def setup_method(self):
+        assert self.text_collection._dataset is None
 
     def teardown_method(self):
+        self.text_collection._set_dataset_kwargs()
+        self.text_collection._dataset = None
+
         if self.optimizer is not None:
             self.optimizer.clear()
 
@@ -97,10 +100,28 @@ class TestOptimizeScores:
         if cls.data_generator is not None:
             cls.data_generator.clear()
 
-    def test_optimize_calinski_harabasz(self):
+    def dataset(self, keep_in_memory: bool = True) -> Dataset:
+        self.text_collection._set_dataset_kwargs(
+            keep_in_memory=keep_in_memory
+        )
+        dataset = self.text_collection._to_dataset()
+
+        # TODO: "workaround", TopicBank needs raw text
+        dataset._data['raw_text'] = dataset._data['vw_text'].apply(
+            lambda text: ' '.join(
+                w.split(':')[0] for w in text.split()[1:] if not w.startswith('|'))
+        )
+
+        return dataset
+
+    @pytest.mark.parametrize('keep_in_memory', [True, False])
+    def test_optimize_calinski_harabasz(self, keep_in_memory):
+        dataset = self.dataset(keep_in_memory)
+        self.text_collection._set_dataset_kwargs(keep_in_memory=keep_in_memory)
+
         score = CalinskiHarabaszScore(
             'calinski_harabasz_score',
-            validation_dataset=self.dataset
+            validation_dataset=dataset,
         )
 
         self._test_optimize_score(score)
@@ -113,27 +134,33 @@ class TestOptimizeScores:
 
         self._test_optimize_score(score)
 
-    def test_optimize_silhouette(self):
+    @pytest.mark.parametrize('keep_in_memory', [True, False])
+    def test_optimize_silhouette(self, keep_in_memory):
+        dataset = self.dataset(keep_in_memory=keep_in_memory)
         score = SilhouetteScore(
             'silhouette_score',
-            validation_dataset=self.dataset
+            validation_dataset=dataset,
         )
 
         self._test_optimize_score(score)
 
-    def test_optimize_likelihood(self):
+    @pytest.mark.parametrize('keep_in_memory', [True, False])
+    def test_optimize_likelihood(self, keep_in_memory):
+        dataset = self.dataset(keep_in_memory=keep_in_memory)
         score = LikelihoodBasedScore(
             'likelihood_score',
-            validation_dataset=self.dataset,
+            validation_dataset=dataset,
             modality=self.main_modality,
         )
 
         self._test_optimize_score(score)
 
-    def test_optimize_divergence(self):
+    @pytest.mark.parametrize('keep_in_memory', [True, False])
+    def test_optimize_divergence(self, keep_in_memory):
+        dataset = self.dataset(keep_in_memory=keep_in_memory)
         score = SpectralDivergenceScore(
             'divergence_score',
-            validation_dataset=self.dataset,
+            validation_dataset=dataset,
             modalities=[self.main_modality],
         )
 
@@ -147,10 +174,12 @@ class TestOptimizeScores:
 
         self._test_optimize_score(score)
 
-    def test_optimize_holdout_perplexity(self):
+    @pytest.mark.parametrize('keep_in_memory', [True, False])
+    def test_optimize_holdout_perplexity(self, keep_in_memory):
+        dataset = self.dataset(keep_in_memory)
         score = HoldoutPerplexityScore(
             'holdout_perplexity_score',
-            test_dataset=self.dataset,
+            test_dataset=dataset,
             class_ids=[self.main_modality, self.other_modality]
         )
 
@@ -169,28 +198,33 @@ class TestOptimizeScores:
 
         self._test_optimize_score(score)
 
-    def test_optimize_intratext(self):
+    @pytest.mark.parametrize('keep_in_memory', [True, False])
+    def test_optimize_intratext(self, keep_in_memory):
+        dataset = self.dataset(keep_in_memory=keep_in_memory)
         score = IntratextCoherenceScore(
             name='intratext_coherence',
-            data=self.dataset,
-            documents=self.dataset._data.index[:1],
-            window=2
+            data=dataset,
+            documents=dataset.documents[:1],
+            window=2,
         )
 
         # a bit slow -> just 2 restarts
         self._test_optimize_score(score, num_restarts=2)
 
-    def test_optimize_sophisticated_toptokens(self):
+    @pytest.mark.parametrize('keep_in_memory', [True, False])
+    def test_optimize_sophisticated_toptokens(self, keep_in_memory):
+        dataset = self.dataset(keep_in_memory=keep_in_memory)
         score = SophisticatedTopTokensCoherenceScore(
             name='sophisticated_toptokens_coherence',
-            data=self.dataset,
-            documents=self.dataset._data.index[:1]
+            data=dataset,
+            documents=dataset.documents[:1]
         )
 
         self._test_optimize_score(score, num_restarts=2)
 
+    @pytest.mark.parametrize('keep_in_memory', [True, False])
     @pytest.mark.parametrize('what_modalities', ['None', 'one', 'many'])
-    def test_optimize_simple_toptokens(self, what_modalities):
+    def test_optimize_simple_toptokens(self, keep_in_memory, what_modalities):
         if what_modalities == 'None':
             modalities = None
         elif what_modalities == 'one':
@@ -210,10 +244,11 @@ class TestOptimizeScores:
 
             cooccurrence_values[(w1, w2)] = i
 
+        dataset = self.dataset(keep_in_memory=keep_in_memory)
         score = SimpleTopTokensCoherenceScore(
             name='simple_toptokens_coherence',
             cooccurrence_values=cooccurrence_values,
-            data=self.dataset,
+            data=dataset,
             modalities=modalities
         )
 
@@ -229,7 +264,7 @@ class TestOptimizeScores:
 
     def test_optimize_sparsity_theta(self):
         score = SparsityThetaScore(
-            'sparsity_theta_score'
+            name='sparsity_theta_score'
         )
 
         self._test_optimize_score(score)

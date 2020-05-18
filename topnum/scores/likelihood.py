@@ -16,8 +16,6 @@ def get_log_likelihood(model, modality):
 
 
 class LikelihoodBasedScore(BaseCustomScore):
-    '''
-    '''
 
     def __init__(
             self,
@@ -36,9 +34,7 @@ class LikelihoodBasedScore(BaseCustomScore):
         )
 
 
-
 class _LikelihoodBasedScore(BaseTopicNetScore):
-
     def __init__(
             self,
             validation_dataset: Dataset,
@@ -49,7 +45,7 @@ class _LikelihoodBasedScore(BaseTopicNetScore):
 
         super().__init__()
 
-        self.num_docs = validation_dataset._data.shape[0]
+        self.num_docs = len(validation_dataset._data)
 
         self.consider_sparsity = consider_sparsity
         self.mode = mode.upper()
