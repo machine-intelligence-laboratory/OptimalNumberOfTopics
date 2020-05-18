@@ -32,7 +32,14 @@ class VowpalWabbitTextCollection(BaseTextCollection):
             main_modality: str,
             modalities: Union[None, List[str], Dict[str, float]] = None,
             **dataset_kwargs):
+        """
 
+        Additional Parameters
+        ---------------------
+        dataset_kwargs
+            Optional init parameters of `Dataset`.
+            Will be used in `_to_dataset` method.
+        """
         super().__init__()
 
         self._file_path = file_path
@@ -84,13 +91,6 @@ class VowpalWabbitTextCollection(BaseTextCollection):
         self._dataset_kwargs = kwargs
 
     def _to_dataset(self) -> Dataset:
-        """
-
-        Additional Parameters
-        ---------------------
-        kwargs
-            Optional init parameters of `Dataset`
-        """
         if self._dataset is not None:
             return self._dataset
 
