@@ -96,12 +96,6 @@ class TestRenormalization:
         )
         dataset = self.text_collection._to_dataset()
 
-        # TODO: "workaround", TopicBank needs raw text
-        dataset._data[RAW_TEXT_COL] = dataset._data[VW_TEXT_COL].apply(
-            lambda text: ' '.join(
-                w.split(':')[0] for w in text.split()[1:] if not w.startswith('|'))
-        )
-
         return dataset
 
     @pytest.mark.parametrize(

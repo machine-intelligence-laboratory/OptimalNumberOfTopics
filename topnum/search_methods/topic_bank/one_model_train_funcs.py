@@ -243,12 +243,6 @@ def _get_topic_model(
 
     dictionary = dataset.get_dictionary()
 
-    # TODO: "workaround"
-    if hasattr(dataset, '_min_df_rate'):
-        dictionary.filter(min_df_rate=dataset._min_df_rate)
-    if hasattr(dataset, '_max_df_rate'):
-        dictionary.filter(max_df_rate=dataset._max_df_rate)
-
     if num_topics is not None and phi is not None:
         assert num_topics >= phi.shape[1]
     elif num_topics is None and phi is not None:
