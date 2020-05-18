@@ -52,13 +52,13 @@ def compute_phi(
 
 
 def _count_word_document_frequencies(dataset: Dataset, word2index: Dict[str, int]):
-    num_documents = dataset._data.shape[0]
+    num_documents = len(dataset._data)  # TODO: for big data may be slow here
     words_dimension_size = max(list(word2index.values())) + 1
     frequencies = np.zeros(
         shape=(words_dimension_size, num_documents)
     )
 
-    for doc_index, doc_text in enumerate(dataset._data[_COL_DOCUMENT_TEXT].values):
+    for doc_index, doc_text in enumerate(dataset._data[_COL_DOCUMENT_TEXT]):
         words = doc_text.split()
 
         words_counter = Counter(words)

@@ -45,7 +45,7 @@ class _LikelihoodBasedScore(BaseTopicNetScore):
 
         super().__init__()
 
-        self.num_docs = len(validation_dataset._data)
+        self.num_docs = len(validation_dataset._data)  # TODO: maybe a bit slow for big datasets
 
         self.consider_sparsity = consider_sparsity
         self.mode = mode.upper()

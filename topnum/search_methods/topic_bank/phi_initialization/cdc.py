@@ -141,7 +141,7 @@ def _count_word_in_word_frequencies(
                 frequencies[word2index[word_pair[0]]][word2index[word_pair[1]]] += 1
                 frequencies[word2index[word_pair[1]]][word2index[word_pair[0]]] += 1
 
-    for doc_index, doc_text in enumerate(dataset._data[_COL_DOCUMENT_TEXT].values):
+    for doc_index, doc_text in enumerate(dataset._data[_COL_DOCUMENT_TEXT]):
         if doc_index % num_docs_to_log == 0:
             _Logger.info(f'Counting word frequencies in the document number {doc_index}')
 
