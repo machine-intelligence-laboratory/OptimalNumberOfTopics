@@ -103,6 +103,14 @@ class TestRenormalization:
         return dataset
 
     @pytest.mark.parametrize(
+        'keep_in_memory,matrix_for_renormalization',
+        [
+            (True, PHI_RENORMALIZATION_MATRIX),
+            (True, THETA_RENORMALIZATION_MATRIX),
+            (False, THETA_RENORMALIZATION_MATRIX),
+        ]
+    )
+    @pytest.mark.parametrize(
         'merge_method',
         [ENTROPY_MERGE_METHOD, RANDOM_MERGE_METHOD, KL_MERGE_METHOD]
     )
@@ -110,11 +118,7 @@ class TestRenormalization:
         'threshold_factor',
         [1.0, 0.5, 1e-7, 1e7]
     )
-    @pytest.mark.parametrize(
-        'matrix_for_renormalization',
-        [PHI_RENORMALIZATION_MATRIX, THETA_RENORMALIZATION_MATRIX]
-    )
-    def test_renormalize(self, merge_method, threshold_factor, matrix_for_renormalization):
+    def test_renormalize(self, keep_in_memory, matrix_for_renormalization, merge_method, threshold_factor):
         max_num_topics = 10
 
         optimizer = RenormalizationMethod(
@@ -127,6 +131,7 @@ class TestRenormalization:
         )
         num_search_points = len(list(range(1, max_num_topics)))
 
+        self.text_collection._set_dataset_kwargs(keep_in_memory=keep_in_memory)
         optimizer.search_for_optimum(self.text_collection)
 
         self._check_search_result(optimizer._result, optimizer, num_search_points)
@@ -143,7 +148,6 @@ class TestRenormalization:
         num_search_points = len(list(range(1, max_num_topics)))
 
         self.text_collection._set_dataset_kwargs(keep_in_memory=keep_in_memory)
-
         optimizer.search_for_optimum(self.text_collection)
 
         self._check_search_result(optimizer._result, optimizer, num_search_points)
