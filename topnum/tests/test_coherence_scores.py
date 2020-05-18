@@ -11,6 +11,8 @@ from functools import reduce
 from itertools import product
 from topicnet.cooking_machine.dataset import (
     Dataset,
+    RAW_TEXT_COL,
+    VW_TEXT_COL,
     DEFAULT_ARTM_MODALITY
 )
 from topicnet.cooking_machine.models.base_model import BaseModel
@@ -32,6 +34,7 @@ from ..scores._base_coherence_score import (
 )
 
 
+DOC_ID_COL = 'id'
 NUM_TOP_WORDS = 10
 BIG_SEGMENT_LENGTH = 8
 SMALL_SEGMENT_LENGTHS = [1, 2, 4]
@@ -190,7 +193,7 @@ class TestIntratextCoherenceScore:
 
         return pd.DataFrame(
             index=cls.documents,
-            columns=['id', 'raw_text', 'vw_text'],
+            columns=[DOC_ID_COL, RAW_TEXT_COL, VW_TEXT_COL],
             data=[
                 [doc, cls.get_raw_text(doc, document_words), cls.get_vw_text(doc, document_words)]
                 for doc in cls.documents

@@ -6,6 +6,8 @@ import pytest
 from numbers import Number
 from topicnet.cooking_machine.dataset import (
     Dataset,
+    RAW_TEXT_COL,
+    VW_TEXT_COL,
     W_DIFF_BATCHES_1
 )
 from topicnet.cooking_machine.models import (
@@ -105,7 +107,7 @@ class TestTopicBank:
         dataset = self.text_collection._to_dataset()
 
         # TODO: "workaround", TopicBank needs raw text
-        dataset._data['raw_text'] = dataset._data['vw_text'].apply(
+        dataset._data[RAW_TEXT_COL] = dataset._data[VW_TEXT_COL].apply(
             lambda text: ' '.join(
                 w.split(':')[0] for w in text.split()[1:] if not w.startswith('|'))
         )
