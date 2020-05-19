@@ -187,6 +187,11 @@ class TestAcceptance:
 
         assert process.returncode == 0
 
+        process = subprocess.Popen(script_file_path, cwd='.')
+        process.wait()
+
+        assert process.returncode != 0
+
     def _test_optimize_score(self, score, num_restarts: int = 3) -> None:
         min_num_topics = 1
         max_num_topics = 2
