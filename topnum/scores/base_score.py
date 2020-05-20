@@ -1,11 +1,12 @@
 import logging
 
+from typing import Union
+
 from artm.scores import BaseScore as BaseArtmScore
 from topicnet.cooking_machine.models import (
     BaseScore as BaseTopicNetScore,
-    TopicModel
+    TopicModel,
 )
-from typing import Union
 
 
 _logger = logging.getLogger()

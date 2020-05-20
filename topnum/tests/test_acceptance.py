@@ -2,7 +2,9 @@ import logging
 import numpy as np
 import os
 import pytest
+import shutil
 import subprocess
+import tempfile
 import warnings
 
 from numbers import Number
@@ -13,8 +15,6 @@ from typing import (
 
 from topicnet.cooking_machine.dataset import (
     Dataset,
-    RAW_TEXT_COL,
-    VW_TEXT_COL,
     W_DIFF_BATCHES_1,
 )
 from topicnet.cooking_machine.models import BaseModel
@@ -32,7 +32,6 @@ from topnum.search_methods import (
     TopicBankMethod,
 )
 from topnum.search_methods.base_search_method import BaseSearchMethod
-from topnum.search_methods.constants import DEFAULT_EXPERIMENT_DIR
 from topnum.search_methods.optimize_scores_method import _KEY_SCORE_RESULTS
 from topnum.tests.data_generator import TestDataGenerator
 
@@ -70,6 +69,8 @@ class TestAcceptance:
 
     optimizer = None
 
+    working_folder_path = None
+
     @classmethod
     def setup_class(cls):
         cls.data_generator = TestDataGenerator()
@@ -81,6 +82,8 @@ class TestAcceptance:
         cls.text_collection = cls.data_generator.text_collection
         cls.main_modality = cls.data_generator.main_modality
         cls.other_modality = cls.data_generator.other_modality
+
+        cls.working_folder_path = tempfile.mkdtemp(prefix='test_acceptance__')
 
     def setup_method(self):
         assert self.text_collection._dataset is None
@@ -96,6 +99,8 @@ class TestAcceptance:
     def teardown_class(cls):
         if cls.data_generator is not None:
             cls.data_generator.clear()
+
+        shutil.rmtree(cls.working_folder_path)
 
     def dataset(self, keep_in_memory: bool = True) -> Dataset:
         self.text_collection._set_dataset_kwargs(
@@ -245,7 +250,7 @@ class TestAcceptance:
             one_model_num_processors=num_processors,
             separate_thread=False,
             experiment_name=score.name,  # otherwise will be using same folder
-            experiment_directory=DEFAULT_EXPERIMENT_DIR
+            experiment_directory=self.working_folder_path,
         )
         num_search_points = len(
             list(range(min_num_topics, max_num_topics + 1, num_topics_interval))
