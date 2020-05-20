@@ -26,3 +26,6 @@ class BaseScore:
 
     def _attach(self, model: TopicModel) -> None:
         raise NotImplementedError()
+
+    def call(self, model):
+        return self._score.call(model)
