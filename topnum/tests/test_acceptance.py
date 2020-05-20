@@ -1,6 +1,8 @@
 import logging
 import numpy as np
+import os
 import pytest
+import subprocess
 import warnings
 
 from numbers import Number
@@ -172,6 +174,23 @@ class TestAcceptance:
         optimizer.search_for_optimum(self.text_collection)
 
         self._check_search_result(optimizer._result, optimizer, num_search_points)
+
+    def test_sample_script(self):
+        tests_folder_path = os.path.dirname(os.path.abspath(__file__))
+        samples_folder_path = os.path.join(tests_folder_path, '..', '..', 'sample')
+        script_file_path = os.path.join(samples_folder_path, 'optimize_scores.sh')
+
+        assert os.path.isfile(script_file_path)
+
+        process = subprocess.Popen(script_file_path, cwd=samples_folder_path)
+        process.wait()
+
+        assert process.returncode == 0
+
+        process = subprocess.Popen(script_file_path, cwd='.')
+        process.wait()
+
+        assert process.returncode != 0
 
     def _test_optimize_score(self, score, num_restarts: int = 3) -> None:
         min_num_topics = 1
