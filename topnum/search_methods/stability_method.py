@@ -11,9 +11,9 @@ import scipy.stats
 import shutil
 import sys
 import tempfile
-import tqdm
 
 from lapsolver import solve_dense
+from tqdm import tqdm
 from typing import (
     List,
     Optional,
@@ -57,6 +57,7 @@ class StabilitySearchMethod(BaseSearchMethod):
             model_seed: int = 0,
             model_family: str or KnownModel = KnownModel.PLSA,
             max_num_top_words: Optional[int] = 1000,
+            max_num_model_pairs: Optional[int] = 10,
             datasets_folder_path: str = None,
             models_folder_path: str = None):
         """
@@ -66,7 +67,16 @@ class StabilitySearchMethod(BaseSearchMethod):
         max_num_top_words
             How many topic top words ot take into account
             when comparing topics.
-            If None, all topic words will be used.
+            If None, all topic words from topic kernel (`p(w | t) > 1/|W|`)
+            will be used (not to mention that it most likely is not necessary,
+            this also may be way too slow if the size of vocabulary is big).
+        max_num_model_pairs
+            How many model pairs ot consider when computing stability.
+            The process in as follows:
+            take `model_a`, take `model_b`, compare distances between their topics
+            (i.e. ``num_topics * num_topics`` distances) and average.
+            Overall process may take much time, so `max_num_model_pairs` may help
+            by limiting the number of model comparisons.
         datasets_folder_path
             Folder where to save data subsamples.
             If the folder is not empty,
@@ -91,18 +101,26 @@ class StabilitySearchMethod(BaseSearchMethod):
         self._model_num_processors = model_num_processors
         self._model_seed = model_seed
         self._max_num_top_words = max_num_top_words
+        self._max_num_model_pairs = max_num_model_pairs
 
         if models_folder_path is None:
-            models_folder_path = tempfile.mkdtemp()
+            models_folder_path = tempfile.mkdtemp(
+                prefix='stability_approach_models__'
+            )
 
         self._models_folder_path = models_folder_path
 
         if datasets_folder_path is None:
-            datasets_folder_path = tempfile.mkdtemp(prefix='stability_approach__')
+            datasets_folder_path = tempfile.mkdtemp(
+                prefix='stability_approach_datasets__'
+            )
 
         self._datasets_folder_path = datasets_folder_path
 
         os.makedirs(datasets_folder_path, exist_ok=True)
+
+        _LOGGER.info(f'Models folder: "{self._models_folder_path}"')
+        _LOGGER.info(f'Datasets folder: "{self._datasets_folder_path}"')
 
     def _get_dataset_subsample_file_paths(self) -> List[str]:
         return glob.glob(
@@ -114,6 +132,24 @@ class StabilitySearchMethod(BaseSearchMethod):
             self._models_folder_path,
             f'num_topics_{num_topics:03}'
         )
+
+    def _extract_num_topics_for_trained_models(self) -> List[int]:
+        numbers_of_topics = list()
+
+        for folder_name in os.listdir(self._models_folder_path):
+            if '_' not in folder_name:
+                continue
+
+            num_topics_as_string = folder_name.split('_')[-1]
+
+            try:
+                num_topics = int(num_topics_as_string)
+            except ValueError:
+                continue
+            else:
+                numbers_of_topics.append(num_topics)
+
+        return numbers_of_topics
 
     def _folder_path_model(self, num_topics: int, subsample_number: int) -> str:
         return os.path.join(
@@ -151,9 +187,18 @@ class StabilitySearchMethod(BaseSearchMethod):
 
         if len(os.listdir(self._models_folder_path)) > 0:
             print(
-                f'Models folder "{self._models_folder_path}" is not empty.'
-                f' Assuming, that no training is needed.'
-                f' Going straight to estimating stability'
+                f'Models folder "{self._models_folder_path}" is not empty!'
+                f' Some num_topics may be skipped'
+                f' (if there is a folder with such num_topics)'
+            )
+
+            processed_num_topics = self._extract_num_topics_for_trained_models()
+
+            self._train_models(
+                text_collection,
+                min_df_rate=min_df_rate,
+                max_df_rate=max_df_rate,
+                num_topics_to_skip=processed_num_topics,
             )
         elif len(self._get_dataset_subsample_file_paths()) > 0:
             self._train_models(
@@ -163,8 +208,7 @@ class StabilitySearchMethod(BaseSearchMethod):
             )
         else:
             print(
-                f'Folder "{self._datasets_folder_path}"'
-                f' has no sub-datasets for training!'
+                'Datasets folder has no sub-datasets for training!'
             )
 
             self._subsample_datasets(
@@ -200,9 +244,10 @@ class StabilitySearchMethod(BaseSearchMethod):
         document_indices = list(range(total_num_documents))
         random = np.random.RandomState(seed)
 
+        print(f'\nFolder for sub-datasets saving: "{self._datasets_folder_path}"')
         print('Subsampling documents...')
 
-        for i in tqdm.tqdm(
+        for i in tqdm(
                 range(num_dataset_subsamples),
                 total=num_dataset_subsamples,
                 file=sys.stdout):
@@ -230,7 +275,8 @@ class StabilitySearchMethod(BaseSearchMethod):
             self,
             text_collection: VowpalWabbitTextCollection,
             min_df_rate: float,
-            max_df_rate: float) -> None:
+            max_df_rate: float,
+            num_topics_to_skip: List[int] = None) -> None:
 
         modalities_to_use = list(text_collection._modalities.keys())
         main_modality = text_collection._main_modality
@@ -240,9 +286,22 @@ class StabilitySearchMethod(BaseSearchMethod):
             self._max_num_topics + 1,
             self._num_topics_interval))
 
-        print('\nTraining models for different numbers of topics...')
+        if num_topics_to_skip is not None:
+            numbers_of_topics = [
+                n for n in numbers_of_topics if n not in num_topics_to_skip
+            ]
 
-        for num_topics in tqdm.tqdm(
+        num_topics_for_message = ', '.join(
+            [str(n) for n in numbers_of_topics[:10]]
+        )
+
+        print(f'\n Folder for models saving: "{self._models_folder_path}"')
+        print(
+            f'Training models for {len(numbers_of_topics)}'
+            f' numbers of topics: {num_topics_for_message}...'
+        )
+
+        for num_topics in tqdm(
                 numbers_of_topics,
                 total=len(numbers_of_topics),
                 file=sys.stdout):
@@ -253,7 +312,7 @@ class StabilitySearchMethod(BaseSearchMethod):
 
             subsample_data_paths = self._get_dataset_subsample_file_paths()
 
-            for subsample_number, data_path in tqdm.tqdm(
+            for subsample_number, data_path in tqdm(
                     enumerate(subsample_data_paths),
                     total=len(subsample_data_paths),
                     file=sys.stdout):
@@ -299,20 +358,25 @@ class StabilitySearchMethod(BaseSearchMethod):
             len(os.listdir(self._folder_path_num_topics(numbers_of_topics[0])))
         ))
 
+        if self._max_num_model_pairs is not None:
+            subsample_combinations_number = self._max_num_model_pairs
+        else:
+            subsample_combinations_number = int(sp.special.binom(len(subsample_numbers), 2))
+
         stabilities = dict()
 
         print('\nEstimating stability for different numbers of topics...')
 
-        for num_topics in tqdm.tqdm(
+        for num_topics in tqdm(
                 numbers_of_topics,
                 total=len(numbers_of_topics),
                 file=sys.stdout):
 
             distances = list()
 
-            for subsample_number_a, subsample_number_b in tqdm.tqdm(
-                    itertools.combinations(subsample_numbers, 2),
-                    total=int(sp.special.binom(len(subsample_numbers), 2)),
+            for i, (subsample_number_a, subsample_number_b) in tqdm(
+                    enumerate(itertools.combinations(subsample_numbers, 2)),
+                    total=subsample_combinations_number,
                     file=sys.stdout):
 
                 topic_model_a = self._load_phi(num_topics, subsample_number_a)
@@ -322,7 +386,18 @@ class StabilitySearchMethod(BaseSearchMethod):
                     self._compute_distance(topic_model_a, topic_model_b)
                 )
 
+                if i + 1 == subsample_combinations_number:
+                    break
+
+            assert len(distances) == subsample_combinations_number
+
             stability_metrics = dict()
+
+            stability_metrics['mean'] = np.mean(distances)
+            stability_metrics['median'] = np.median(distances)
+            stability_metrics['max'] = np.max(distances)
+            stability_metrics['min'] = np.min(distances)
+
             stability_metrics['std'] = np.std(distances, ddof=_DDOF)
             stability_metrics['var'] = np.var(distances, ddof=_DDOF)
             stability_metrics['range'] = np.ptp(distances)
@@ -377,9 +452,11 @@ class StabilitySearchMethod(BaseSearchMethod):
 
         row_ids, column_ids = solve_dense(topic_distances)
 
-        return float(np.sum(
-            topic_distances[row_ids, column_ids]
-        ))
+        return float(
+            np.sum(
+                topic_distances[row_ids, column_ids]
+            ) / max(1.0, num_topics)
+        )
 
     def _compute_topic_distance(self, topic_a: pd.Series, topic_b: pd.Series) -> float:
         return TopicBankMethod._jaccard_distance(

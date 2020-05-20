@@ -33,22 +33,25 @@ def _copy_phi(model: artm.ARTM, phi: pd.DataFrame, phi_ref: np.ndarray = None) -
     # TODO: faster?
     source_indices = list(phi.index)
     target_indices = list()
+    found_indices = list()
     not_found_indices = list()
     not_found_indices_fraction_threshold = 0.5
 
     for index in source_indices:
         try:
             target_index = base_phi_index.get_loc(index)
-            target_indices.append(target_index)
         except KeyError:
             not_found_indices.append(index)
+        else:
+            target_indices.append(target_index)
+            found_indices.append(index)
 
     if len(not_found_indices) == 0:
         pass
     elif len(not_found_indices) < not_found_indices_fraction_threshold * len(source_indices):
         warnings.warn(
-            f'There are {not_found_indices_fraction_threshold * 100}% of words'
-            f' (i.e. {not_found_indices_fraction_threshold * len(source_indices)} words)'
+            f'There are {len(not_found_indices) / (1e-7 + len(source_indices)) * 100}% of words'
+            f' (i.e. {len(not_found_indices)} words)'
             f' in the given Phi matrix'
             f' which were not found in the model\'s Phi matrix'
         )
@@ -67,7 +70,7 @@ def _copy_phi(model: artm.ARTM, phi: pd.DataFrame, phi_ref: np.ndarray = None) -
             model=model.model_pwt
         )
 
-    phi_ref[target_indices, :phi.shape[1]] = phi.values
+    phi_ref[target_indices, :phi.shape[1]] = phi.loc[found_indices, :].values
 
     return phi_ref
 

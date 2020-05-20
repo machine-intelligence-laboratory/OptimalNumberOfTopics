@@ -39,7 +39,7 @@ class OptimizeScoresMethod(BaseSearchMethod):
     def __init__(
             self,
             scores: List[BaseScore],  # TODO: Union[BaseScore, List[BaseScore]]
-            model_family: str or KnownModel = KnownModel.LDA,
+            model_family: str or KnownModel = KnownModel.PLSA,
             num_restarts: int = 3,
             num_topics_interval: int = 10,
             min_num_topics: int = DEFAULT_MIN_NUM_TOPICS,
