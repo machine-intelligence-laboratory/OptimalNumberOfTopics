@@ -1,10 +1,16 @@
-import artm
 import numpy as np
 import pandas as pd
 import logging
 import warnings
 
 from pandas.core.indexes.base import Index
+from typing import (
+    Iterable,
+    List,
+)
+
+import artm
+
 from topicnet.cooking_machine import Dataset
 from topicnet.cooking_machine.models import TopicModel
 
@@ -94,3 +100,18 @@ def _safe_copy_phi(
         model.fit_offline(dataset.get_batch_vectorizer(), 1)
 
     return phi_ref
+
+
+def _trim_vw(tokens: List[str]) -> Iterable[str]:
+    modality_start_symbol = '|'
+
+    for token in tokens:
+        if token.startswith(modality_start_symbol):
+            continue
+
+        if ':' not in token:
+            word = token
+        else:
+            word, frequency = token.split(':')
+
+        yield word

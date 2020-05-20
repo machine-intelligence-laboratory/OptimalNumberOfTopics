@@ -7,7 +7,10 @@ import warnings
 from tqdm import tqdm
 from typing import List
 
-from topicnet.cooking_machine.models import TopicModel, DummyTopicModel
+from topicnet.cooking_machine.models import (
+    DummyTopicModel,
+    TopicModel,
+)
 
 from .base_search_method import (
     BaseSearchMethod,
@@ -84,7 +87,10 @@ class OptimizeScoresMethod(BaseSearchMethod):
             self._keys_mean_many.append(key)
             self._keys_std_many.append(key)
 
-    def search_for_optimum(self, text_collection: VowpalWabbitTextCollection) -> None:
+    def search_for_optimum(
+            self,
+            text_collection: VowpalWabbitTextCollection) -> None:
+
         _logger.info('Starting to search for optimum...')
 
         dataset = text_collection._to_dataset()

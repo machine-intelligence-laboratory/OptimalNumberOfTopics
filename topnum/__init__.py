@@ -11,7 +11,7 @@ lib = artm.wrapper.LibArtm(logging_config=lc)
 
 logs_folder = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
-    'logs'
+    'logs',
 )
 
 os.makedirs(logs_folder, exist_ok=True)
@@ -19,11 +19,11 @@ os.makedirs(logs_folder, exist_ok=True)
 
 # Creating logger
 logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.WARNING)
 
 # Creating file handler
 fh = logging.FileHandler(os.path.join(logs_folder, 'logs.txt'))
-fh.setLevel(logging.DEBUG)
+fh.setLevel(logging.WARNING)
 
 # Creating formatter
 formatter = logging.Formatter(

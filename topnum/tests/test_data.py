@@ -1,3 +1,5 @@
+import pytest
+
 from topicnet.cooking_machine import Dataset
 
 from topnum.data import VowpalWabbitTextCollection
@@ -53,3 +55,23 @@ class TestData:
         assert len(text_collection._modalities) == 2
         assert self.main_modality in text_collection._modalities
         assert self.other_modality in text_collection._modalities
+
+    @pytest.mark.parametrize('keep_in_memory', [True, False])
+    def test_dataset_kwargs(self, keep_in_memory):
+        text_collection = VowpalWabbitTextCollection(
+            file_path=self.text_collection._file_path,
+            main_modality=self.main_modality,
+            modalities=[self.main_modality],
+            keep_in_memory=keep_in_memory,
+        )
+        dataset = text_collection._to_dataset()
+
+        assert dataset._small_data == keep_in_memory
+
+        text_collection._dataset = None
+        text_collection._set_dataset_kwargs()
+
+        dataset = text_collection._to_dataset()
+        default_dataset_keep_in_memory = True
+
+        assert dataset._small_data == default_dataset_keep_in_memory
