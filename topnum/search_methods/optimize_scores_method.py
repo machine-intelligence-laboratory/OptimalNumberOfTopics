@@ -7,8 +7,10 @@ import warnings
 from tqdm import tqdm
 from typing import List
 
-from topicnet.cooking_machine import Dataset
-from topicnet.cooking_machine.models import TopicModel
+from topicnet.cooking_machine.models import (
+    DummyTopicModel,
+    TopicModel,
+)
 
 from .base_search_method import (
     BaseSearchMethod,
@@ -198,7 +200,7 @@ def _summarize_models(
 
         detailed_result[score_name] = score_df.astype(float)
 
-    any_model_all_scores = dict(list(any_model._get_all_scores()))
+    any_model_all_scores = any_model.scores
     any_model_all_given_score_names = list(any_model_all_scores.keys())
 
     for score_name in score_names:
@@ -256,6 +258,7 @@ def load_models_from_disk(experiment_directory, base_experiment_name, scores=Non
             f.path for f in os.scandir(folder)
             if f.is_dir() and f.name != START
         ]
-        result_models += [TopicModel.load(path) for path in model_pathes]
+        result_models += [DummyTopicModel.load(path) for path in model_pathes]
+        # result_models += [TopicModel.load(path).to_dummy() for path in model_pathes]
 
     return _summarize_models(result_models)
