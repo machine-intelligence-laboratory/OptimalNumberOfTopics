@@ -1,0 +1,15 @@
+
+name: 20NewsGroups
+dataset_path: '/data_mil/datasets/20_News_dataset/train_preprocessed.csv'
+
+word: "@lemmatized"
+
+min_num_topics: 5
+max_num_topics: 30
+
+num_topics_interval: 3
+num_fit_iterations: 40
+num_restarts: 6
+
+
+

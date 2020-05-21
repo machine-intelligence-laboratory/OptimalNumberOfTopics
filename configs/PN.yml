@@ -1,0 +1,15 @@
+
+name: PostNauka
+dataset_path: '/data_mil/datasets/postnauka/postnauka.csv'
+
+word: "@word"
+
+min_num_topics: 5
+max_num_topics: 50
+
+num_topics_interval: 3
+num_fit_iterations: 40
+num_restarts: 6
+
+
+

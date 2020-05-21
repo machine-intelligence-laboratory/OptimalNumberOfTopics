@@ -1,6 +1,7 @@
 import logging
 import os
 import pandas as pd
+from  numpy.random import RandomState
 import uuid
 import warnings
 
@@ -89,8 +90,7 @@ class OptimizeScoresMethod(BaseSearchMethod):
 
         dataset = text_collection._to_dataset()
 
-        # seed == None is too similar to seed == 0
-        seeds = [None] + list(range(1, self._num_restarts))
+        seeds = [None] + [abs(RandomState(i).tomaxint()) for i in range(1, self._num_restarts)]
 
         nums_topics = list(range(
             self._min_num_topics,

@@ -1,0 +1,12 @@
+name: WikiRef220
+
+dataset_path: '/data_mil/datasets/WikiRef220/wiki_ref220_bow.csv'
+
+word: "@lemmatized"
+
+min_num_topics: 2
+max_num_topics: 20
+
+num_topics_interval: 1
+num_fit_iterations: 40
+num_restarts: 6
