@@ -85,6 +85,7 @@ class OptimizeScoresMethod(BaseSearchMethod):
             self._keys_mean_many.append(key)
             self._keys_std_many.append(key)
 
+    # TODO: accept either VowpalWabbitTextCollection or Dataset with modalities
     def search_for_optimum(self, text_collection: VowpalWabbitTextCollection) -> None:
         _logger.info('Starting to search for optimum...')
 

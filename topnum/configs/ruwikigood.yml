@@ -1,5 +1,6 @@
 
 name: RuWikiGood
+batches_prefix: RWG
 dataset_path: '/data_mil/datasets/ruwiki_good/good_ruwiki_vw.txt'
 
 word: "@lemmatized"

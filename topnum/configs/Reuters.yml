@@ -1,6 +1,7 @@
 
-name: PostNauka
-dataset_path: '/data_mil/datasets/postnauka/postnauka.csv'
+name: Reuters
+batches_prefix: Reuters
+dataset_path: '/data_mil/datasets/Reuters/Reuters.csv'
 
 word: "@word"
 
