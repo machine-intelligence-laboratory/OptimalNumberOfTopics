@@ -61,7 +61,8 @@ class RenormalizationMethod(BaseSearchMethod):
             num_fit_iterations: int = DEFAULT_NUM_FIT_ITERATIONS,
             model_num_processors: int = 1,
             model_seed: int = 0,
-            model_family: str or KnownModel = KnownModel.PLSA):
+            model_family: str or KnownModel = KnownModel.PLSA,
+            model_params: dict = None):
 
         super().__init__(min_num_topics, max_num_topics, num_fit_iterations)
 
@@ -85,6 +86,7 @@ class RenormalizationMethod(BaseSearchMethod):
         self._model_num_processors = model_num_processors
         self._model_seed = model_seed
         self._model_family = model_family
+        self._model_params = model_params
 
         self._result = dict()
 
@@ -132,6 +134,7 @@ class RenormalizationMethod(BaseSearchMethod):
                 num_topics=self._max_num_topics,
                 seed=self._model_seed,
                 num_processors=self._model_num_processors,
+                model_params=self._model_params,
             )
 
             artm_model.seed = seed  # TODO: seed -> init_simple_default_model

@@ -41,6 +41,7 @@ class OptimizeScoresMethod(BaseSearchMethod):
             self,
             scores: List[BaseScore],  # TODO: Union[BaseScore, List[BaseScore]]
             model_family: str or KnownModel = KnownModel.PLSA,
+            model_params: dict = None,
             num_restarts: int = 3,
             num_topics_interval: int = 10,
             min_num_topics: int = DEFAULT_MIN_NUM_TOPICS,
@@ -56,6 +57,7 @@ class OptimizeScoresMethod(BaseSearchMethod):
 
         self._scores = scores
         self._family = model_family
+        self._model_params = model_params
         self._num_restarts = num_restarts
         self._num_topics_interval = num_topics_interval
 
@@ -110,7 +112,8 @@ class OptimizeScoresMethod(BaseSearchMethod):
                     main_modality=text_collection._main_modality,
                     num_topics=num_topics,
                     seed=seed,
-                    num_processors=self._one_model_num_processors
+                    num_processors=self._one_model_num_processors,
+                    model_params=self._model_params,
                 )
 
                 model = TopicModel(artm_model)
@@ -212,7 +215,7 @@ def _summarize_models(
             higher_better = any_model_all_scores[given_score_name]._higher_better
         else:
             warnings.warn(
-                f'Score "{score_name}" doesn\'t have "_higher_better" attribute!'
+                f'Score "{score_name}" of type {type(any_model_all_scores[given_score_name])} doesn\'t have "_higher_better" attribute!'
                 f' Assuming that higher_better = True'
             )
 
