@@ -17,6 +17,16 @@ class KnownModel(Enum):
     DECORRELATION = 'decorrelation'
     ARTM = 'ARTM'
 
+PARAMS_EXPLORED = {
+    KnownModel.LDA: {'prior': ['symmetric', 'asymmetric', 'small', 'heuristic']},
+    KnownModel.PLSA: {},
+    KnownModel.SPARSE: {'smooth_bcg_tau': [0.05, 0.1],
+                        'sparse_sp_tau':  [-0.05, -0.1]},
+    KnownModel.DECORRELATION: {'decorrelation_tau': [0.02, 0.05, 0.1]},
+    KnownModel.ARTM: {'smooth_bcg_tau':    [0.05, 0.1],
+                      'sparse_sp_tau':     [-0.05, -0.1],
+                      'decorrelation_tau': [0.02, 0.05, 0.1]}
+}
 
 # TODO: move this to BigARTM dictionary
 # ==================================
@@ -160,7 +170,7 @@ def _init_dirichlet_prior(prior, num_topics, num_terms):
 
 def init_lda(
         dataset, modalities_to_use, main_modality,
-        num_topics, prior="symmetric"
+        num_topics, model_params
 ):
     """
     Creates simple artm model with standard scores.
@@ -181,6 +191,8 @@ def init_lda(
         dataset, modalities_to_use, main_modality, num_topics
     )
 
+    if model_params is None:
+        model_params = {}
     prior = model_params.get('prior', 'symmetric')
 
     # what GenSim returns by default (everything is 'symmetric')
@@ -262,24 +274,24 @@ def init_bcg_sparse_model(
         artm.SmoothSparsePhiRegularizer(
              name='smooth_phi_bcg',
              topic_names=background_topic_names,
-             tau=model_params.get("smooth_phi_bcg_tau", 0.1),
+             tau=model_params.get("smooth_bcg_tau", 0.1),
              class_ids=[main_modality],
         ),
         artm.SmoothSparseThetaRegularizer(
              name='smooth_theta_bcg',
              topic_names=background_topic_names,
-             tau=model_params.get("smooth_theta_bcg_tau", 0.1),
+             tau=model_params.get("smooth_bcg_tau", 0.1),
         ),
         artm.SmoothSparsePhiRegularizer(
              name='sparse_phi_sp',
              topic_names=specific_topic_names,
-             tau=model_params.get("sparse_phi_sp_tau", -0.05),
+             tau=model_params.get("sparse_sp_tau", -0.05),
              class_ids=[main_modality],
             ),
         artm.SmoothSparseThetaRegularizer(
              name='sparse_theta_sp',
              topic_names=specific_topic_names,
-             tau=model_params.get("sparse_theta_sp_tau", -0.05),
+             tau=model_params.get("sparse_sp_tau", -0.05),
         ),
     ]
     for reg in regularizers:
