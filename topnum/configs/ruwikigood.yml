@@ -15,7 +15,7 @@ max_num_topics: 100
 
 num_topics_interval: 5
 num_fit_iterations: 40
-num_restarts: 4
+num_restarts: 3
 
 
 
