@@ -8,6 +8,8 @@ from topicnet.cooking_machine.rel_toolbox_lite import count_vocab_size, transfor
 from topicnet.cooking_machine.model_constructor import (
     create_default_topics, add_standard_scores, init_model
 )
+import numpy as np
+import pandas as pd
 
 
 class KnownModel(Enum):
@@ -17,8 +19,10 @@ class KnownModel(Enum):
     DECORRELATION = 'decorrelation'
     ARTM = 'ARTM'
 
+
 PARAMS_EXPLORED = {
-    KnownModel.LDA: {'prior': ['symmetric', 'asymmetric', 'small', 'heuristic']},
+    KnownModel.LDA: {'prior': ['symmetric', #'asymmetric',
+                               'small', 'heuristic']},
     KnownModel.PLSA: {},
     KnownModel.SPARSE: {'smooth_bcg_tau': [0.05, 0.1],
                         'sparse_sp_tau':  [-0.05, -0.1]},
@@ -32,6 +36,7 @@ PARAMS_EXPLORED = {
 # ==================================
 
 FIELDS = 'token class_id token_value token_tf token_df'.split()
+
 
 def artm_dict2df(artm_dict):
     dictionary_data = artm_dict._master.get_dictionary(artm_dict._name)
@@ -149,7 +154,7 @@ def init_decorrelated_plsa(
     model.regularizers.add(
         artm.DecorrelatorPhiRegularizer(
             gamma=0,
-            tau=0.01,
+            tau=tau,
             name='decorrelation',
             topic_names=specific_topic_names,
             class_ids=modalities_to_use,
@@ -159,11 +164,13 @@ def init_decorrelated_plsa(
     return model
 
 
-def _init_dirichlet_prior(prior, num_topics, num_terms):
+def _init_dirichlet_prior(name, num_topics, num_terms):
     prior_shape = num_topics if name == 'alpha' else num_terms
 
-    init_prior = np.fromiter((1.0 / (i + np.sqrt(prior_shape)) for i in range(prior_shape)),
-        dtype=self.dtype, count=prior_shape)
+    init_prior = np.fromiter(
+        (1.0 / (i + np.sqrt(prior_shape)) for i in range(prior_shape)),
+        dtype=np.float32, count=prior_shape
+    )
     init_prior /= init_prior.sum()
     return init_prior
 
@@ -203,11 +210,15 @@ def init_lda(
         alpha = 1.0 / num_topics
         eta = 1.0 / num_topics
     elif prior == "asymmetric":
+        # TODO: turns out, BigARTM does not support tau as a list of floats
+        # so we need to use custom regularzir instead (TopicPrior perhaps?)
+        # this won't be happening today :(
         artm_dict = dataset.get_dictionary()
         temp_df = artm_dict2df(artm_dict)
         num_terms = temp_df.query("class_id in @modalities_to_use").shape[0]
         alpha = _init_dirichlet_prior("alpha", num_topics, num_terms)
         eta = _init_dirichlet_prior("eta", num_topics, num_terms)
+        raise NotImplementedError
     elif prior == "small":
         # used in BigARTM
         alpha = 0.01

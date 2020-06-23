@@ -247,16 +247,26 @@ def load_models_from_disk(experiment_directory, base_experiment_name, scores=Non
 
     result_models = []
 
-    mask = f"{experiment_directory}/{base_experiment_name}_*"
-    msg = (f'Trying to load models from {mask}.'
-           f' {len(glob.glob(mask))} models found.')
-    _logger.info(msg)
-    for folder in glob.glob(mask):
-        model_pathes = [
-            f.path for f in os.scandir(folder)
-            if f.is_dir() and f.name != START
-        ]
-        result_models += [DummyTopicModel.load(path) for path in model_pathes]
-        # result_models += [TopicModel.load(path).to_dummy() for path in model_pathes]
+    masks = [
+        f"{experiment_directory}/{base_experiment_name}_*",
+        f"{experiment_directory}/{base_experiment_name}/*"
+    ]
+    for new_exp_format, mask in enumerate(masks):
+        if not len(glob.glob(mask)):
+            continue
+        msg = (f'Trying to load models from {mask}.'
+               f' {len(glob.glob(mask))} models found.')
+        _logger.info(msg)
+        for folder in glob.glob(mask):
+            if new_exp_format:
+                model_pathes = [folder]
+            else:
+                model_pathes = [
+                    f.path for f in os.scandir(folder)
+                    if f.is_dir() and f.name != START
+                ]
+            result_models += [DummyTopicModel.load(path) for path in model_pathes]
+            # result_models += [TopicModel.load(path).to_dummy() for path in model_pathes]
 
-    return _summarize_models(result_models)
+        return _summarize_models(result_models)
+    raise ValueError(f"No models found in {masks}")

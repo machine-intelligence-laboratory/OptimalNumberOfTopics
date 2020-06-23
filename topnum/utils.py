@@ -23,6 +23,7 @@ import pandas as pd
 
 from topicnet.cooking_machine.dataset import Dataset
 import numpy as np
+import os, glob
 
 
 def split_into_train_test(dataset, config):
@@ -120,15 +121,16 @@ def check_if_monotonous(score_result):
 
 def monotonity_and_std_analysis(experiment_directory, experiment_name_template):
     informative_df = pd.DataFrame()
-    for model_family in KnownModel:
-        mfv = model_family.value
 
+    all_subexperems_mask = os.path.join(experiment_directory, experiment_name_template.format("*", "*"))
+
+    for entry in glob.glob(all_subexperems_mask):
+
+        experiment_name = entry.split("/")[-1]
         try:
             result, detailed_result = load_models_from_disk(
-                experiment_directory, experiment_name_template.format(mfv)
+                experiment_directory, experiment_name
             )
-            print(mfv, detailed_result['perp'].shape[0])
-
             for score in detailed_result.keys():
                 max_std = detailed_result[score].std().max()
                 avg_val = detailed_result[score].median().median()
@@ -138,9 +140,9 @@ def monotonity_and_std_analysis(experiment_directory, experiment_name_template):
                     print(score, rel_error, detailed_result[score].std().min(), max_std)
 
                 is_monotonous = check_if_monotonous(detailed_result[score].T)
-                informative_df.loc[score, mfv] = is_monotonous
+                informative_df.loc[score, experiment_name] = is_monotonous
         except IndexError as e:
-            print(f"Error reading data from {mfv};\nThe exception raised is\n{e}")
+            print(f"Error reading data from {entry};\nThe exception raised is\n{e}")
             pass
     return informative_df
 
@@ -189,11 +191,14 @@ def plot_everything_informative(
 
     details = defaultdict(dict)
 
-    for model_family in KnownModel:
-        mfv = model_family.value
+    all_subexperems_mask = os.path.join(experiment_directory, experiment_name_template.format("*", "*"))
+
+    for entry in glob.glob(all_subexperems_mask):
+
+        experiment_name = entry.split("/")[-1]
 
         result, detailed_result = load_models_from_disk(
-            experiment_directory, experiment_name_template.format(mfv)
+            experiment_directory, experiment_name
         )
 
         for score in detailed_result.keys():
@@ -203,12 +208,10 @@ def plot_everything_informative(
                 all(f_criterion not in score for f_criterion in false_criteria)
             )
             if should_plot:
-                details[score][mfv] = detailed_result[score].T
+                details[score][experiment_name] = detailed_result[score].T
     for score in details.keys():
         fig, axes = plt.subplots(1, 1, figsize=(10, 10))
-        for index, model_family in enumerate(KnownModel):
-            mfv = model_family.value
-            data = details[score][mfv]
+        for experiment_name, data in details[score].items():
             is_monotonous = check_if_monotonous(data)
 
             # I can make a grid of plots if I do something like this:
@@ -218,7 +221,7 @@ def plot_everything_informative(
                 style = ':'
             else:
                 style = '-'
-            my_ax.plot(data.T.mean(axis=0), linestyle=style, label=mfv)
+            my_ax.plot(data.T.mean(axis=0), linestyle=style, label=experiment_name)
 
         my_ax.set_title(f"{score}")
         my_ax.legend()
