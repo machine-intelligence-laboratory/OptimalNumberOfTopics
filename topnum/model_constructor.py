@@ -28,15 +28,26 @@ class KnownModel(Enum):
 
 # TODO: maybe this shouldn't be here (let it be in Jupyter notebook with experiments)
 PARAMS_EXPLORED = {
-    KnownModel.LDA: {'prior': ['symmetric', #'asymmetric',
-                               'small', 'heuristic']},
+    KnownModel.LDA: {
+        'prior': [
+            'symmetric',  # TODO: 'asymmetric' (see another to-do below)
+            'small',
+            'heuristic',
+        ]
+    },
     KnownModel.PLSA: {},
-    KnownModel.SPARSE: {'smooth_bcg_tau': [0.05, 0.1],
-                        'sparse_sp_tau':  [-0.05, -0.1]},
-    KnownModel.DECORRELATION: {'decorrelation_tau': [0.02, 0.05, 0.1]},
-    KnownModel.ARTM: {'smooth_bcg_tau':    [0.05, 0.1],
-                      'sparse_sp_tau':     [-0.05, -0.1],
-                      'decorrelation_tau': [0.02, 0.05, 0.1]}
+    KnownModel.SPARSE: {
+        'smooth_bcg_tau': [0.05, 0.1],
+        'sparse_sp_tau':  [-0.05, -0.1]
+    },
+    KnownModel.DECORRELATION: {
+        'decorrelation_tau': [0.02, 0.05, 0.1]
+    },
+    KnownModel.ARTM: {
+        'smooth_bcg_tau':    [0.05, 0.1],
+        'sparse_sp_tau':     [-0.05, -0.1],
+        'decorrelation_tau': [0.02, 0.05, 0.1]
+    }
 }
 
 # TODO: move this to BigARTM dictionary
