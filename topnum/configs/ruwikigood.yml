@@ -1,0 +1,21 @@
+
+name: RuWikiGood
+batches_prefix: RWG
+dataset_path: '/data_mil/datasets/ruwiki_good/good_ruwiki_vw.txt'
+
+word: "@lemmatized"
+
+min_num_topics: 5
+
+# around 10 main categories
+# around 87 `ul b` tags
+# around 238 <b> tags in total
+# max_num_topics: 300?
+max_num_topics: 100
+
+num_topics_interval: 5
+num_fit_iterations: 40
+num_restarts: 4
+
+
+

@@ -1,0 +1,16 @@
+
+name: Brown
+batches_prefix: Brown
+dataset_path: '/data_mil/datasets/Brown/Brown.csv'
+
+word: "@word"
+
+min_num_topics: 5
+max_num_topics: 25
+
+num_topics_interval: 3
+num_fit_iterations: 30
+num_restarts: 6
+
+
+

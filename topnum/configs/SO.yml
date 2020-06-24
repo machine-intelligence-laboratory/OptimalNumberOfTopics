@@ -1,0 +1,24 @@
+name: StackOverflow
+
+dataset_path: '/data_mil/datasets/StackOverflow/SO_vw_bow.txt'
+batches_prefix: SO
+
+word: "@lemmatized"
+
+# https://link.springer.com/article/10.1007/s10664-012-9231-y
+# Anton Barua, Stephen W. Thomas & Ahmed E. Hassan 2012
+# used just 40 topics
+#
+# Rosen, C., Shihab, E. 2016
+# What are mobile developers asking about? A large scale study using stack overflow.
+# used 40 topics (but merged them down to 32)
+
+min_num_topics: 5
+max_num_topics: 60
+
+num_topics_interval: 5
+num_fit_iterations: 40
+num_restarts: 6
+
+
+
