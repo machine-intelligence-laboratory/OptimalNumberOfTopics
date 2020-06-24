@@ -8,7 +8,10 @@ import warnings
 from tqdm import tqdm
 from typing import List
 
-from topicnet.cooking_machine.models import TopicModel, DummyTopicModel
+from topicnet.cooking_machine.models import (
+    DummyTopicModel,
+    TopicModel,
+)
 
 from .base_search_method import (
     BaseSearchMethod,
@@ -86,11 +89,16 @@ class OptimizeScoresMethod(BaseSearchMethod):
             self._keys_std_many.append(key)
 
     # TODO: accept either VowpalWabbitTextCollection or Dataset with modalities
-    def search_for_optimum(self, text_collection: VowpalWabbitTextCollection) -> None:
+    def search_for_optimum(
+            self,
+            text_collection: VowpalWabbitTextCollection) -> None:
+
         _logger.info('Starting to search for optimum...')
 
         dataset = text_collection._to_dataset()
 
+        # TODO: if this sophisticated seeds don't make models different,
+        #  return the simpler seeds (0, 1, 2, ...)
         seeds = [None] + [abs(RandomState(i).tomaxint()) for i in range(1, self._num_restarts)]
 
         nums_topics = list(range(

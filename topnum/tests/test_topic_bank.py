@@ -6,6 +6,8 @@ import pytest
 from numbers import Number
 from topicnet.cooking_machine.dataset import (
     Dataset,
+    RAW_TEXT_COL,
+    VW_TEXT_COL,
     W_DIFF_BATCHES_1
 )
 from topicnet.cooking_machine.models import (
@@ -15,7 +17,7 @@ from topicnet.cooking_machine.models import (
 from typing import (
     Callable,
     Dict,
-    List
+    List,
 )
 
 from topnum.scores.base_score import BaseScore
@@ -64,7 +66,6 @@ class _DummyTopicScore(BaseTopicScore):
 class TestTopicBank:
     data_generator = None
 
-    dataset = None
     main_modality = None
     other_modality = None
     text_collection = None
@@ -77,19 +78,19 @@ class TestTopicBank:
 
         cls.data_generator.generate()
 
+        cls.data_generator.text_collection._dataset = None
+
         cls.text_collection = cls.data_generator.text_collection
         cls.main_modality = cls.data_generator.main_modality
         cls.other_modality = cls.data_generator.other_modality
 
-        cls.dataset = cls.text_collection._to_dataset()
-
-        # TODO: "workaround", TopicBank needs raw text
-        cls.dataset._data['raw_text'] = cls.dataset._data['vw_text'].apply(
-            lambda text: ' '.join(
-                w.split(':')[0] for w in text.split()[1:] if not w.startswith('|'))
-        )
+    def setup_method(self):
+        assert self.text_collection._dataset is None
 
     def teardown_method(self):
+        self.text_collection._set_dataset_kwargs()
+        self.text_collection._dataset = None
+
         if self.optimizer is not None:
             self.optimizer._topic_bank.eliminate()
             self.optimizer.clear()
@@ -99,25 +100,46 @@ class TestTopicBank:
         if cls.data_generator is not None:
             cls.data_generator.clear()
 
-    def test_topic_bank_smoke(self):
-        self._test_topic_bank(BankUpdateMethod.PROVIDE_NON_LINEARITY)
+    def dataset(self, keep_in_memory: bool = True) -> Dataset:
+        self.text_collection._set_dataset_kwargs(
+            keep_in_memory=keep_in_memory
+        )
+        dataset = self.text_collection._to_dataset()
+
+        return dataset
+
+    @pytest.mark.parametrize('keep_in_memory', [True, False])
+    def test_topic_bank_smoke(self, keep_in_memory):
+        self._test_topic_bank(
+            self.dataset(keep_in_memory=keep_in_memory),
+            BankUpdateMethod.PROVIDE_NON_LINEARITY,
+        )
 
     @pytest.mark.parametrize(
-        'bank_update',
-        [BankUpdateMethod.JUST_ADD_GOOD_TOPICS, BankUpdateMethod.PROVIDE_NON_LINEARITY]
+        'keep_in_memory, bank_update',
+        [
+            (True, BankUpdateMethod.JUST_ADD_GOOD_TOPICS),
+            (False, BankUpdateMethod.JUST_ADD_GOOD_TOPICS),
+            (True, BankUpdateMethod.PROVIDE_NON_LINEARITY),
+        ]
     )
     @pytest.mark.parametrize(
         'train_funcs',
         [None, background_topics_train_func, default_train_func, regularization_train_func]
     )
-    def test_topic_bank(self, bank_update, train_funcs):
-        self._test_topic_bank(bank_update, train_func=train_funcs)
+    def test_topic_bank(self, keep_in_memory, bank_update, train_funcs):
+        self._test_topic_bank(
+            self.dataset(keep_in_memory=keep_in_memory),
+            bank_update,
+            train_func=train_funcs,
+        )
 
+    @pytest.mark.parametrize('keep_in_memory', [True, False])
     @pytest.mark.parametrize(
         'bank_update',
         [BankUpdateMethod.JUST_ADD_GOOD_TOPICS, BankUpdateMethod.PROVIDE_NON_LINEARITY]
     )
-    def test_topic_bank_specific_phi_random(self, bank_update):
+    def test_topic_bank_specific_phi_random(self, keep_in_memory, bank_update):
         def initialize_phi_func(
                 dataset: Dataset,
                 model_number: int,
@@ -138,17 +160,23 @@ class TestTopicBank:
                 initialize_phi_func=initialize_phi_func
             )
 
-        self._test_topic_bank(bank_update, train_func=train_func)
+        self._test_topic_bank(
+            self.dataset(keep_in_memory=keep_in_memory),
+            bank_update,
+            train_func=train_func,
+        )
 
+    @pytest.mark.parametrize('keep_in_memory', [True, False])
     @pytest.mark.parametrize(
         'bank_update',
         [BankUpdateMethod.JUST_ADD_GOOD_TOPICS, BankUpdateMethod.PROVIDE_NON_LINEARITY]
     )
-    def test_topic_bank_specific_phi_cdc(self, bank_update):
+    def test_topic_bank_specific_phi_cdc(self, keep_in_memory, bank_update):
+        dataset = self.dataset(keep_in_memory=keep_in_memory)
         one_model_num_topics = 10
         num_topics_to_copy = one_model_num_topics // 2
         phi = cdc.compute_phi(
-            self.dataset,
+            dataset,
             self.main_modality,
             local_context_words_percentile=95,
             eps=0.05,
@@ -179,20 +207,23 @@ class TestTopicBank:
             )
 
         self._test_topic_bank(
+            dataset,
             bank_update,
             one_model_num_topics=one_model_num_topics,
-            train_func=train_func
+            train_func=train_func,
         )
 
+    @pytest.mark.parametrize('keep_in_memory', [True, False])
     @pytest.mark.parametrize(
         'bank_update',
         [BankUpdateMethod.JUST_ADD_GOOD_TOPICS, BankUpdateMethod.PROVIDE_NON_LINEARITY]
     )
-    def test_topic_bank_specific_phi_arora(self, bank_update):
+    def test_topic_bank_specific_phi_arora(self, keep_in_memory, bank_update):
+        dataset = self.dataset(keep_in_memory=keep_in_memory)
         one_model_num_topics = 10
         num_topics_to_copy = one_model_num_topics // 2
         phi = arora.compute_phi(
-            self.dataset,
+            dataset,
             self.main_modality,
             num_topics=one_model_num_topics,
             document_occurrences_threshold_percentage=0.001
@@ -222,19 +253,21 @@ class TestTopicBank:
             )
 
         self._test_topic_bank(
+            dataset,
             bank_update,
             one_model_num_topics=one_model_num_topics,
-            train_func=train_func
+            train_func=train_func,
         )
 
     def _test_topic_bank(
             self,
+            dataset: Dataset,
             bank_update: BankUpdateMethod,
             one_model_num_topics: int = 2,
             train_func: Callable = None):
 
         self.optimizer = TopicBankMethod(
-            data=self.dataset,
+            data=dataset,
             main_modality=self.main_modality,
             min_df_rate=0.0,
             max_df_rate=1.1,

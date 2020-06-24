@@ -11,6 +11,8 @@ from functools import reduce
 from itertools import product
 from topicnet.cooking_machine.dataset import (
     Dataset,
+    RAW_TEXT_COL,
+    VW_TEXT_COL,
     DEFAULT_ARTM_MODALITY
 )
 from topicnet.cooking_machine.models.base_model import BaseModel
@@ -32,6 +34,7 @@ from ..scores._base_coherence_score import (
 )
 
 
+DOC_ID_COL = 'id'
 NUM_TOP_WORDS = 10
 BIG_SEGMENT_LENGTH = 8
 SMALL_SEGMENT_LENGTHS = [1, 2, 4]
@@ -73,6 +76,7 @@ class TestIntratextCoherenceScore:
     out_of_topics_word = 'unknown_word'
 
     data_folder_path = None
+    dataset_file_path = None
     model = None
     dataset = None
 
@@ -84,11 +88,14 @@ class TestIntratextCoherenceScore:
         dataset_table = cls.create_dataset_table(document_words)
 
         cls.data_folder_path = tempfile.mkdtemp()
+        cls.dataset_file_path = os.path.join(
+            cls.data_folder_path,
+            DATASET_FILE_NAME,
+        )
 
-        dataset_file_path = os.path.join(cls.data_folder_path, DATASET_FILE_NAME)
-        dataset_table.to_csv(dataset_file_path, index=False)
+        dataset_table.to_csv(cls.dataset_file_path, index=False)
 
-        cls.dataset = Dataset(dataset_file_path)
+        cls.dataset = Dataset(cls.dataset_file_path)
 
     @classmethod
     def teardown_class(cls):
@@ -186,7 +193,7 @@ class TestIntratextCoherenceScore:
 
         return pd.DataFrame(
             index=cls.documents,
-            columns=['id', 'raw_text', 'vw_text'],
+            columns=[DOC_ID_COL, RAW_TEXT_COL, VW_TEXT_COL],
             data=[
                 [doc, cls.get_raw_text(doc, document_words), cls.get_vw_text(doc, document_words)]
                 for doc in cls.documents
@@ -229,6 +236,13 @@ class TestIntratextCoherenceScore:
 
         self._check_compute(score)
 
+    @pytest.mark.parametrize('keep_in_memory', [True, False])
+    def test_compute_intratext_small_big_data(self, keep_in_memory) -> None:
+        dataset = Dataset(self.dataset_file_path, keep_in_memory=keep_in_memory)
+        score = _IntratextCoherenceScore(dataset)
+
+        self._check_compute(score)
+
     @pytest.mark.parametrize(
         'text_type, computation_method, word_topic_relatedness, specificity_estimation',
         list(product(
@@ -254,6 +268,13 @@ class TestIntratextCoherenceScore:
             word_topic_relatedness=word_topic_relatedness,
             specificity_estimation=specificity_estimation
         )
+
+        self._check_call(score)
+
+    @pytest.mark.parametrize('keep_in_memory', [True, False])
+    def test_call_intratext_small_big_data(self, keep_in_memory) -> None:
+        dataset = Dataset(self.dataset_file_path, keep_in_memory=keep_in_memory)
+        score = _IntratextCoherenceScore(dataset)
 
         self._check_call(score)
 
@@ -324,6 +345,13 @@ class TestIntratextCoherenceScore:
 
         self._check_compute(score, strict=False)
 
+    @pytest.mark.parametrize('keep_in_memory', [True, False])
+    def test_compute_toptokens_small_big_data(self, keep_in_memory) -> None:
+        dataset = Dataset(self.dataset_file_path, keep_in_memory=keep_in_memory)
+        score = _TopTokensCoherenceScore(dataset)
+
+        self._check_compute(score, strict=False)
+
     @pytest.mark.parametrize(
         'text_type, word_topic_relatedness, specificity_estimation',
         list(product(
@@ -345,6 +373,13 @@ class TestIntratextCoherenceScore:
             word_topic_relatedness=word_topic_relatedness,
             specificity_estimation=specificity_estimation
         )
+
+        self._check_call(score)
+
+    @pytest.mark.parametrize('keep_in_memory', [True, False])
+    def test_call_toptokens_small_big_data(self, keep_in_memory) -> None:
+        dataset = Dataset(self.dataset_file_path, keep_in_memory=keep_in_memory)
+        score = _TopTokensCoherenceScore(dataset)
 
         self._check_call(score)
 

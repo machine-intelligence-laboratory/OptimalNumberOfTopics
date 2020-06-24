@@ -4,12 +4,18 @@ import pytest
 import warnings
 
 from numbers import Number
-from topicnet.cooking_machine.dataset import W_DIFF_BATCHES_1
-from topicnet.cooking_machine.models import BaseModel
 from typing import (
     Dict,
-    List
+    List,
 )
+
+from topicnet.cooking_machine.dataset import (
+    Dataset,
+    RAW_TEXT_COL,
+    VW_TEXT_COL,
+    W_DIFF_BATCHES_1,
+)
+from topicnet.cooking_machine.models import BaseModel
 
 from topnum.scores.base_topic_score import BaseTopicScore
 from topnum.search_methods import RenormalizationMethod
@@ -51,7 +57,6 @@ class _DummyTopicScore(BaseTopicScore):
 class TestRenormalization:
     data_generator = None
 
-    dataset = None
     main_modality = None
     other_modality = None
     text_collection = None
@@ -64,19 +69,19 @@ class TestRenormalization:
 
         cls.data_generator.generate()
 
+        cls.data_generator.text_collection._dataset = None
+
         cls.text_collection = cls.data_generator.text_collection
         cls.main_modality = cls.data_generator.main_modality
         cls.other_modality = cls.data_generator.other_modality
 
-        cls.dataset = cls.text_collection._to_dataset()
-
-        # TODO: "workaround", TopicBank needs raw text
-        cls.dataset._data['raw_text'] = cls.dataset._data['vw_text'].apply(
-            lambda text: ' '.join(
-                w.split(':')[0] for w in text.split()[1:] if not w.startswith('|'))
-        )
+    def setup_method(self):
+        assert self.text_collection._dataset is None
 
     def teardown_method(self):
+        self.text_collection._set_dataset_kwargs()
+        self.text_collection._dataset = None
+
         if self.optimizer is not None:
             self.optimizer.clear()
 
@@ -85,6 +90,22 @@ class TestRenormalization:
         if cls.data_generator is not None:
             cls.data_generator.clear()
 
+    def dataset(self, keep_in_memory: bool = True) -> Dataset:
+        self.text_collection._set_dataset_kwargs(
+            keep_in_memory=keep_in_memory
+        )
+        dataset = self.text_collection._to_dataset()
+
+        return dataset
+
+    @pytest.mark.parametrize(
+        'keep_in_memory,matrix_for_renormalization',
+        [
+            (True, PHI_RENORMALIZATION_MATRIX),
+            (True, THETA_RENORMALIZATION_MATRIX),
+            (False, THETA_RENORMALIZATION_MATRIX),
+        ]
+    )
     @pytest.mark.parametrize(
         'merge_method',
         [ENTROPY_MERGE_METHOD, RANDOM_MERGE_METHOD, KL_MERGE_METHOD]
@@ -93,11 +114,7 @@ class TestRenormalization:
         'threshold_factor',
         [1.0, 0.5, 1e-7, 1e7]
     )
-    @pytest.mark.parametrize(
-        'matrix_for_renormalization',
-        [PHI_RENORMALIZATION_MATRIX, THETA_RENORMALIZATION_MATRIX]
-    )
-    def test_renormalize(self, merge_method, threshold_factor, matrix_for_renormalization):
+    def test_renormalize(self, keep_in_memory, matrix_for_renormalization, merge_method, threshold_factor):
         max_num_topics = 10
 
         optimizer = RenormalizationMethod(
@@ -110,6 +127,23 @@ class TestRenormalization:
         )
         num_search_points = len(list(range(1, max_num_topics)))
 
+        self.text_collection._set_dataset_kwargs(keep_in_memory=keep_in_memory)
+        optimizer.search_for_optimum(self.text_collection)
+
+        self._check_search_result(optimizer._result, optimizer, num_search_points)
+
+    @pytest.mark.parametrize('keep_in_memory', [True, False])
+    def test_renormalize_small_big_data(self, keep_in_memory):
+        max_num_topics = 10
+
+        optimizer = RenormalizationMethod(
+            max_num_topics=max_num_topics,
+            num_fit_iterations=10,
+            num_restarts=3,
+        )
+        num_search_points = len(list(range(1, max_num_topics)))
+
+        self.text_collection._set_dataset_kwargs(keep_in_memory=keep_in_memory)
         optimizer.search_for_optimum(self.text_collection)
 
         self._check_search_result(optimizer._result, optimizer, num_search_points)

@@ -1,6 +1,10 @@
 import logging
 import numpy as np
+import os
 import pytest
+import shutil
+import subprocess
+import tempfile
 import warnings
 
 from numbers import Number
@@ -9,7 +13,10 @@ from typing import (
     List,
 )
 
-from topicnet.cooking_machine.dataset import W_DIFF_BATCHES_1
+from topicnet.cooking_machine.dataset import (
+    Dataset,
+    W_DIFF_BATCHES_1,
+)
 from topicnet.cooking_machine.models import BaseModel
 
 from topnum.scores import (
@@ -25,7 +32,6 @@ from topnum.search_methods import (
     TopicBankMethod,
 )
 from topnum.search_methods.base_search_method import BaseSearchMethod
-from topnum.search_methods.constants import DEFAULT_EXPERIMENT_DIR
 from topnum.search_methods.optimize_scores_method import _KEY_SCORE_RESULTS
 from topnum.tests.data_generator import TestDataGenerator
 
@@ -57,12 +63,13 @@ class _DummyTopicScore(BaseTopicScore):
 class TestAcceptance:
     data_generator = None
 
-    dataset = None
     main_modality = None
     other_modality = None
     text_collection = None
 
     optimizer = None
+
+    working_folder_path = None
 
     @classmethod
     def setup_class(cls):
@@ -70,19 +77,21 @@ class TestAcceptance:
 
         cls.data_generator.generate()
 
+        cls.data_generator.text_collection._dataset = None
+
         cls.text_collection = cls.data_generator.text_collection
         cls.main_modality = cls.data_generator.main_modality
         cls.other_modality = cls.data_generator.other_modality
 
-        cls.dataset = cls.text_collection._to_dataset()
+        cls.working_folder_path = tempfile.mkdtemp(prefix='test_acceptance__')
 
-        # TODO: "workaround", TopicBank needs raw text
-        cls.dataset._data['raw_text'] = cls.dataset._data['vw_text'].apply(
-            lambda text: ' '.join(
-                w.split(':')[0] for w in text.split()[1:] if not w.startswith('|'))
-        )
+    def setup_method(self):
+        assert self.text_collection._dataset is None
 
     def teardown_method(self):
+        self.text_collection._set_dataset_kwargs()
+        self.text_collection._dataset = None
+
         if self.optimizer is not None:
             self.optimizer.clear()
 
@@ -91,36 +100,61 @@ class TestAcceptance:
         if cls.data_generator is not None:
             cls.data_generator.clear()
 
-    def test_optimize_perplexity(self):
+        shutil.rmtree(cls.working_folder_path)
+
+    def dataset(self, keep_in_memory: bool = True) -> Dataset:
+        self.text_collection._set_dataset_kwargs(
+            keep_in_memory=keep_in_memory
+        )
+        dataset = self.text_collection._to_dataset()
+
+        return dataset
+
+    @pytest.mark.parametrize('keep_in_memory', [True, False])
+    def test_optimize_perplexity(self, keep_in_memory):
         score = PerplexityScore(
             'perplexity_score',
             class_ids=[self.main_modality, self.other_modality]
         )
-
-        self._test_optimize_score(score)
-
-    def test_optimize_diversity(self):
-        score = DiversityScore(
-            'diversity_score',
-            class_ids=self.main_modality
+        self.text_collection._set_dataset_kwargs(
+            keep_in_memory=keep_in_memory
         )
 
         self._test_optimize_score(score)
 
-    def test_optimize_intratext(self):
+    @pytest.mark.parametrize('keep_in_memory', [True, False])
+    def test_optimize_diversity(self, keep_in_memory):
+        score = DiversityScore(
+            'diversity_score',
+            class_ids=self.main_modality
+        )
+        self.text_collection._set_dataset_kwargs(
+            keep_in_memory=keep_in_memory
+        )
+
+        self._test_optimize_score(score)
+
+    @pytest.mark.parametrize('keep_in_memory', [True, False])
+    def test_optimize_intratext(self, keep_in_memory):
+        dataset = self.dataset(keep_in_memory=keep_in_memory)
         score = IntratextCoherenceScore(
             name='intratext_coherence',
-            data=self.dataset,
-            documents=self.dataset._data.index[:1],
-            window=2
+            data=dataset,
+            documents=dataset.documents[:1],
+            window=2,
+        )
+        self.text_collection._set_dataset_kwargs(
+            keep_in_memory=keep_in_memory
         )
 
         # a bit slow -> just 2 restarts
         self._test_optimize_score(score, num_restarts=2)
 
-    def test_topic_bank(self):
+    @pytest.mark.parametrize('keep_in_memory', [True, False])
+    def test_topic_bank(self, keep_in_memory):
+        dataset = self.dataset(keep_in_memory=keep_in_memory)
         self.optimizer = TopicBankMethod(
-            data=self.dataset,
+            data=dataset,
             main_modality=self.main_modality,
             min_df_rate=0.0,
             max_df_rate=1.1,
@@ -132,14 +166,15 @@ class TestAcceptance:
             topic_score_threshold_percentile=2,
         )
 
-        self.optimizer.search_for_optimum(self.text_collection)
+        self.optimizer.search_for_optimum()
 
         # TODO: improve check
         for result_key in ['optimum', 'optimum_std']:
             assert result_key in self.optimizer._result
             assert isinstance(self.optimizer._result[result_key], Number)
 
-    def test_stability(self):
+    @pytest.mark.parametrize('keep_in_memory', [True, False])
+    def test_stability(self, keep_in_memory):
         min_num_topics = 1
         max_num_topics = 5
         num_topics_interval = 1
@@ -148,6 +183,9 @@ class TestAcceptance:
             min_num_topics=min_num_topics,
             max_num_topics=max_num_topics,
             num_topics_interval=num_topics_interval,
+        )
+        self.text_collection._set_dataset_kwargs(
+            keep_in_memory=keep_in_memory
         )
 
         self.optimizer.search_for_optimum(self.text_collection)
@@ -159,7 +197,8 @@ class TestAcceptance:
 
         assert len(list(result_value.values())) == len(num_topics_values)
 
-    def test_renormalize(self):
+    @pytest.mark.parametrize('keep_in_memory', [True, False])
+    def test_renormalize(self, keep_in_memory):
         max_num_topics = 10
 
         optimizer = RenormalizationMethod(
@@ -168,10 +207,30 @@ class TestAcceptance:
             num_restarts=3
         )
         num_search_points = len(list(range(1, max_num_topics)))
+        self.text_collection._set_dataset_kwargs(
+            keep_in_memory=keep_in_memory
+        )
 
         optimizer.search_for_optimum(self.text_collection)
 
         self._check_search_result(optimizer._result, optimizer, num_search_points)
+
+    def test_sample_script(self):
+        tests_folder_path = os.path.dirname(os.path.abspath(__file__))
+        samples_folder_path = os.path.join(tests_folder_path, '..', '..', 'sample')
+        script_file_path = os.path.join(samples_folder_path, 'optimize_scores.sh')
+
+        assert os.path.isfile(script_file_path)
+
+        process = subprocess.Popen(script_file_path, cwd=samples_folder_path)
+        process.wait()
+
+        assert process.returncode == 0
+
+        process = subprocess.Popen(script_file_path, cwd='.')
+        process.wait()
+
+        assert process.returncode != 0
 
     def _test_optimize_score(self, score, num_restarts: int = 3) -> None:
         min_num_topics = 1
@@ -191,7 +250,7 @@ class TestAcceptance:
             one_model_num_processors=num_processors,
             separate_thread=False,
             experiment_name=score.name,  # otherwise will be using same folder
-            experiment_directory=DEFAULT_EXPERIMENT_DIR
+            experiment_directory=self.working_folder_path,
         )
         num_search_points = len(
             list(range(min_num_topics, max_num_topics + 1, num_topics_interval))

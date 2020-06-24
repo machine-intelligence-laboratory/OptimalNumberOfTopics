@@ -154,7 +154,8 @@ def init_lda(
         dataset, modalities_to_use, main_modality, num_topics
     )
 
-    # found in doi.org/10.1007/s10664-015-9379-3
+    # TODO: implement this LDA also
+    # Found in doi.org/10.1007/s10664-015-9379-3
     # Rosen, C., Shihab, E. 2016
     # What are mobile developers asking about? A large scale study using stack overflow.
     #
