@@ -2,12 +2,12 @@ import logging
 import numpy as np
 import pandas as pd
 import traceback
+import warnings
 
 from itertools import combinations
 from numbers import Number
 from scipy.spatial.distance import jensenshannon
 from sklearn.cluster import DBSCAN
-from topicnet.cooking_machine import Dataset
 from typing import (
     Callable,
     Dict,
@@ -16,9 +16,12 @@ from typing import (
     Union,
 )
 
+from topicnet.cooking_machine import Dataset
+from topicnet.cooking_machine.dataset import VW_TEXT_COL
+
 from . import (
     utils,
-    _COL_DOCUMENT_TEXT,
+    WARNING_VW_TEXT_WRONG_FORMAT,
 )
 
 
@@ -28,11 +31,22 @@ _Logger = logging.getLogger()
 def compute_phi(
         dataset: Dataset,
         main_modality: str,
+        text_column: str = VW_TEXT_COL,
         local_context_words_percentile: int = 20,  # TODO: why 20?
         clusterization_distance: Callable[[np.ndarray, np.ndarray], float] = None,
         eps: float = 0.6,
         min_samples: int = 20) -> pd.DataFrame:
     """
+    Parameters
+    ----------
+    text_column
+        Should be a name of `dataset` column.
+        Text in this column is going to be used by the method.
+        Is ts recommended that `text_column` is 'vw_text',
+        and Vowpal Wabbit text is in natural (not bag of words) order
+
+    References
+    ----------
     Vladimir Dobrynin, David Patterson, and Niall Rooney.
     "Contextual document clustering."
     European Conference on Information Retrieval.
@@ -55,6 +69,7 @@ def compute_phi(
 
     word_in_word_frequencies, document_frequencies = _count_word_in_word_frequencies(
         dataset=dataset,
+        text_column=text_column,
         word2index=word2index
     )
     word_in_word_probabilities = _count_word_in_word_probabilities(
@@ -107,6 +122,7 @@ def _check_clusterization_distance_func(
 
 def _count_word_in_word_frequencies(
         dataset: Dataset,
+        text_column: str,
         word2index: Dict[str, int],
         split_on_paragraphs: bool = True,
         max_document_size: int = None,
@@ -141,7 +157,7 @@ def _count_word_in_word_frequencies(
                 frequencies[word2index[word_pair[0]]][word2index[word_pair[1]]] += 1
                 frequencies[word2index[word_pair[1]]][word2index[word_pair[0]]] += 1
 
-    for doc_index, doc_text in enumerate(dataset._data[_COL_DOCUMENT_TEXT].values):
+    for doc_index, doc_text in enumerate(dataset._data[text_column]):
         if doc_index % num_docs_to_log == 0:
             _Logger.info(f'Counting word frequencies in the document number {doc_index}')
 
@@ -155,7 +171,13 @@ def _count_word_in_word_frequencies(
             text_pieces = [doc_text]
 
         for text_piece in text_pieces:
-            process_words(text_piece.split())
+            raw_words = text_piece.split()
+            words = list(utils._trim_vw(raw_words))
+
+            if words[:100] != raw_words[:100]:
+                warnings.warn(WARNING_VW_TEXT_WRONG_FORMAT)
+
+            process_words(words)
 
     if smoothing_value > 0:
         frequencies += smoothing_value

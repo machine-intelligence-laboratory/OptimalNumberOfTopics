@@ -16,7 +16,10 @@ from typing import (
     Tuple
 )
 
-from topicnet.cooking_machine.dataset import Dataset
+from topicnet.cooking_machine.dataset import (
+    Dataset,
+    VW_TEXT_COL,
+)
 from topicnet.cooking_machine.models import TopicModel
 from ..model_constructor import (
     init_model_from_family,
@@ -218,7 +221,15 @@ class RenormalizationMethod(BaseSearchMethod):
         p_d = list()
 
         for i, d in enumerate(docs):
-            vw_text = dataset._data.iloc[i]['vw_text']
+            vw_text = dataset._data.loc[d, VW_TEXT_COL]
+
+            if not dataset._small_data:
+                vw_text = vw_text.compute()
+
+                assert len(vw_text) == 1
+
+                vw_text = vw_text.values[0]
+
             tokens = [w for w in vw_text.split() if not w.startswith('|')]
             frequencies = [
                 float(t.split(':')[1]) if ':' in t else 1.0

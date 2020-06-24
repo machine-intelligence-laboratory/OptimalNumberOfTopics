@@ -176,19 +176,22 @@ def _init_dirichlet_prior(name, num_topics, num_terms):
 
 
 def init_lda(
-        dataset, modalities_to_use, main_modality,
-        num_topics, model_params
+        dataset: Dataset,
+        modalities_to_use: List[str],
+        main_modality: str,
+        num_topics: int,
+        model_params: dict,
 ):
     """
     Creates simple artm model with standard scores.
 
     Parameters
     ----------
-    dataset : Dataset
-    modalities_to_use : list of str
-    main_modality : str
-    num_topics : int
-    prior : str
+    dataset
+    modalities_to_use
+    main_modality
+    num_topics
+    model_params
 
     Returns
     -------
@@ -199,8 +202,17 @@ def init_lda(
     )
 
     if model_params is None:
-        model_params = {}
+        model_params = dict()
+
     prior = model_params.get('prior', 'symmetric')
+
+    # TODO: implement this LDA also
+    # Found in doi.org/10.1007/s10664-015-9379-3
+    # Rosen, C., Shihab, E. 2016
+    # What are mobile developers asking about? A large scale study using stack overflow.
+    #
+    # "We use the defacto standard heuristics of α=50/K and β=0.01
+    # (Biggers et al. 2014) for our hyperparameter values"
 
     # what GenSim returns by default (everything is 'symmetric')
     # see https://github.com/RaRe-Technologies/gensim/blob/master/gensim/models/ldamodel.py#L521

@@ -6,7 +6,6 @@ import tempfile
 from typing import List
 
 from topnum.data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
-from topnum.search_methods.constants import DEFAULT_EXPERIMENT_DIR
 
 
 class TestDataGenerator:
@@ -26,7 +25,7 @@ class TestDataGenerator:
         vw_texts = self.generate_vowpal_wabbit_texts()
         vw_file_path = os.path.join(
             self.text_collection_folder,
-            self.vw_file_name
+            self.vw_file_name,
         )
 
         with open(vw_file_path, 'w') as f:
@@ -43,9 +42,6 @@ class TestDataGenerator:
     def clear(self):
         self.text_collection._remove_dataset()
         shutil.rmtree(self.text_collection_folder)
-
-        if os.path.isdir(DEFAULT_EXPERIMENT_DIR):
-            shutil.rmtree(DEFAULT_EXPERIMENT_DIR)
 
     # TODO: DRY (same code in tests for optimize scores)
     def generate_vowpal_wabbit_texts(self) -> List[str]:

@@ -319,10 +319,10 @@ class _BaseCoherenceScore(TopicNetBaseScore):
 
     # TODO: try again self._dataset.get_source_document()?
     def _get_source_document(self, document_id: str) -> str:
-        return self._dataset.get_source_document(document_id).loc[document_id, 'raw_text']
+        return self._dataset.get_source_document(document_id).loc[document_id, RAW_TEXT_COL]
 
     def _get_vw_document(self, document_id: str) -> str:
-        return self._dataset.get_vw_document(document_id).loc[document_id, 'vw_text']
+        return self._dataset.get_vw_document(document_id).loc[document_id, VW_TEXT_COL]
 
     @staticmethod
     def _get_relatedness(

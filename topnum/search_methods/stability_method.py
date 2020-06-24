@@ -20,6 +20,10 @@ from typing import (
 )
 
 from topicnet.cooking_machine import Dataset
+from topicnet.cooking_machine.dataset import (
+    RAW_TEXT_COL,
+    VW_TEXT_COL,
+)
 from topicnet.cooking_machine.models import TopicModel
 
 from .constants import (
@@ -238,7 +242,7 @@ class StabilitySearchMethod(BaseSearchMethod):
             seed: int) -> None:
 
         dataset = text_collection._to_dataset()
-        total_num_documents = dataset._data.shape[0]
+        total_num_documents = len(dataset.documents)
 
         if isinstance(dataset_subsample_size, float):
             dataset_subsample_size = int(total_num_documents * dataset_subsample_size)
@@ -269,7 +273,14 @@ class StabilitySearchMethod(BaseSearchMethod):
                 writer.writerow(dataset._data.columns)
 
                 for document_index in current_document_indices:
-                    writer.writerow(dataset._data.iloc[document_index].to_list())
+                    # TODO: for big datasets maybe slow
+                    document_id = dataset.documents[document_index]
+                    document_df_row = dataset._data.loc[document_id, :]
+
+                    if not dataset._small_data:
+                        document_df_row = document_df_row.compute().loc[document_id]
+
+                    writer.writerow(document_df_row.to_list())
 
         _LOGGER.info('Subsampling finished')
 

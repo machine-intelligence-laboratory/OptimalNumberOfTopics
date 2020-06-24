@@ -41,6 +41,7 @@ def split_into_train_test(dataset, config):
 
     assert len(train_documents) + len(test_documents) == len(documents)
 
+    # TODO: test with keep_in_memory = False just in case
     train_data = dataset._data.loc[train_documents]
     test_data = dataset._data.loc[test_documents]
     train_data['id'] = train_data.index
@@ -52,7 +53,7 @@ def split_into_train_test(dataset, config):
     train_dataset = Dataset(f'{dn}_train.csv', batch_vectorizer_path=f'{dn}_train_internals')
     test_dataset = Dataset(f'{dn}_test.csv', batch_vectorizer_path=f'{dn}_test_internals')
 
-    # quick hack, i'm not sure what for
+    # TODO: quick hack, i'm not sure what for
     test_dataset._to_dataset = lambda: test_dataset
     train_dataset._to_dataset = lambda: train_dataset
 

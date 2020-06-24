@@ -50,17 +50,32 @@ def compute_document_details(demo_data, all_mods):
     columns = [col_total_len(m) for m in all_mods] + [col_uniq_len(m) for m in all_mods]
     token_count_df = pd.DataFrame(index=demo_data._data.index, columns=columns)
 
-    is_raw_tokenized = not demo_data._data.vw_text.str.contains(":").any()
+    if demo_data._small_data:
+        is_raw_tokenized = not demo_data._data.vw_text.str.contains(":").any()
+    else:
+        small_num_documents = 10
+        documents = list(demo_data._data.index)[:small_num_documents]  # TODO: maybe slow here
+        small_subdata = demo_data._data.loc[documents, :].compute()
+        is_raw_tokenized = not small_subdata.vw_text.str.contains(":").any()
+
+        del documents
+        del small_subdata
 
     for m in all_mods:
         local_columns = col_total_len(m), col_uniq_len(m)
         vw_copy = demo_data._data.vw_text.apply(lambda vw_string: get_modality_vw(vw_string, m))
+
         if is_raw_tokenized:
             data = vw_copy.apply(count_tokens_raw_tokenized)
         else:
             data = vw_copy.apply(count_tokens_unigram)
 
-        token_count_df.loc[:, local_columns] = pd.DataFrame(data.tolist(), index=data.index, columns=local_columns)
+        if not demo_data._small_data:
+            data = data.compute()
+
+        token_count_df.loc[:, local_columns] = pd.DataFrame(
+            data.to_list(), index=data.index, columns=local_columns
+        )
 
     return token_count_df
 
@@ -72,16 +87,16 @@ def _symmetric_kl(distrib_p, distrib_q):
 
 
 class SpectralDivergenceScore(BaseCustomScore):
-    '''
-        Implements Arun metric to estimate the optimal number of topics:
-        Arun, R., V. Suresh, C. V. Madhavan, and M. N. Murthy
-        On finding the natural number of topics with latent dirichlet allocation: Some observations.
-        In PAKDD (2010), pp. 391–402.
+    """
+    Implements Arun metric to estimate the optimal number of topics:
+    Arun, R., V. Suresh, C. V. Madhavan, and M. N. Murthy
+    On finding the natural number of topics with latent dirichlet allocation: Some observations.
+    In PAKDD (2010), pp. 391–402.
 
 
-        The code is based on analagous code from TOM:
-        https://github.com/AdrienGuille/TOM/blob/388c71ef/tom_lib/nlp/topic_model.py
-    '''
+    The code is based on analagous code from TOM:
+    https://github.com/AdrienGuille/TOM/blob/388c71ef/tom_lib/nlp/topic_model.py
+    """
 
     def __init__(
             self,
@@ -93,7 +108,6 @@ class SpectralDivergenceScore(BaseCustomScore):
         super().__init__(name)
 
         self._score = _SpectralDivergenceScore(validation_dataset, modalities)
-
 
 
 class _SpectralDivergenceScore(BaseTopicNetScore):
@@ -108,7 +122,6 @@ class _SpectralDivergenceScore(BaseTopicNetScore):
         self._keep_dataset_in_memory = validation_dataset._small_data
         self._dataset_internals_folder_path = validation_dataset._internals_folder_path
         self._dataset_file_path = validation_dataset._data_path
-
 
     def call(self, model: TopicModel):
         theta = model.get_theta(dataset=self._dataset)
