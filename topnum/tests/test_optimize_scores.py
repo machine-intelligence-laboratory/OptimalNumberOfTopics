@@ -1,6 +1,8 @@
 import logging
 import numpy as np
 import pytest
+import shutil
+import tempfile
 import warnings
 
 from itertools import combinations
@@ -11,13 +13,22 @@ from typing import (
     List,
 )
 
+import artm
+
+from topicnet.cooking_machine import Experiment
+from topicnet.cooking_machine.cubes import (
+    CubeCreator,
+    RegularizersModifierCube,
+)
 from topicnet.cooking_machine.dataset import (
     Dataset,
-    RAW_TEXT_COL,
-    VW_TEXT_COL,
     W_DIFF_BATCHES_1,
 )
-from topicnet.cooking_machine.models import BaseModel
+from topicnet.cooking_machine.models import (
+    BaseModel,
+    TopicModel,
+)
+from topicnet.cooking_machine.model_constructor import init_simple_default_model
 
 from topnum.scores import (
     CalinskiHarabaszScore,
@@ -37,7 +48,6 @@ from topnum.scores import (
 from topnum.scores.base_topic_score import BaseTopicScore
 from topnum.search_methods import OptimizeScoresMethod
 from topnum.search_methods.base_search_method import BaseSearchMethod
-from topnum.search_methods.constants import DEFAULT_EXPERIMENT_DIR
 from topnum.search_methods.optimize_scores_method import _KEY_SCORE_RESULTS
 from topnum.tests.data_generator import TestDataGenerator
 
@@ -75,6 +85,8 @@ class TestOptimizeScores:
 
     optimizer = None
 
+    working_folder_path = None
+
     @classmethod
     def setup_class(cls):
         cls.data_generator = TestDataGenerator()
@@ -86,6 +98,8 @@ class TestOptimizeScores:
         cls.text_collection = cls.data_generator.text_collection
         cls.main_modality = cls.data_generator.main_modality
         cls.other_modality = cls.data_generator.other_modality
+
+        cls.working_folder_path = tempfile.mktemp(prefix='test_optimize_scores__')
 
     def setup_method(self):
         assert self.text_collection._dataset is None
@@ -101,6 +115,8 @@ class TestOptimizeScores:
     def teardown_class(cls):
         if cls.data_generator is not None:
             cls.data_generator.clear()
+
+        shutil.rmtree(cls.working_folder_path)
 
     def dataset(self, keep_in_memory: bool = True) -> Dataset:
         self.text_collection._set_dataset_kwargs(
@@ -265,6 +281,135 @@ class TestOptimizeScores:
 
         self._test_optimize_score(score)
 
+    @pytest.mark.parametrize('keep_in_memory', [True, False])
+    def test_two_stage_experiment_with_all_scores(self, keep_in_memory):
+        dataset = self.dataset(keep_in_memory=keep_in_memory)
+        artm_model = init_simple_default_model(
+            dataset=dataset,
+            modalities_to_use=[self.main_modality, self.other_modality],
+            main_modality=self.main_modality,
+            specific_topics=5,
+            background_topics=1,
+        )
+        artm_model.num_processors = 2
+        topic_model = TopicModel(artm_model)
+        experiment = Experiment(
+            topic_model=topic_model,
+            experiment_id=f'test_all_scores_workable__{keep_in_memory}',
+            save_path=self.working_folder_path,
+        )
+
+        scores = [
+            SpectralDivergenceScore(
+                'divergence_score',
+                validation_dataset=dataset,
+                modalities=[self.main_modality],
+            ),
+            LikelihoodBasedScore(
+                'likelihood_score',
+                validation_dataset=dataset,
+                modality=self.main_modality,
+            ),
+            SilhouetteScore(
+                'silhouette_score',
+                validation_dataset=dataset,
+            ),
+            DiversityScore(
+                'diversity_score',
+                class_ids=self.main_modality,
+            ),
+            CalinskiHarabaszScore(
+                'calinski_harabasz_score',
+                validation_dataset=dataset,
+            ),
+            EntropyScore(
+                name='renyi_entropy',
+            ),
+            HoldoutPerplexityScore(
+                'holdout_perplexity_score',
+                test_dataset=dataset,
+                class_ids=[self.main_modality, self.other_modality]
+            ),
+            IntratextCoherenceScore(
+                name='intratext_coherence',
+                data=dataset,
+                documents=dataset.documents[:1],
+                window=2,
+            ),
+            SophisticatedTopTokensCoherenceScore(
+                name='sophisticated_toptokens_coherence',
+                data=dataset,
+                documents=dataset.documents[:1],
+            ),
+            PerplexityScore(
+                'perplexity_score',
+                class_ids=[self.main_modality, self.other_modality],
+            ),
+            SparsityPhiScore(
+                'sparsity_phi_score',
+                class_id=self.main_modality,
+            ),
+        ]
+
+        for score in scores:
+            score._attach(topic_model)
+
+        num_iters_first_cube = 5
+        cube = CubeCreator(
+            num_iter=num_iters_first_cube,
+            parameters=[
+                {
+                    'name': 'num_document_passes',
+                    'values': [1, 2]
+                },
+            ],
+            reg_search='grid',
+            tracked_score_function=f'PerplexityScore{self.main_modality}',
+            separate_thread=False,
+            verbose=False,
+        )
+
+        _ = cube(experiment.root, dataset)
+        selection_criterion = f'PerplexityScore{self.main_modality} -> min'
+        best_model_first_cube = experiment.select(selection_criterion)[0]
+
+        num_iters_second_cube = 7
+        cube = RegularizersModifierCube(
+            num_iter=num_iters_second_cube,
+            regularizer_parameters=[
+                {
+                    'regularizer': artm.DecorrelatorPhiRegularizer(
+                        name='decorr',
+                        tau=0,
+                    ),
+                    'tau_grid': [0.01, 0.1]
+                },
+                {
+                    'regularizer': artm.SmoothSparsePhiRegularizer(
+                        name='smooth',
+                        tau=0,
+                    ),
+                    'tau_grid': [0.001]
+                }
+            ],
+            use_relative_coefficients=True,
+            reg_search='grid',
+            separate_thread=False,
+            verbose=False,
+        )
+
+        _ = cube(best_model_first_cube, dataset)
+        best_model_second_cube = experiment.select(selection_criterion)[0]
+
+        for score in scores:
+            for model, model_num_iters in zip(
+                    [best_model_first_cube, best_model_second_cube],
+                    [num_iters_first_cube, num_iters_first_cube + num_iters_second_cube]):
+
+                assert score.name in model.scores
+                assert len(model.scores[score.name]) == model_num_iters
+                assert all([isinstance(v, Number) for v in model.scores[score.name]])
+
     def _test_optimize_score(self, score, num_restarts: int = 3) -> None:
         min_num_topics = 1
         max_num_topics = 2
@@ -283,7 +428,7 @@ class TestOptimizeScores:
             one_model_num_processors=num_processors,
             separate_thread=False,
             experiment_name=score.name,  # otherwise will be using same folder
-            experiment_directory=DEFAULT_EXPERIMENT_DIR
+            experiment_directory=self.working_folder_path,
         )
         num_search_points = len(
             list(range(min_num_topics, max_num_topics + 1, num_topics_interval))
@@ -294,7 +439,7 @@ class TestOptimizeScores:
         assert len(optimizer._result) == 1
         assert _KEY_SCORE_RESULTS in optimizer._result
 
-        # TODO: ptobably remove the assert below, because there are many default scores now
+        # TODO: probably remove the assert below, because there are many default scores now
         # assert len(optimizer._result[_KEY_SCORE_RESULTS]) == 1
         assert score.name in optimizer._result[_KEY_SCORE_RESULTS]
 
