@@ -11,6 +11,8 @@ import warnings
 from datetime import datetime
 from tqdm import tqdm
 from typing import (
+    Any,
+    Dict,
     Callable,
     List,
     Tuple
@@ -65,7 +67,7 @@ class RenormalizationMethod(BaseSearchMethod):
             model_num_processors: int = 1,
             model_seed: int = 0,
             model_family: str or KnownModel = KnownModel.PLSA,
-            model_params: dict = None):
+            model_params: Dict[str, Any] = None):
 
         super().__init__(min_num_topics, max_num_topics, num_fit_iterations)
 

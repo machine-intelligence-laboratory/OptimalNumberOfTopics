@@ -1,12 +1,16 @@
 import logging
 import os
 import pandas as pd
-from  numpy.random import RandomState
 import uuid
 import warnings
 
+from numpy.random import RandomState
 from tqdm import tqdm
-from typing import List
+from typing import (
+    Any,
+    Dict,
+    List,
+)
 
 from topicnet.cooking_machine.models import (
     DummyTopicModel,
@@ -44,7 +48,7 @@ class OptimizeScoresMethod(BaseSearchMethod):
             self,
             scores: List[BaseScore],  # TODO: Union[BaseScore, List[BaseScore]]
             model_family: str or KnownModel = KnownModel.PLSA,
-            model_params: dict = None,
+            model_params: Dict[str, Any] = None,
             num_restarts: int = 3,
             num_topics_interval: int = 10,
             min_num_topics: int = DEFAULT_MIN_NUM_TOPICS,

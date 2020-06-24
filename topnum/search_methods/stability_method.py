@@ -15,15 +15,13 @@ import tempfile
 from lapsolver import solve_dense
 from tqdm import tqdm
 from typing import (
+    Any,
+    Dict,
     List,
     Optional,
 )
 
 from topicnet.cooking_machine import Dataset
-from topicnet.cooking_machine.dataset import (
-    RAW_TEXT_COL,
-    VW_TEXT_COL,
-)
 from topicnet.cooking_machine.models import TopicModel
 
 from .constants import (
@@ -60,7 +58,7 @@ class StabilitySearchMethod(BaseSearchMethod):
             model_num_processors: int = 1,
             model_seed: int = 0,
             model_family: str or KnownModel = KnownModel.PLSA,
-            model_params: dict = None,
+            model_params: Dict[str, Any] = None,
             max_num_top_words: Optional[int] = 1000,
             max_num_model_pairs: Optional[int] = 10,
             datasets_folder_path: str = None,

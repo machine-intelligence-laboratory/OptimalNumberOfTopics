@@ -1,15 +1,21 @@
+import numpy as np
+import pandas as pd
+
 import artm
 
 from enum import Enum
 from typing import List
 
 from topicnet.cooking_machine import Dataset
-from topicnet.cooking_machine.rel_toolbox_lite import count_vocab_size, transform_regularizer
-from topicnet.cooking_machine.model_constructor import (
-    create_default_topics, add_standard_scores, init_model
+from topicnet.cooking_machine.rel_toolbox_lite import (
+    count_vocab_size,
+    transform_regularizer,
 )
-import numpy as np
-import pandas as pd
+from topicnet.cooking_machine.model_constructor import (
+    add_standard_scores,
+    create_default_topics,
+    init_model,
+)
 
 
 class KnownModel(Enum):
@@ -20,6 +26,7 @@ class KnownModel(Enum):
     ARTM = 'ARTM'
 
 
+# TODO: maybe this shouldn't be here (let it be in Jupyter notebook with experiments)
 PARAMS_EXPLORED = {
     KnownModel.LDA: {'prior': ['symmetric', #'asymmetric',
                                'small', 'heuristic']},
@@ -206,24 +213,16 @@ def init_lda(
 
     prior = model_params.get('prior', 'symmetric')
 
-    # TODO: implement this LDA also
-    # Found in doi.org/10.1007/s10664-015-9379-3
-    # Rosen, C., Shihab, E. 2016
-    # What are mobile developers asking about? A large scale study using stack overflow.
-    #
-    # "We use the defacto standard heuristics of α=50/K and β=0.01
-    # (Biggers et al. 2014) for our hyperparameter values"
-
-    # what GenSim returns by default (everything is 'symmetric')
+    # What GenSim returns by default (everything is 'symmetric')
     # see https://github.com/RaRe-Technologies/gensim/blob/master/gensim/models/ldamodel.py#L521
-    # note that you can specify prior shape for alpha and beta separately
+    # Note that you can specify prior shape for alpha and beta separately,
     # but we do not do that here
     if prior == "symmetric":
         alpha = 1.0 / num_topics
         eta = 1.0 / num_topics
     elif prior == "asymmetric":
         # TODO: turns out, BigARTM does not support tau as a list of floats
-        # so we need to use custom regularzir instead (TopicPrior perhaps?)
+        # so we need to use custom regularizer instead (TopicPrior perhaps?)
         # this won't be happening today :(
         artm_dict = dataset.get_dictionary()
         temp_df = artm_dict2df(artm_dict)
@@ -236,10 +235,9 @@ def init_lda(
         alpha = 0.01
         eta = 0.01
     elif prior == "heuristic":
-        # found in doi.org/10.1007/s10664-015-9379-3 (2016)
-        #
-        # "We use the defacto standard heuristics of α=50/K and β=0.01
-        # (Biggers et al. 2014) for our hyperparameter values"
+        # Found in doi.org/10.1007/s10664-015-9379-3 (2016)
+        #  "We use the defacto standard heuristics of α=50/K and β=0.01
+        #  (Biggers et al. 2014) for our hyperparameter values"
         alpha = 50.0 / num_topics
         eta = 0.01
     else:
