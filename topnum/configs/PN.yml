@@ -1,7 +1,7 @@
 
 name: PostNauka
 batches_prefix: PN
-dataset_path: '/data_mil/datasets/postnauka/postnauka.csv'
+dataset_path: '/data_mil/datasets/postnauka/PostNauka_natural_order.csv'
 
 word: "@word"
 
