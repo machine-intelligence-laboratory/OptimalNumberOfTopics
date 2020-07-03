@@ -134,10 +134,13 @@ class OptimizeScoresMethod(BaseSearchMethod):
                     f'Model\'s custom scores before attaching: {list(model.custom_scores.keys())}'
                 )
 
-                # TODO: remove this when TopicNet fixed
-                _logger.info('Making custom scores empty dict')
+                for score in self._scores:
+                    score._attach(model)
 
-                model.custom_scores = dict()
+                for score in model.custom_scores:
+                    # TODO: update topicnet version in reqs when released
+                    score._should_compute = BaseScore.compute_on_last
+
                 model.model_id = str(uuid.uuid4())
 
                 path_components = [
@@ -150,9 +153,6 @@ class OptimizeScoresMethod(BaseSearchMethod):
                     dataset_trainable=dataset_trainable,
                     num_iterations=self._num_fit_iterations - 1,
                 )
-
-                for score in self._scores:
-                    score._attach(model)
 
                 model._fit(
                     dataset_trainable=dataset_trainable,
