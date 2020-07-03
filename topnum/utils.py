@@ -26,7 +26,7 @@ import numpy as np
 import os, glob
 
 
-def split_into_train_test(dataset, config):
+def split_into_train_test(dataset: Dataset, config: dict):
     documents = list(dataset._data.index)
     dn = config['batches_prefix']
 
@@ -50,8 +50,16 @@ def split_into_train_test(dataset, config):
     train_data.to_csv(f'{dn}_train.csv', index=False)
     test_data.to_csv(f'{dn}_test.csv', index=False)
 
-    train_dataset = Dataset(f'{dn}_train.csv', batch_vectorizer_path=f'{dn}_train_internals')
-    test_dataset = Dataset(f'{dn}_test.csv', batch_vectorizer_path=f'{dn}_test_internals')
+    train_dataset = Dataset(
+        f'{dn}_train.csv',
+        batch_vectorizer_path=f'{dn}_train_internals',
+        keep_in_memory=dataset._small_data,
+    )
+    test_dataset = Dataset(
+        f'{dn}_test.csv',
+        batch_vectorizer_path=f'{dn}_test_internals',
+        keep_in_memory=dataset._small_data,
+    )
 
     # TODO: quick hack, i'm not sure what for
     test_dataset._to_dataset = lambda: test_dataset
