@@ -15,7 +15,8 @@ from topicnet.cooking_machine.model_constructor import (
     create_default_topics,
     init_model,
 )
-from topicnet.cooking_machine.models import TopicModel, ThetalessRegularizer
+from topicnet.cooking_machine.models import TopicModel
+from topicnet.cooking_machine.models.thetaless_regularizer import ThetalessRegularizer
 
 
 class KnownModel(Enum):
