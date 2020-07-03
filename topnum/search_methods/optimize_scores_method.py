@@ -13,6 +13,7 @@ from typing import (
 )
 
 from topicnet.cooking_machine.models import (
+    BaseScore as BaseTopicNetScore,
     DummyTopicModel,
     TopicModel,
 )
@@ -30,7 +31,6 @@ from .constants import (
     DEFAULT_EXPERIMENT_DIR
 )
 from ..data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
-from ..scores.base_custom_score import BaseCustomScore
 from ..scores.base_score import BaseScore
 
 from ..model_constructor import (
@@ -140,7 +140,7 @@ class OptimizeScoresMethod(BaseSearchMethod):
 
                 for score in model.custom_scores:
                     # TODO: update topicnet version in reqs when released
-                    score._should_compute = BaseCustomScore.compute_on_last
+                    score._should_compute = BaseTopicNetScore.compute_on_last
 
                 model.model_id = str(uuid.uuid4())
 
