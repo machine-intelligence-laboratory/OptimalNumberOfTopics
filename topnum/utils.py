@@ -73,7 +73,22 @@ def build_every_score(dataset, test_dataset, config):
         HoldoutPerplexityScore('holdout_perp', test_dataset=test_dataset)
     ]
 
-    coherence_documents = list(test_dataset._data[:300].index)
+    max_coherence_text_length = 25000
+    coherence_documents = list(test_dataset._data.index)
+    coherence_text_length = sum(
+        len(t.split())
+        for t in test_dataset._data.loc[coherence_documents, 'vw_text'].values
+    )
+
+    while coherence_text_length > max_coherence_text_length:
+        d = coherence_documents.pop()
+        coherence_text_length -= len(test_dataset._data.loc[d, 'vw_text'].split())
+
+    assert len(coherence_documents) > 0
+
+    print(
+        f'Num documents for coherence: {len(coherence_documents)}, {coherence_text_length} words'
+    )
 
     coherences = [
         IntratextCoherenceScore(
@@ -84,7 +99,7 @@ def build_every_score(dataset, test_dataset, config):
         ),
 
         # TODO: and this
-        # SimpleTopTokensCoherenceScore(),
+        #   SimpleTopTokensCoherenceScore(),
     ]
 
     likelihoods = [
