@@ -143,12 +143,7 @@ class OptimizeScoresMethod(BaseSearchMethod):
 
                 model._fit(
                     dataset_trainable=dataset_trainable,
-                    num_iterations=self._num_fit_iterations - 1,
-                )
-
-                model._fit(
-                    dataset_trainable=dataset_trainable,
-                    num_iterations=1,
+                    num_iterations=self._num_fit_iterations,
                 )
 
                 model.save(model_save_path=os.path.join(*path_components))
