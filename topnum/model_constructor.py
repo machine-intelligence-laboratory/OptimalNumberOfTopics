@@ -282,8 +282,10 @@ def init_lda(
              class_ids=[main_modality],
         ),
     )
-    if isinstance(alpha, list):
+
+    if isinstance(alpha, (list, np.ndarray)):
         assert(len(alpha) == len(model.topic_names))
+
         for i, topic in enumerate(model.topic_names):
             model.regularizers.add(
                 artm.SmoothSparseThetaRegularizer(
