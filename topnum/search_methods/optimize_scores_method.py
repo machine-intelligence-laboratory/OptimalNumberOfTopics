@@ -4,7 +4,6 @@ import pandas as pd
 import uuid
 import warnings
 
-from numpy.random import RandomState
 from tqdm import tqdm
 from typing import (
     Any,
@@ -103,9 +102,7 @@ class OptimizeScoresMethod(BaseSearchMethod):
 
         dataset = text_collection._to_dataset()
 
-        # TODO: if this sophisticated seeds don't make models different,
-        #  return the simpler seeds (0, 1, 2, ...)
-        seeds = [None] + [abs(RandomState(i).tomaxint()) for i in range(1, self._num_restarts)]
+        seeds = list(range(0, self._num_restarts))
 
         nums_topics = list(range(
             self._min_num_topics,
@@ -117,7 +114,7 @@ class OptimizeScoresMethod(BaseSearchMethod):
 
         for seed in tqdm(seeds):  # dirty workaround for 'too many models' issue
             for num_topics in nums_topics:
-                artm_model = init_model_from_family(
+                model = init_model_from_family(
                     self._family,
                     dataset,
                     modalities_to_use=list(text_collection._modalities.keys()),
@@ -126,12 +123,6 @@ class OptimizeScoresMethod(BaseSearchMethod):
                     seed=seed,
                     num_processors=self._one_model_num_processors,
                     model_params=self._model_params,
-                )
-
-                model = TopicModel(artm_model)
-
-                _logger.info(
-                    f'Model\'s custom scores before attaching: {list(model.custom_scores.keys())}'
                 )
 
                 # TODO: remove this when TopicNet fixed
@@ -226,8 +217,9 @@ def _summarize_models(
         if hasattr(any_model_all_scores[given_score_name], '_higher_better'):
             higher_better = any_model_all_scores[given_score_name]._higher_better
         else:
+            my_type = type(any_model_all_scores[given_score_name])
             warnings.warn(
-                f'Score "{score_name}" of type {type(any_model_all_scores[given_score_name])} doesn\'t have "_higher_better" attribute!'
+                f'Score "{score_name}" of type {my_type} doesn\'t have "_higher_better" attribute!'
                 f' Assuming that higher_better = True'
             )
 
