@@ -33,6 +33,8 @@ PARAMS_EXPLORED = {
         'prior': [
             'symmetric',
             'asymmetric',
+            # this is not supported
+            # 'double_asymmetric',
             'heuristic',
         ]
     },
@@ -59,7 +61,7 @@ def init_model_from_family(
             main_modality: str,
             num_topics: int,
             seed: int,
-            all_mods: List[str] = None,
+            modalities_to_use: List[str] = None,
             num_processors: int = 3,
             model_params: dict = None
 ):
@@ -71,24 +73,35 @@ def init_model_from_family(
     if isinstance(family, KnownModel):
         family = family.value
 
-    if all_mods is None:
-        all_mods = [main_modality]
+    if modalities_to_use is None:
+        modalities_to_use = [main_modality]
 
     custom_regs = {}
 
     if family == "LDA":
-        model = init_lda(dataset, all_mods, main_modality, num_topics, model_params)
+        model = init_lda(
+            dataset, modalities_to_use, main_modality, num_topics, model_params
+        )
     elif family == "PLSA":
-        model = init_plsa(dataset, all_mods, main_modality, num_topics)
+        model = init_plsa(
+            dataset, modalities_to_use, main_modality, num_topics
+        )
     elif family == "TARTM":
-        result = init_thetaless(dataset, all_mods, main_modality, num_topics, 1, model_params)
-        model, custom_regs = result
+        model, custom_regs = init_thetaless(
+            dataset, modalities_to_use, main_modality, num_topics, 1, model_params
+        )
     elif family == "sparse":
-        model = init_bcg_sparse_model(dataset, all_mods, main_modality, num_topics, 1, model_params)
+        model = init_bcg_sparse_model(
+            dataset, modalities_to_use, main_modality, num_topics, 1, model_params
+        )
     elif family == "decorrelation":
-        model = init_decorrelated_plsa(dataset, all_mods, main_modality, num_topics, model_params)
+        model = init_decorrelated_plsa(
+            dataset, modalities_to_use, main_modality, num_topics, model_params
+        )
     elif family == "ARTM":
-        model = init_baseline_artm(dataset, all_mods, main_modality, num_topics, 1, model_params)
+        model = init_baseline_artm(
+            dataset, modalities_to_use, main_modality, num_topics, 1, model_params
+        )
     else:
         raise ValueError(f'family: {family}')
 
@@ -100,7 +113,7 @@ def init_model_from_family(
     dictionary = dataset.get_dictionary()
     model.initialize(dictionary)
     add_standard_scores(model, dictionary, main_modality=main_modality,
-                        all_modalities=all_mods)
+                        all_modalities=modalities_to_use)
 
     model = TopicModel(
         artm_model=model,
@@ -181,6 +194,9 @@ def init_decorrelated_plsa(
 
 
 def _init_dirichlet_prior(name, num_topics, num_terms):
+    """
+    Adapted from github.com/RaRe-Technologies/gensim/blob/master/gensim/models/ldamodel.py#L521
+    """
     prior_shape = num_topics if name == 'alpha' else num_terms
 
     init_prior = np.fromiter(
@@ -233,16 +249,22 @@ def init_lda(
         # following the recommendation from
         # http://papers.nips.cc/paper/3854-rethinking-lda-why-priors-matter
         # we will use symmetric prior over Phi and asymmetric over Theta
-
-        # this stuff is needed for asymmetric Phi initialization:
-        if False:
-            artm_dict = dataset.get_dictionary()
-            temp_df = artm_dict2df(artm_dict)  # noqa: F821
-            num_terms = temp_df.query("class_id in @modalities_to_use").shape[0]
-            eta = _init_dirichlet_prior("eta", num_topics, num_terms)
-
         eta = 0
+        num_terms = 0  # isn't used, so let's not compute it
         alpha = _init_dirichlet_prior("alpha", num_topics, num_terms=0)
+
+    elif prior == "double_asymmetric":
+        # this stuff is needed for asymmetric Phi initialization:
+        artm_dict = dataset.get_dictionary()
+        temp_df = artm_dict2df(artm_dict)  # noqa: F821
+        num_terms = temp_df.query("class_id in @modalities_to_use").shape[0]
+        eta = _init_dirichlet_prior("eta", num_topics, num_terms)
+        alpha = _init_dirichlet_prior("alpha", num_topics, num_terms)
+        # TODO: turns out, BigARTM does not support tau as a list of floats (or dictionary)
+        # so we need to use custom regularizer instead
+        # (TopicPrior doesn't work because it provides $beta_t$ instead of $beta_w$)
+        raise NotImplementedError
+
     elif prior == "heuristic":
         # Found in doi.org/10.1007/s10664-015-9379-3 (2016)
         #  "We use the defacto standard heuristics of α=50/K and β=0.01
@@ -260,6 +282,7 @@ def init_lda(
         ),
     )
     if isinstance(alpha, list):
+        assert(len(alpha) == len(model.topic_names))
         for i, topic in enumerate(model.topic_names):
             model.regularizers.add(
                 artm.SmoothSparseThetaRegularizer(

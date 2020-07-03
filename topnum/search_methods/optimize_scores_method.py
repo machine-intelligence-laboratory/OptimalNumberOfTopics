@@ -4,7 +4,6 @@ import pandas as pd
 import uuid
 import warnings
 
-from numpy.random import RandomState
 from tqdm import tqdm
 from typing import (
     Any,
@@ -103,9 +102,7 @@ class OptimizeScoresMethod(BaseSearchMethod):
 
         dataset = text_collection._to_dataset()
 
-        # TODO: if this sophisticated seeds don't make models different,
-        #  return the simpler seeds (0, 1, 2, ...)
-        seeds = [None] + [abs(RandomState(i).tomaxint()) for i in range(1, self._num_restarts)]
+        seeds = list(range(0, self._num_restarts))
 
         nums_topics = list(range(
             self._min_num_topics,
