@@ -138,7 +138,7 @@ class OptimizeScoresMethod(BaseSearchMethod):
                 for score in self._scores:
                     score._attach(model)
 
-                for score in model.custom_scores:
+                for score in model.custom_scores.values():
                     # TODO: update topicnet version in reqs when released
                     score._should_compute = BaseTopicNetScore.compute_on_last
 
