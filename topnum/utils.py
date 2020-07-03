@@ -82,7 +82,8 @@ def build_every_score(dataset, test_dataset, config):
     ]
 
     max_coherence_text_length = 25000
-    coherence_documents = list(test_dataset._data.index)
+    max_num_coherence_documents = 500
+    coherence_documents = list(test_dataset._data.index)[:max_num_coherence_documents]
     coherence_text_length = sum(
         len(t.split())
         for t in test_dataset._data.loc[coherence_documents, 'vw_text'].values
