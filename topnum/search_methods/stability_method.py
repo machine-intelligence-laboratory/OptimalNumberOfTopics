@@ -420,19 +420,12 @@ class StabilitySearchMethod(BaseSearchMethod):
         self._result['stability_metrics_for_num_topics'] = stabilities
 
     def _load_phi(self, num_topics: int, subsample_number: int) -> pd.DataFrame:
-        # or, if might be needed (to load all model):
-        # TopicModel.load(
-        #     self._folder_path_model(
-        #         num_topics,subsample_number=subsample_number_a
-        #     )
-        # )
-        return pd.read_csv(
-            os.path.join(
-                self._folder_path_model(num_topics, subsample_number),
-                'phi.csv',
-            ),
-            index_col=0,  # TODO: phi is saved with index
+        topic_model = TopicModel.load(
+            self._folder_path_model(
+                num_topics, subsample_number=subsample_number
+            )
         )
+        return topic_model.get_phi()
 
     def clear(self) -> None:
         shutil.rmtree(self._datasets_folder_path)
