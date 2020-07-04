@@ -1,3 +1,5 @@
+import copy
+
 from artm.scores import BaseScore as BaseArtmScore
 from topicnet.cooking_machine.models import TopicModel
 
@@ -14,7 +16,7 @@ class BaseDefaultScore(BaseScore):
         # TODO: workaround: maybe a better way is possible
         setattr(self._score, '_higher_better', self._higher_better)
 
-        model._model.scores.add(self._score)
+        model._model.scores.add(copy.deepcopy(self._score))
 
     def _initialize(self) -> BaseArtmScore:
         # return artm.scores.<SCORE>(...)
