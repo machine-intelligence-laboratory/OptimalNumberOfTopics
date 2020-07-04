@@ -131,7 +131,7 @@ class RenormalizationMethod(BaseSearchMethod):
             restart_result[self._key_shannon_entropy_values] = list()
             restart_result[self._key_energy_values] = list()
 
-            artm_model = init_model_from_family(
+            model = init_model_from_family(
                 family=self._model_family,
                 dataset=dataset,
                 modalities_to_use=text_collection._modalities,
@@ -142,9 +142,6 @@ class RenormalizationMethod(BaseSearchMethod):
                 model_params=self._model_params,
             )
 
-            artm_model.seed = seed  # TODO: seed -> init_simple_default_model
-
-            model = TopicModel(artm_model)
             model._fit(
                 dataset.get_batch_vectorizer(),
                 num_iterations=self._num_fit_iterations
