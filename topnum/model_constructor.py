@@ -284,6 +284,8 @@ def init_lda(
     )
 
     if isinstance(alpha, (list, np.ndarray)):
+        alpha = [float(a) for a in alpha]
+
         assert(len(alpha) == len(model.topic_names))
 
         for i, topic in enumerate(model.topic_names):
