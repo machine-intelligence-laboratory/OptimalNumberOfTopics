@@ -89,7 +89,7 @@ def init_model_from_family(
         )
     elif family == "TARTM":
         model, custom_regs = init_thetaless(
-            dataset, modalities_to_use, main_modality, num_topics, 1, model_params
+            dataset, modalities_to_use, main_modality, num_topics, model_params
         )
     elif family == "sparse":
         model = init_bcg_sparse_model(
