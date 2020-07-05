@@ -89,7 +89,7 @@ def init_model_from_family(
         )
     elif family == "TARTM":
         model, custom_regs = init_thetaless(
-            dataset, modalities_to_use, main_modality, num_topics, 1, model_params
+            dataset, modalities_to_use, main_modality, num_topics, model_params
         )
     elif family == "sparse":
         model = init_bcg_sparse_model(
@@ -112,6 +112,9 @@ def init_model_from_family(
         model.seed = seed
 
     dictionary = dataset.get_dictionary()
+    for modality in dataset.get_possible_modalities():
+        if modality not in modalities_to_use:
+            dictionary.filter(class_id=modality, max_df=0, inplace=True)
     model.initialize(dictionary)
     add_standard_scores(model, dictionary, main_modality=main_modality,
                         all_modalities=modalities_to_use)
@@ -438,6 +441,7 @@ def init_thetaless(
         name='thetaless',
         tau=1,
         dataset=dataset, modality=main_modality,
+        modalities_to_use=[main_modality]
     )
     custom_regularizers = {
         thetaless_reg.name: thetaless_reg
