@@ -15,7 +15,8 @@ from topicnet.cooking_machine.model_constructor import (
     create_default_topics,
     init_model,
 )
-from topicnet.cooking_machine.models import TopicModel, ThetalessRegularizer
+from topicnet.cooking_machine.models import TopicModel
+from topicnet.cooking_machine.models.thetaless_regularizer import ThetalessRegularizer
 
 
 class KnownModel(Enum):
@@ -88,7 +89,7 @@ def init_model_from_family(
         )
     elif family == "TARTM":
         model, custom_regs = init_thetaless(
-            dataset, modalities_to_use, main_modality, num_topics, 1, model_params
+            dataset, modalities_to_use, main_modality, num_topics, model_params
         )
     elif family == "sparse":
         model = init_bcg_sparse_model(
@@ -281,8 +282,12 @@ def init_lda(
              class_ids=[main_modality],
         ),
     )
-    if isinstance(alpha, list):
+
+    if isinstance(alpha, (list, np.ndarray)):
+        alpha = [float(a) for a in alpha]
+
         assert(len(alpha) == len(model.topic_names))
+
         for i, topic in enumerate(model.topic_names):
             model.regularizers.add(
                 artm.SmoothSparseThetaRegularizer(

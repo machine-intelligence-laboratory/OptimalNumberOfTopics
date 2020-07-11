@@ -12,6 +12,7 @@ from typing import (
 )
 
 from topicnet.cooking_machine.models import (
+    BaseScore as BaseTopicNetScore,
     DummyTopicModel,
     TopicModel,
 )
@@ -125,10 +126,13 @@ class OptimizeScoresMethod(BaseSearchMethod):
                     model_params=self._model_params,
                 )
 
-                # TODO: remove this when TopicNet fixed
-                _logger.info('Making custom scores empty dict')
+                for score in self._scores:
+                    score._attach(model)
 
-                model.custom_scores = dict()
+                for score in model.custom_scores.values():
+                    # TODO: update topicnet version in reqs when released
+                    score._should_compute = BaseTopicNetScore.compute_on_last
+
                 model.model_id = str(uuid.uuid4())
 
                 path_components = [
@@ -139,15 +143,7 @@ class OptimizeScoresMethod(BaseSearchMethod):
 
                 model._fit(
                     dataset_trainable=dataset_trainable,
-                    num_iterations=self._num_fit_iterations - 1,
-                )
-
-                for score in self._scores:
-                    score._attach(model)
-
-                model._fit(
-                    dataset_trainable=dataset_trainable,
-                    num_iterations=1,
+                    num_iterations=self._num_fit_iterations,
                 )
 
                 model.save(model_save_path=os.path.join(*path_components))

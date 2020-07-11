@@ -124,9 +124,6 @@ class VowpalWabbitTextCollection(BaseTextCollection):
 
         self._dataset = Dataset(dataset_table_path, **self._dataset_kwargs)
 
-        # TODO: remove this after TopicNet new release
-        setattr(self._dataset, 'documents', list(self._dataset._data.index))
-
         return self._dataset
 
     @classmethod

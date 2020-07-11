@@ -1,6 +1,17 @@
-from topnum.model_constructor import KnownModel
-from topnum.search_methods.optimize_scores_method import load_models_from_disk
+import glob
+import numpy as np
+import os
+import pandas as pd
+import strictyaml
+import warnings
 
+from collections import defaultdict
+from inspect import signature
+from strictyaml import Map, Str, Optional, Int
+
+from topicnet.cooking_machine.dataset import Dataset
+
+from topnum.search_methods.optimize_scores_method import load_models_from_disk
 from topnum.scores import (
     SpectralDivergenceScore, CalinskiHarabaszScore, DiversityScore, EntropyScore,
     HoldoutPerplexityScore, IntratextCoherenceScore,
@@ -12,21 +23,8 @@ from topnum.scores import (
     SophisticatedTopTokensCoherenceScore
 )
 
-from inspect import signature
 
-from collections import defaultdict
-
-import strictyaml
-from strictyaml import Map, Str, Optional, Int
-
-import pandas as pd
-
-from topicnet.cooking_machine.dataset import Dataset
-import numpy as np
-import os, glob
-
-
-def split_into_train_test(dataset, config):
+def split_into_train_test(dataset: Dataset, config: dict):
     documents = list(dataset._data.index)
     dn = config['batches_prefix']
 
@@ -47,11 +45,20 @@ def split_into_train_test(dataset, config):
     train_data['id'] = train_data.index
     test_data['id'] = test_data.index
 
+    # TODO: save path
     train_data.to_csv(f'{dn}_train.csv', index=False)
     test_data.to_csv(f'{dn}_test.csv', index=False)
 
-    train_dataset = Dataset(f'{dn}_train.csv', batch_vectorizer_path=f'{dn}_train_internals')
-    test_dataset = Dataset(f'{dn}_test.csv', batch_vectorizer_path=f'{dn}_test_internals')
+    train_dataset = Dataset(
+        f'{dn}_train.csv',
+        batch_vectorizer_path=f'{dn}_train_internals',
+        keep_in_memory=dataset._small_data,
+    )
+    test_dataset = Dataset(
+        f'{dn}_test.csv',
+        batch_vectorizer_path=f'{dn}_test_internals',
+        keep_in_memory=dataset._small_data,
+    )
 
     # TODO: quick hack, i'm not sure what for
     test_dataset._to_dataset = lambda: test_dataset
@@ -73,19 +80,14 @@ def build_every_score(dataset, test_dataset, config):
         HoldoutPerplexityScore('holdout_perp', test_dataset=test_dataset)
     ]
 
-    coherence_documents = list(test_dataset._data[:300].index)
+    is_dataset_bow = _is_dataset_bow(test_dataset)
 
-    coherences = [
-        IntratextCoherenceScore(
-            'intra', data=test_dataset, documents=coherence_documents
-        ),
-        SophisticatedTopTokensCoherenceScore(
-            'toptok1', data=test_dataset, documents=coherence_documents
-        ),
+    if not is_dataset_bow:
+        coherences = _build_coherence_scores(dataset=test_dataset)
+    else:
+        warnings.warn('Dataset seems to be in BOW! Skipping coherence scores')
 
-        # TODO: and this
-        # SimpleTopTokensCoherenceScore(),
-    ]
+        coherences = list()
 
     likelihoods = [
         LikelihoodBasedScore(
@@ -111,16 +113,71 @@ def build_every_score(dataset, test_dataset, config):
     return scores + diversity + clustering + renyi_variations + likelihoods + coherences
 
 
+def _is_dataset_bow(dataset: Dataset, max_num_documents_to_check: int = 100) -> bool:
+    words_with_colon_threshold = 0.25
+    is_dataset_bow = False
+    documents_to_check = list(dataset._data.index)[:max_num_documents_to_check]
+
+    for t in dataset._data.loc[documents_to_check, 'vw_text'].values:
+        all_vw_words = t.split()
+        doc_content_vw_words = [w for w in all_vw_words[1:] if not w.startswith('|')]
+        num_words_with_colon = sum(1 if ':' in w else 0 for w in doc_content_vw_words)
+        num_words = len(doc_content_vw_words)
+
+        if num_words_with_colon >= words_with_colon_threshold * num_words:
+            is_dataset_bow = True
+
+            break
+
+    return is_dataset_bow
+
+
+def _build_coherence_scores(dataset: Dataset) -> list:
+    max_coherence_text_length = 25000
+    max_num_coherence_documents = 500
+    coherence_documents = list(dataset._data.index)[:max_num_coherence_documents]
+    coherence_text_length = sum(
+        len(t.split())
+        for t in dataset._data.loc[coherence_documents, 'vw_text'].values
+    )
+
+    while coherence_text_length > max_coherence_text_length:
+        d = coherence_documents.pop()
+        coherence_text_length -= len(dataset._data.loc[d, 'vw_text'].split())
+
+    assert len(coherence_documents) > 0
+
+    print(
+        f'Num documents for coherence: {len(coherence_documents)}, {coherence_text_length} words'
+    )
+
+    return [
+        IntratextCoherenceScore(
+            'intra', data=dataset, documents=coherence_documents
+        ),
+        SophisticatedTopTokensCoherenceScore(
+            'toptok1', data=dataset, documents=coherence_documents
+        ),
+
+        # TODO: and this
+        #   SimpleTopTokensCoherenceScore(),
+    ]
+
+
 def check_if_monotonous(score_result):
     signs = np.sign(score_result.diff().iloc[1:, :])
     # convert all nans to a single value
     different_signs = set(signs.values.flatten().astype(str))
+
     if different_signs == {'nan', '0.0'}:
         return True
+
     return len(different_signs) == 1
 
 
-def monotonity_and_std_analysis(experiment_directory, experiment_name_template):
+def monotonity_and_std_analysis(
+        experiment_directory: str, experiment_name_template: str) -> pd.DataFrame:
+
     informative_df = pd.DataFrame()
 
     all_subexperems_mask = os.path.join(experiment_directory, experiment_name_template.format("*", "*"))
@@ -128,10 +185,12 @@ def monotonity_and_std_analysis(experiment_directory, experiment_name_template):
     for entry in glob.glob(all_subexperems_mask):
 
         experiment_name = entry.split("/")[-1]
+
         try:
             result, detailed_result = load_models_from_disk(
                 experiment_directory, experiment_name
             )
+
             for score in detailed_result.keys():
                 max_std = detailed_result[score].std().max()
                 avg_val = detailed_result[score].median().median()
@@ -142,14 +201,14 @@ def monotonity_and_std_analysis(experiment_directory, experiment_name_template):
 
                 is_monotonous = check_if_monotonous(detailed_result[score].T)
                 informative_df.loc[score, experiment_name] = is_monotonous
+
         except IndexError as e:
-            print(f"Error reading data from {entry};\nThe exception raised is\n{e}")
-            pass
+            print(f"Error reading data from {entry}!\nThe exception raised is\n{e}")
+
     return informative_df
 
 
 def read_corpus_config(filename='corpus.yml'):
-
     schema = Map({
         'dataset_path': Str(),
         'batches_prefix': Str(),
@@ -164,7 +223,9 @@ def read_corpus_config(filename='corpus.yml'):
 
     with open(filename, 'r') as f:
         string = f.read()
+
     data = strictyaml.load(string, schema=schema).data
+
     return data
 
 
@@ -176,8 +237,8 @@ def trim_config(config, method):
     }
 
 
-def estimate_num_iterations_for_convergence(tm):
-    score = tm.scores["PerplexityScore@all"]
+def estimate_num_iterations_for_convergence(tm, score_name="PerplexityScore@all"):
+    score = tm.scores[score_name]
     normalized_score = np.array(score) / np.median(score)
     contributions = abs(np.diff(normalized_score))
 
@@ -186,16 +247,23 @@ def estimate_num_iterations_for_convergence(tm):
 
 def plot_everything_informative(
     experiment_directory, experiment_name_template,
-    true_criteria=[], false_criteria=[]
+    true_criteria=None, false_criteria=None
 ):
     import matplotlib.pyplot as plt
 
+    if true_criteria is None:
+        true_criteria = list()
+
+    if false_criteria is None:
+        false_criteria = list()
+
     details = defaultdict(dict)
 
-    all_subexperems_mask = os.path.join(experiment_directory, experiment_name_template.format("*", "*"))
+    all_subexperems_mask = os.path.join(
+        experiment_directory, experiment_name_template.format("*", "*")
+    )
 
     for entry in glob.glob(all_subexperems_mask):
-
         experiment_name = entry.split("/")[-1]
 
         result, detailed_result = load_models_from_disk(
@@ -208,20 +276,25 @@ def plot_everything_informative(
                 and
                 all(f_criterion not in score for f_criterion in false_criteria)
             )
+
             if should_plot:
                 details[score][experiment_name] = detailed_result[score].T
+
     for score in details.keys():
         fig, axes = plt.subplots(1, 1, figsize=(10, 10))
+
         for experiment_name, data in details[score].items():
             is_monotonous = check_if_monotonous(data)
 
             # I can make a grid of plots if I do something like this:
             # my_ax = axes[index // 3][index % 3]
             my_ax = axes
+
             if is_monotonous:
                 style = ':'
             else:
                 style = '-'
+
             my_ax.plot(data.T.mean(axis=0), linestyle=style, label=experiment_name)
 
         my_ax.set_title(f"{score}")

@@ -1,6 +1,6 @@
 name: WikiRef220
 
-dataset_path: '/data_mil/datasets/WikiRef220/wiki_ref220_bow.csv'
+dataset_path: '/data_mil/datasets/WikiRef220/wiki_ref220_natural_order.csv'
 batches_prefix: WRef
 
 word: "@lemmatized"
