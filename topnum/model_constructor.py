@@ -440,8 +440,8 @@ def init_thetaless(
     thetaless_reg = ThetalessRegularizer(
         name='thetaless',
         tau=1,
-        dataset=dataset, modality=main_modality,
-        modalities_to_use=[main_modality]
+        dataset=dataset,
+        modality=main_modality,
     )
     custom_regularizers = {
         thetaless_reg.name: thetaless_reg
