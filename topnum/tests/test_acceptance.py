@@ -17,8 +17,13 @@ from topicnet.cooking_machine.dataset import (
     Dataset,
     W_DIFF_BATCHES_1,
 )
-from topicnet.cooking_machine.models import BaseModel
+from topicnet.cooking_machine.models import (
+    BaseModel,
+    TopicModel,
+)
 
+from topnum.data import VowpalWabbitTextCollection
+from topnum.model_constructor import KnownModel
 from topnum.scores import (
     DiversityScore,
     IntratextCoherenceScore,
@@ -34,6 +39,10 @@ from topnum.search_methods import (
 from topnum.search_methods.base_search_method import BaseSearchMethod
 from topnum.search_methods.optimize_scores_method import _KEY_SCORE_RESULTS
 from topnum.tests.data_generator import TestDataGenerator
+from topnum.utils import (
+    build_every_score,
+    split_into_train_test,
+)
 
 
 _Logger = logging.getLogger()
@@ -88,6 +97,8 @@ class TestAcceptance:
     def setup_method(self):
         assert self.text_collection._dataset is None
 
+        os.makedirs(self.working_folder_path, exist_ok=True)
+
     def teardown_method(self):
         self.text_collection._set_dataset_kwargs()
         self.text_collection._dataset = None
@@ -95,12 +106,16 @@ class TestAcceptance:
         if self.optimizer is not None:
             self.optimizer.clear()
 
+        if os.path.isdir(self.working_folder_path):
+            shutil.rmtree(self.working_folder_path)
+
     @classmethod
     def teardown_class(cls):
         if cls.data_generator is not None:
             cls.data_generator.clear()
 
-        shutil.rmtree(cls.working_folder_path)
+        if os.path.isdir(cls.working_folder_path):
+            shutil.rmtree(cls.working_folder_path)
 
     def dataset(self, keep_in_memory: bool = True) -> Dataset:
         self.text_collection._set_dataset_kwargs(
@@ -149,6 +164,142 @@ class TestAcceptance:
 
         # a bit slow -> just 2 restarts
         self._test_optimize_score(score, num_restarts=2)
+
+    @pytest.mark.parametrize('keep_in_memory', [True, False])
+    def test_optimize_all_scores(self, keep_in_memory):
+        batches_prefix = 'all_scores'
+        train_dataset, test_dataset = split_into_train_test(
+            self.dataset(keep_in_memory=keep_in_memory),
+            config={'batches_prefix': batches_prefix}  # TODO: fragile
+        )
+
+        assert train_dataset._small_data == keep_in_memory
+        assert test_dataset._small_data == keep_in_memory
+
+        text_collection = VowpalWabbitTextCollection.from_dataset(
+            train_dataset,
+            main_modality=self.main_modality,
+        )
+
+        assert text_collection._to_dataset()._small_data == keep_in_memory
+
+        built_scores = build_every_score(
+            dataset=train_dataset,
+            test_dataset=test_dataset,
+            config={'word': self.main_modality},  # TODO: fragile
+        )
+
+        min_num_topics = 1
+        max_num_topics = 2
+        num_topics_interval = 1
+        num_search_points = len(
+            list(range(min_num_topics, max_num_topics + 1, num_topics_interval))
+        )
+        num_restarts = 3
+        experiment_name = 'all_scores'
+        experiment_folder = self.working_folder_path
+
+        optimizer = OptimizeScoresMethod(
+            scores=built_scores,
+            min_num_topics=min_num_topics,
+            max_num_topics=max_num_topics,
+            num_topics_interval=num_topics_interval,
+            num_fit_iterations=3,
+            num_restarts=num_restarts,
+            one_model_num_processors=1,
+            separate_thread=False,
+            experiment_name=experiment_name,
+            experiment_directory=experiment_folder,
+        )
+
+        optimizer.search_for_optimum(text_collection=text_collection)
+        restart_folder_names = os.listdir(experiment_folder)
+
+        assert len(restart_folder_names) == num_restarts
+
+        for restart_folder_name in restart_folder_names:
+            assert restart_folder_name.startswith(experiment_name)
+
+            model_folder_names = os.listdir(os.path.join(experiment_folder, restart_folder_name))
+
+            assert len(model_folder_names) == num_search_points
+
+        for dataset in [train_dataset, test_dataset]:
+            dataset.clear_folder()
+
+            os.remove(dataset._data_path)  # TODO: better remove folder with csv's
+
+    @pytest.mark.parametrize('keep_in_memory', [True, False])
+    @pytest.mark.parametrize('model_family', list(KnownModel))
+    def test_optimize_for_model(self, keep_in_memory, model_family):
+        # Thetaless currently fails
+        # see https://github.com/machine-intelligence-laboratory/TopicNet/issues/79
+
+        artm_score_name = 'perplexity_score'
+        artm_score = PerplexityScore(
+            name=artm_score_name,
+            class_ids=[self.main_modality, self.other_modality]
+        )
+
+        custom_score_name = 'diversity_score'
+        custom_score = DiversityScore(
+            custom_score_name,
+            class_ids=self.main_modality
+        )
+
+        self.text_collection._set_dataset_kwargs(
+            keep_in_memory=keep_in_memory
+        )
+
+        min_num_topics = 1
+        max_num_topics = 2
+        num_topics_interval = 1
+        num_fit_iterations = 3
+        num_search_points = len(
+            list(range(min_num_topics, max_num_topics + 1, num_topics_interval))
+        )
+        num_restarts = 3
+        experiment_name = model_family.value
+        experiment_folder = self.working_folder_path
+
+        optimizer = OptimizeScoresMethod(
+            scores=[artm_score, custom_score],
+            model_family=model_family,
+            min_num_topics=min_num_topics,
+            max_num_topics=max_num_topics,
+            num_topics_interval=num_topics_interval,
+            num_fit_iterations=num_fit_iterations,
+            num_restarts=num_restarts,
+            one_model_num_processors=1,
+            separate_thread=False,
+            experiment_name=experiment_name,
+            experiment_directory=experiment_folder,
+        )
+
+        optimizer.search_for_optimum(text_collection=self.text_collection)
+        restart_folder_names = os.listdir(experiment_folder)
+
+        assert len(restart_folder_names) == num_restarts
+
+        for restart_folder_name in restart_folder_names:
+            assert restart_folder_name.startswith(experiment_name)
+
+            restart_folder_path = os.path.join(experiment_folder, restart_folder_name)
+            model_folder_names = os.listdir(restart_folder_path)
+
+            assert len(model_folder_names) == num_search_points
+
+            for model_folder_name in model_folder_names:
+                topic_model = TopicModel.load(os.path.join(restart_folder_path, model_folder_name))
+
+                assert artm_score_name in topic_model.scores
+                assert custom_score_name in topic_model.scores
+
+                assert len(topic_model.scores[artm_score_name]) == num_fit_iterations
+                assert len(topic_model.scores[custom_score_name]) == 1
+
+                assert all(isinstance(v, Number) for v in topic_model.scores[artm_score_name])
+                assert all(isinstance(v, Number) for v in topic_model.scores[custom_score_name])
 
     @pytest.mark.parametrize('keep_in_memory', [True, False])
     def test_topic_bank(self, keep_in_memory):
