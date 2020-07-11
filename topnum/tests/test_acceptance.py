@@ -231,7 +231,10 @@ class TestAcceptance:
 
     @pytest.mark.parametrize('keep_in_memory', [True, False])
     @pytest.mark.parametrize('model_family', list(KnownModel))
-    def test_optimize_for_all_models(self, keep_in_memory, model_family):
+    def test_optimize_for_model(self, keep_in_memory, model_family):
+        # Thetaless currently fails
+        # see https://github.com/machine-intelligence-laboratory/TopicNet/issues/79
+
         artm_score_name = 'perplexity_score'
         artm_score = PerplexityScore(
             name=artm_score_name,
@@ -256,7 +259,7 @@ class TestAcceptance:
             list(range(min_num_topics, max_num_topics + 1, num_topics_interval))
         )
         num_restarts = 3
-        experiment_name = 'all_models'
+        experiment_name = model_family.value
         experiment_folder = self.working_folder_path
 
         optimizer = OptimizeScoresMethod(
