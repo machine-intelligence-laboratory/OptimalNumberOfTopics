@@ -269,9 +269,9 @@ def init_lda(
         # following the recommendation from
         # http://papers.nips.cc/paper/3854-rethinking-lda-why-priors-matter
         # we will use symmetric prior over Phi and asymmetric over Theta
-        eta = 0
+        eta = 1.0 / num_topics
         num_terms = 0  # isn't used, so let's not compute it
-        alpha = _init_dirichlet_prior("alpha", num_topics, num_terms=0)
+        alpha = _init_dirichlet_prior("alpha", num_topics, num_terms=num_terms)
 
     elif prior == "double_asymmetric":
         # this stuff is needed for asymmetric Phi initialization:
