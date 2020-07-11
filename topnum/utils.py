@@ -24,7 +24,7 @@ from topnum.scores import (
 )
 
 
-def split_into_train_test(dataset: Dataset, config: dict):
+def split_into_train_test(dataset: Dataset, config: dict, save_folder: str = None):
     # TODO: no need for `config` here, just `batches_prefix`
 
     documents = list(dataset._data.index)
@@ -52,18 +52,23 @@ def split_into_train_test(dataset: Dataset, config: dict):
     if not dataset._small_data:
         to_csv_kwargs['single_file'] = True
 
-    # TODO: save path
+    if save_folder is None:
+        save_folder = '.'
+    elif not os.path.isdir(save_folder):
+        os.mkdir(save_folder)
 
-    train_data.to_csv(f'{dn}_train.csv', index=False, **to_csv_kwargs)
-    test_data.to_csv(f'{dn}_test.csv', index=False, **to_csv_kwargs)
+    train_dataset_path = os.path.join(save_folder, f'{dn}_train.csv')
+    test_dataset_path = os.path.join(save_folder, f'{dn}_test.csv')
+    train_data.to_csv(train_dataset_path, index=False, **to_csv_kwargs)
+    test_data.to_csv(test_dataset_path, index=False, **to_csv_kwargs)
 
     train_dataset = Dataset(
-        f'{dn}_train.csv',
+        train_dataset_path,
         batch_vectorizer_path=f'{dn}_train_internals',
         keep_in_memory=dataset._small_data,
     )
     test_dataset = Dataset(
-        f'{dn}_test.csv',
+        test_dataset_path,
         batch_vectorizer_path=f'{dn}_test_internals',
         keep_in_memory=dataset._small_data,
     )

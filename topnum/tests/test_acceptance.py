@@ -170,7 +170,8 @@ class TestAcceptance:
         batches_prefix = 'all_scores'
         train_dataset, test_dataset = split_into_train_test(
             self.dataset(keep_in_memory=keep_in_memory),
-            config={'batches_prefix': batches_prefix}  # TODO: fragile
+            config={'batches_prefix': batches_prefix},  # TODO: fragile
+            save_folder=self.working_folder_path,
         )
 
         assert train_dataset._small_data == keep_in_memory
@@ -197,7 +198,7 @@ class TestAcceptance:
         )
         num_restarts = 3
         experiment_name = 'all_scores'
-        experiment_folder = self.working_folder_path
+        experiment_folder = os.path.join(self.working_folder_path, 'experiment_all_scores')
 
         optimizer = OptimizeScoresMethod(
             scores=built_scores,
@@ -223,11 +224,6 @@ class TestAcceptance:
             model_folder_names = os.listdir(os.path.join(experiment_folder, restart_folder_name))
 
             assert len(model_folder_names) == num_search_points
-
-        for dataset in [train_dataset, test_dataset]:
-            dataset.clear_folder()
-
-            os.remove(dataset._data_path)  # TODO: better remove folder with csv's
 
     @pytest.mark.parametrize('keep_in_memory', [True, False])
     @pytest.mark.parametrize('model_family', list(KnownModel))
