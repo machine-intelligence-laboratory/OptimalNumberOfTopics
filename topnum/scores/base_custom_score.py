@@ -1,4 +1,6 @@
+import copy
 import logging
+
 from topicnet.cooking_machine.models import (
     BaseScore as BaseTopicNetScore,
     TopicModel
@@ -26,7 +28,7 @@ class BaseCustomScore(BaseScore):
         setattr(self._score, '_higher_better', self._higher_better)
 
         # TODO: TopicModel should provide ability to add custom scores
-        model.custom_scores[self.name] = self._score
+        model.custom_scores[self.name] = copy.deepcopy(self._score)
 
     def _initialize(self) -> BaseTopicNetScore:
         raise NotImplementedError()
