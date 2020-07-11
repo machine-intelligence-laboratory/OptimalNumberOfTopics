@@ -17,9 +17,13 @@ from topicnet.cooking_machine.dataset import (
     Dataset,
     W_DIFF_BATCHES_1,
 )
-from topicnet.cooking_machine.models import BaseModel
+from topicnet.cooking_machine.models import (
+    BaseModel,
+    TopicModel,
+)
 
 from topnum.data import VowpalWabbitTextCollection
+from topnum.model_constructor import KnownModel
 from topnum.scores import (
     DiversityScore,
     IntratextCoherenceScore,
@@ -209,21 +213,90 @@ class TestAcceptance:
         )
 
         optimizer.search_for_optimum(text_collection=text_collection)
-        model_folders = os.listdir(experiment_folder)
+        restart_folder_names = os.listdir(experiment_folder)
 
-        assert len(model_folders) == num_restarts
+        assert len(restart_folder_names) == num_restarts
 
-        for model_folder in model_folders:
-            assert model_folder.startswith(experiment_name)
+        for restart_folder_name in restart_folder_names:
+            assert restart_folder_name.startswith(experiment_name)
 
-            submodel_folders = os.listdir(os.path.join(experiment_folder, model_folder))
+            model_folder_names = os.listdir(os.path.join(experiment_folder, restart_folder_name))
 
-            assert len(submodel_folders) == num_search_points
+            assert len(model_folder_names) == num_search_points
 
         for dataset in [train_dataset, test_dataset]:
             dataset.clear_folder()
 
             os.remove(dataset._data_path)  # TODO: better remove folder with csv's
+
+    @pytest.mark.parametrize('keep_in_memory', [True, False])
+    @pytest.mark.parametrize('model_family', list(KnownModel))
+    def test_optimize_for_all_models(self, keep_in_memory, model_family):
+        artm_score_name = 'perplexity_score'
+        artm_score = PerplexityScore(
+            name=artm_score_name,
+            class_ids=[self.main_modality, self.other_modality]
+        )
+
+        custom_score_name = 'diversity_score'
+        custom_score = DiversityScore(
+            custom_score_name,
+            class_ids=self.main_modality
+        )
+
+        self.text_collection._set_dataset_kwargs(
+            keep_in_memory=keep_in_memory
+        )
+
+        min_num_topics = 1
+        max_num_topics = 2
+        num_topics_interval = 1
+        num_fit_iterations = 3
+        num_search_points = len(
+            list(range(min_num_topics, max_num_topics + 1, num_topics_interval))
+        )
+        num_restarts = 3
+        experiment_name = 'all_models'
+        experiment_folder = self.working_folder_path
+
+        optimizer = OptimizeScoresMethod(
+            scores=[artm_score, custom_score],
+            model_family=model_family,
+            min_num_topics=min_num_topics,
+            max_num_topics=max_num_topics,
+            num_topics_interval=num_topics_interval,
+            num_fit_iterations=num_fit_iterations,
+            num_restarts=num_restarts,
+            one_model_num_processors=1,
+            separate_thread=False,
+            experiment_name=experiment_name,
+            experiment_directory=experiment_folder,
+        )
+
+        optimizer.search_for_optimum(text_collection=self.text_collection)
+        restart_folder_names = os.listdir(experiment_folder)
+
+        assert len(restart_folder_names) == num_restarts
+
+        for restart_folder_name in restart_folder_names:
+            assert restart_folder_name.startswith(experiment_name)
+
+            restart_folder_path = os.path.join(experiment_folder, restart_folder_name)
+            model_folder_names = os.listdir(restart_folder_path)
+
+            assert len(model_folder_names) == num_search_points
+
+            for model_folder_name in model_folder_names:
+                topic_model = TopicModel.load(os.path.join(restart_folder_path, model_folder_name))
+
+                assert artm_score_name in topic_model.scores
+                assert custom_score_name in topic_model.scores
+
+                assert len(topic_model.scores[artm_score_name]) == num_fit_iterations
+                assert len(topic_model.scores[custom_score_name]) == 1
+
+                assert all(isinstance(v, Number) for v in topic_model.scores[artm_score_name])
+                assert all(isinstance(v, Number) for v in topic_model.scores[custom_score_name])
 
     @pytest.mark.parametrize('keep_in_memory', [True, False])
     def test_topic_bank(self, keep_in_memory):

@@ -3,7 +3,10 @@ import numpy as np
 import artm
 
 from enum import Enum
-from typing import List
+from typing import (
+    List,
+    Tuple,
+)
 
 from topicnet.cooking_machine import Dataset
 from topicnet.cooking_machine.rel_toolbox_lite import (
@@ -57,14 +60,14 @@ PARAMS_EXPLORED = {
 
 
 def init_model_from_family(
-            family: str or KnownModel,
-            dataset: Dataset,
-            main_modality: str,
-            num_topics: int,
-            seed: int,
-            modalities_to_use: List[str] = None,
-            num_processors: int = 3,
-            model_params: dict = None
+        family: str or KnownModel,
+        dataset: Dataset,
+        main_modality: str,
+        num_topics: int,
+        seed: int,
+        modalities_to_use: List[str] = None,
+        num_processors: int = 3,
+        model_params: dict = None
 ):
     """
     Returns
@@ -131,7 +134,11 @@ def init_model_from_family(
 
 
 def init_plsa(
-        dataset, modalities_to_use, main_modality, num_topics, num_bcg_topics=0
+        dataset,
+        modalities_to_use,
+        main_modality,
+        num_topics,
+        num_bcg_topics=0
 ):
     """
     Creates simple artm model with standard scores.
@@ -163,7 +170,11 @@ def init_plsa(
 
 
 def init_decorrelated_plsa(
-        dataset, modalities_to_use, main_modality, num_topics, model_params
+        dataset,
+        modalities_to_use,
+        main_modality,
+        num_topics,
+        model_params: dict = None
 ):
     """
     Creates simple artm model with standard scores.
@@ -180,6 +191,8 @@ def init_decorrelated_plsa(
     -------
     model: artm.ARTM() instance
     """
+    if model_params is None:
+        model_params = dict()
 
     model = init_plsa(
         dataset, modalities_to_use, main_modality, num_topics
@@ -219,7 +232,7 @@ def init_lda(
         modalities_to_use: List[str],
         main_modality: str,
         num_topics: int,
-        model_params: dict,
+        model_params: dict = None,
 ):
     """
     Creates simple artm model with standard scores.
@@ -236,12 +249,12 @@ def init_lda(
     -------
     model: artm.ARTM() instance
     """
+    if model_params is None:
+        model_params = dict()
+
     model = init_plsa(
         dataset, modalities_to_use, main_modality, num_topics
     )
-
-    if model_params is None:
-        model_params = dict()
 
     prior = model_params.get('prior', 'symmetric')
 
@@ -312,9 +325,12 @@ def init_lda(
 
 
 def init_bcg_sparse_model(
-        dataset, modalities_to_use, main_modality,
-        specific_topics, bcg_topics,
-        model_params
+        dataset,
+        modalities_to_use,
+        main_modality,
+        specific_topics,
+        bcg_topics,
+        model_params: dict = None
 ):
     """
     Creates simple artm model with standard scores.
@@ -331,6 +347,9 @@ def init_bcg_sparse_model(
     -------
     model: artm.ARTM() instance
     """
+    if model_params is None:
+        model_params = dict()
+
     model = init_plsa(
         dataset, modalities_to_use, main_modality, specific_topics, bcg_topics
     )
@@ -378,7 +397,12 @@ def init_bcg_sparse_model(
 
 
 def init_baseline_artm(
-        dataset, modalities_to_use, main_modality, num_topics, bcg_topics, model_params
+        dataset,
+        modalities_to_use,
+        main_modality,
+        num_topics,
+        bcg_topics,
+        model_params: dict = None,
 ):
     """
     Creates simple artm model with standard scores.
@@ -394,6 +418,8 @@ def init_baseline_artm(
     -------
     model: artm.ARTM() instance
     """
+    if model_params is None:
+        model_params = dict()
 
     model = init_bcg_sparse_model(
         dataset, modalities_to_use, main_modality, num_topics, bcg_topics, model_params
@@ -414,8 +440,12 @@ def init_baseline_artm(
 
 
 def init_thetaless(
-        dataset, modalities_to_use, main_modality, num_topics, model_params
-):
+        dataset,
+        modalities_to_use,
+        main_modality,
+        num_topics,
+        model_params: dict = None,
+) -> Tuple[artm.ARTM, dict]:
     """
     Creates a base thetaless artm model and custom regularizer to be attached later
 
@@ -434,6 +464,8 @@ def init_thetaless(
         custom_regularizers: dict
             contains a single element, custom regularizer
     """
+    if model_params is None:
+        model_params = dict()
 
     model = init_plsa(
         dataset, modalities_to_use, main_modality, num_topics
