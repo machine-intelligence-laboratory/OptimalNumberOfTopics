@@ -24,7 +24,9 @@ from topnum.scores import (
 )
 
 
-def split_into_train_test(dataset: Dataset, config: dict):
+def split_into_train_test(dataset: Dataset, config: dict, save_folder: str = None):
+    # TODO: no need for `config` here, just `batches_prefix`
+
     documents = list(dataset._data.index)
     dn = config['batches_prefix']
 
@@ -45,17 +47,28 @@ def split_into_train_test(dataset: Dataset, config: dict):
     train_data['id'] = train_data.index
     test_data['id'] = test_data.index
 
-    # TODO: save path
-    train_data.to_csv(f'{dn}_train.csv', index=False)
-    test_data.to_csv(f'{dn}_test.csv', index=False)
+    to_csv_kwargs = dict()
+
+    if not dataset._small_data:
+        to_csv_kwargs['single_file'] = True
+
+    if save_folder is None:
+        save_folder = '.'
+    elif not os.path.isdir(save_folder):
+        os.mkdir(save_folder)
+
+    train_dataset_path = os.path.join(save_folder, f'{dn}_train.csv')
+    test_dataset_path = os.path.join(save_folder, f'{dn}_test.csv')
+    train_data.to_csv(train_dataset_path, index=False, **to_csv_kwargs)
+    test_data.to_csv(test_dataset_path, index=False, **to_csv_kwargs)
 
     train_dataset = Dataset(
-        f'{dn}_train.csv',
+        train_dataset_path,
         batch_vectorizer_path=f'{dn}_train_internals',
         keep_in_memory=dataset._small_data,
     )
     test_dataset = Dataset(
-        f'{dn}_test.csv',
+        test_dataset_path,
         batch_vectorizer_path=f'{dn}_test_internals',
         keep_in_memory=dataset._small_data,
     )
@@ -118,7 +131,7 @@ def _is_dataset_bow(dataset: Dataset, max_num_documents_to_check: int = 100) -> 
     is_dataset_bow = False
     documents_to_check = list(dataset._data.index)[:max_num_documents_to_check]
 
-    for t in dataset._data.loc[documents_to_check, 'vw_text'].values:
+    for t in dataset._data.loc[documents_to_check, 'vw_text']:
         all_vw_words = t.split()
         doc_content_vw_words = [w for w in all_vw_words[1:] if not w.startswith('|')]
         num_words_with_colon = sum(1 if ':' in w else 0 for w in doc_content_vw_words)
