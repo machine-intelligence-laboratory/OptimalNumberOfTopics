@@ -60,6 +60,7 @@ class _UniformThetaDivergenceScore(BaseTopicNetScore):
 
     def call(self, model: TopicModel):
         theta = model.get_theta(dataset=self._dataset)
+        T = theta.shape[0]
 
         return _compute_kl(T, theta, self.document_lengths)
 
