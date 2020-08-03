@@ -141,11 +141,10 @@ class _SpectralDivergenceScore(BaseTopicNetScore):
                 f' of exactly {phi.shape[1]} singular values.'
             )
 
-        try:
-            # we do not need to normalize these vectors
-            return _symmetric_kl(c_m1, c_m2)
-        except ValueError:
-            return 0.0
+            return 1.0
+
+        # we do not need to normalize these vectors
+        return _symmetric_kl(c_m1, c_m2)
 
     # TODO: this piece is copy-pastd among three different scores
     def save(self, path: str) -> None:
