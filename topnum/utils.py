@@ -23,6 +23,33 @@ from topnum.scores import (
     SophisticatedTopTokensCoherenceScore
 )
 
+WC3_COLORS = {
+    "Red": "ff0303", 
+    "Blue": "0042ff", 
+    "Teal": "1be7ba", 
+    "Purple": "550081", 
+    "Yellow": "fefc00", 
+    "Orange": "fe890d", 
+    "Green": "21bf00", 
+    "Pink": "e45caf", 
+    "Gray": "939596", 
+    "Light Blue": "7ebff1", 
+    "Dark Green": "106247", 
+    "Brown": "4f2b05", 
+    "Maroon": "9c0000", 
+    "Navy": "0000c3", 
+    "Turquoise": "00ebff", 
+    "Violet": "bd00ff", 
+    "Wheat": "ecce87", 
+    "Peach": "f7a58b", 
+    "Mint": "bfff81", 
+    "Lavender": "dbb8eb", 
+    "Coal": "4f5055", 
+    "Snow": "ecf0ff", 
+    "Emerald": "00781e", 
+    "Peanut": "a56f34", 
+    "Black": "2e2d2e", 
+}
 
 def split_into_train_test(dataset: Dataset, config: dict, save_folder: str = None):
     # TODO: no need for `config` here, just `batches_prefix`
@@ -263,6 +290,7 @@ def plot_everything_informative(
     true_criteria=None, false_criteria=None
 ):
     import matplotlib.pyplot as plt
+    import matplotlib._color_data as mcd
 
     if true_criteria is None:
         true_criteria = list()
@@ -297,18 +325,21 @@ def plot_everything_informative(
         fig, axes = plt.subplots(1, 1, figsize=(10, 10))
 
         for experiment_name, data in details[score].items():
-            is_monotonous = check_if_monotonous(data)
 
             # I can make a grid of plots if I do something like this:
             # my_ax = axes[index // 3][index % 3]
             my_ax = axes
 
-            if is_monotonous:
-                style = ':'
-            else:
-                style = '-'
+            *name_base, param_id, seed = experiment_name.split("_")
 
-            my_ax.plot(data.T.mean(axis=0), linestyle=style, label=experiment_name)
+            style = [':', "-.", "-"][int(seed)]
+            names = list(WC3_COLORS.keys())
+            color = "#" + WC3_COLORS[names[int(param_id)]]
+            # color = WC3_COLORS[names[int(param_id)]]
+
+            my_data = data.T.mean(axis=0)
+            label = f"{experiment_name} ({data.shape[0]})" if seed == "0" else None
+            my_ax.plot(my_data, linestyle=style, label=label, color=color)
 
         my_ax.set_title(f"{score}")
         my_ax.legend()
