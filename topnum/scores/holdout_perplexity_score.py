@@ -26,14 +26,6 @@ class HoldoutPerplexityScore(BaseCustomScore):
             test_dataset=self._test_dataset
         )
 
-    def _attach(self, model: TopicModel) -> None:
-        model._model.scores.add(
-            PerplexityScore(
-                name=self._name,
-                class_ids=self._class_ids
-            )
-        )
-
 
 class _HoldoutPerplexityScore(BaseTopicNetScore):
     def __init__(self, perplexity_score_name: str, test_dataset: Dataset):
