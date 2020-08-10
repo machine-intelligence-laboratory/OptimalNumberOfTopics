@@ -45,6 +45,7 @@ from topnum.scores import (
     SparsityPhiScore,
     SparsityThetaScore,
     SpectralDivergenceScore,
+    UniformThetaDivergenceScore,
 )
 from topnum.scores.base_topic_score import BaseTopicScore
 from topnum.search_methods import OptimizeScoresMethod
@@ -162,6 +163,17 @@ class TestOptimizeScores:
         dataset = self.dataset(keep_in_memory=keep_in_memory)
         score = MeanLiftScore(
             'lift_score',
+            validation_dataset=dataset,
+            modalities=[self.main_modality, self.other_modality],
+        )
+
+        self._test_optimize_score(score)
+
+    @pytest.mark.parametrize('keep_in_memory', [True, False])
+    def test_optimize_uniform_theta_divergence(self, keep_in_memory):
+        dataset = self.dataset(keep_in_memory=keep_in_memory)
+        score = UniformThetaDivergenceScore(
+            'uniform_theta_divergence',
             validation_dataset=dataset,
             modalities=[self.main_modality, self.other_modality],
         )

@@ -23,8 +23,13 @@ from .dataset_utils import col_total_len, compute_document_details
 
 def _compute_kl(T, theta, doc_lengths):
     uniform_distrib = np.ones(T) / T
+
     doc_lengths = doc_lengths / sum(doc_lengths)
     theta_distrib = theta.dot(doc_lengths)
+
+    # TODO: dtype was 'object'? how could it be?
+    theta_distrib = np.array(theta_distrib.values, dtype=np.float)
+
     return stats.entropy(uniform_distrib, theta_distrib)
 
 
