@@ -1,3 +1,5 @@
+import dill
+
 from artm.scores import PerplexityScore
 from topicnet.cooking_machine import Dataset
 from topicnet.cooking_machine.models import (
@@ -55,3 +57,38 @@ class _HoldoutPerplexityScore(BaseTopicNetScore):
         perplexity = model._model.get_score(self._perplexity_score_name)
 
         return perplexity.value
+
+    # TODO: this piece is copy-pastd among four different scores
+    def save(self, path: str) -> None:
+        dataset = self._dataset
+        self._dataset = None
+
+        with open(path, 'wb') as f:
+            dill.dump(self, f)
+
+        self._dataset = dataset
+
+    @classmethod
+    def load(cls, path: str):
+        """
+
+        Parameters
+        ----------
+        path
+
+        Returns
+        -------
+        an instance of this class
+
+        """
+
+        with open(path, 'rb') as f:
+            score = dill.load(f)
+
+        score._dataset = Dataset(
+            score._dataset_file_path,
+            internals_folder_path=score._dataset_internals_folder_path,
+            keep_in_memory=score._keep_dataset_in_memory,
+        )
+
+        return score
