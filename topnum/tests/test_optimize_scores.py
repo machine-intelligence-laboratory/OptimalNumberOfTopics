@@ -257,8 +257,6 @@ class TestOptimizeScores:
         )
         tiny_number = 1e-6
 
-        print(perplexity_score_values)
-        print(holdout_perplexity_score_values)
         assert any(v > tiny_number for v in absolute_differences)
 
     @pytest.mark.parametrize('entropy', ['renyi', 'shannon'])
