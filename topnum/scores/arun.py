@@ -1,12 +1,13 @@
+import dill
 import numpy as np
 import scipy.stats as stats
-import dill
+import warnings
 
 
 from topicnet.cooking_machine import Dataset
 from topicnet.cooking_machine.models import (
     BaseScore as BaseTopicNetScore,
-    TopicModel
+    TopicModel,
 )
 from typing import (
     List
@@ -64,6 +65,16 @@ class _SpectralDivergenceScore(BaseTopicNetScore):
         c_m1 = np.linalg.svd(phi, compute_uv=False)
         c_m2 = self.document_lengths.dot(theta.T)
         c_m2 += 0.0001  # we need this to prevent components equal to zero
+
+        if len(c_m1) != phi.shape[1]:
+            warnings.warn(
+                f'Phi has {phi.shape[1]} topics'
+                f' but its SVD resulted in a vector of size {len(c_m1)}!'
+                f' To work correctly, SpectralDivergenceScore expects to get a vector'
+                f' of exactly {phi.shape[1]} singular values.'
+            )
+
+            return 1.0
 
         # we do not need to normalize these vectors
         return _symmetric_kl(c_m1, c_m2)
