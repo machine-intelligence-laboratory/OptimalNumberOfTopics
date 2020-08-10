@@ -45,7 +45,7 @@ class _HoldoutPerplexityScore(BaseTopicNetScore):
         self._call_number = self._call_number + 1
 
         # TODO: maybe possible with only one score?
-        score_name = f'{self._base_score_name}__{self._call_number}'
+        score_name = f'{self._base_score_name}_{self._call_number}'
 
         assert score_name not in model._model.scores.data
 
