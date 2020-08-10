@@ -1,24 +1,21 @@
-"""
-"""
-
-
-
 import os
 import pandas as pd
 import numpy as np
-from topicnet.cooking_machine.models.thetaless_regularizer import artm_dict2df
 
+from typing import (
+    List
+)
+
+import artm
+
+from topicnet.cooking_machine.models.thetaless_regularizer import artm_dict2df
 from topicnet.cooking_machine import Dataset
 from topicnet.cooking_machine.models import (
     BaseScore as BaseTopicNetScore,
     TopicModel
 )
-from typing import (
-    List
-)
 
 from .base_custom_score import BaseCustomScore
-import artm
 
 
 class MeanLiftScore(BaseCustomScore):
@@ -27,7 +24,6 @@ class MeanLiftScore(BaseCustomScore):
     Arun, R., V. Suresh, C. V. Madhavan, and M. N. Murthy
     On finding the natural number of topics with latent dirichlet allocation: Some observations.
     In PAKDD (2010), pp. 391–402.
-
 
     The code is based on analagous code from TOM:
     https://github.com/AdrienGuille/TOM/blob/388c71ef/tom_lib/nlp/topic_model.py
@@ -94,9 +90,11 @@ class _MeanLiftScore(BaseTopicNetScore):
 
     def _select_topwords(self, phi):
         relevant_words = []
+
         for t in phi.columns:
             top30 = phi[t].sort_values().tail(self.num_toptokens)
             relevant_words.append(top30.index)
+
         return relevant_words
 
     def call(self, model: TopicModel):
@@ -105,8 +103,12 @@ class _MeanLiftScore(BaseTopicNetScore):
         relevant_words = self._select_topwords(phi)
 
         loglift = self._compute_lift(phi, relevant_words)
-        if not self.topic_names:
-            self.topic_names = model.topic_names
-        total_loglift = loglift[self.topic_names]
+
+        if self.topic_names is not None:
+            topic_names = self.topic_names
+        else:
+            topic_names = model.topic_names
+
+        total_loglift = loglift[topic_names]
 
         return total_loglift.mean()
