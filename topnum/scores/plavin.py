@@ -1,36 +1,41 @@
-import dill
 import numpy as np
 import scipy.stats as stats
-import warnings
+import dill
 
 
 from topicnet.cooking_machine import Dataset
 from topicnet.cooking_machine.models import (
     BaseScore as BaseTopicNetScore,
-    TopicModel,
+    TopicModel
 )
 from typing import (
     List
 )
 
 from .base_custom_score import BaseCustomScore
+
+
+import pandas as pd
+from topicnet.cooking_machine.dataset import get_modality_vw
+
 from .dataset_utils import col_total_len, compute_document_details
 
 
-def _symmetric_kl(distrib_p, distrib_q):
-    return 0.5 * np.sum([stats.entropy(distrib_p, distrib_q), stats.entropy(distrib_p, distrib_q)])
+def _compute_kl(T, theta, doc_lengths):
+    uniform_distrib = np.ones(T) / T
+
+    doc_lengths = doc_lengths / sum(doc_lengths)
+    theta_distrib = theta.dot(doc_lengths)
+
+    # TODO: dtype was 'object'? how could it be?
+    theta_distrib = np.array(theta_distrib.values, dtype=np.float)
+
+    return stats.entropy(uniform_distrib, theta_distrib)
 
 
-class SpectralDivergenceScore(BaseCustomScore):
+class UniformThetaDivergenceScore(BaseCustomScore):
     """
-    Implements Arun metric to estimate the optimal number of topics:
-    Arun, R., V. Suresh, C. V. Madhavan, and M. N. Murthy
-    On finding the natural number of topics with latent dirichlet allocation: Some observations.
-    In PAKDD (2010), pp. 391–402.
-
-
-    The code is based on analagous code from TOM:
-    https://github.com/AdrienGuille/TOM/blob/388c71ef/tom_lib/nlp/topic_model.py
+    svn.code.sf.net/p/mlalgorithms/code/Group174/Plavin2015TopicSelection/doc/Plavin2015Diploma.pdf
     """
 
     def __init__(
@@ -42,10 +47,10 @@ class SpectralDivergenceScore(BaseCustomScore):
 
         super().__init__(name)
 
-        self._score = _SpectralDivergenceScore(validation_dataset, modalities)
+        self._score = _UniformThetaDivergenceScore(validation_dataset, modalities)
 
 
-class _SpectralDivergenceScore(BaseTopicNetScore):
+class _UniformThetaDivergenceScore(BaseTopicNetScore):
     def __init__(self, validation_dataset, modalities):
         super().__init__()
 
@@ -60,26 +65,11 @@ class _SpectralDivergenceScore(BaseTopicNetScore):
 
     def call(self, model: TopicModel):
         theta = model.get_theta(dataset=self._dataset)
-        phi = model.get_phi(class_ids=self.modalities)
+        T = theta.shape[0]
 
-        c_m1 = np.linalg.svd(phi, compute_uv=False)
-        c_m2 = self.document_lengths.dot(theta.T)
-        c_m2 += 0.0001  # we need this to prevent components equal to zero
+        return _compute_kl(T, theta, self.document_lengths)
 
-        if len(c_m1) != phi.shape[1]:
-            warnings.warn(
-                f'Phi has {phi.shape[1]} topics'
-                f' but its SVD resulted in a vector of size {len(c_m1)}!'
-                f' To work correctly, SpectralDivergenceScore expects to get a vector'
-                f' of exactly {phi.shape[1]} singular values.'
-            )
-
-            return 1.0
-
-        # we do not need to normalize these vectors
-        return _symmetric_kl(c_m1, c_m2)
-
-    # TODO: this piece is copy-pastd among three different scores
+    # TODO: this piece is copy-pastd among four different scores
     def save(self, path: str) -> None:
         dataset = self._dataset
         self._dataset = None
