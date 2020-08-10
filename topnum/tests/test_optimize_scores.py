@@ -1,5 +1,6 @@
 import logging
 import numpy as np
+import os
 import pytest
 import shutil
 import tempfile
@@ -106,6 +107,8 @@ class TestOptimizeScores:
     def setup_method(self):
         assert self.text_collection._dataset is None
 
+        os.mkdir(self.working_folder_path)
+
     def teardown_method(self):
         self.text_collection._set_dataset_kwargs()
         self.text_collection._dataset = None
@@ -113,12 +116,16 @@ class TestOptimizeScores:
         if self.optimizer is not None:
             self.optimizer.clear()
 
+        if os.path.isdir(self.working_folder_path):
+            shutil.rmtree(self.working_folder_path)
+
     @classmethod
     def teardown_class(cls):
         if cls.data_generator is not None:
             cls.data_generator.clear()
 
-        shutil.rmtree(cls.working_folder_path)
+        if os.path.isdir(cls.working_folder_path):
+            shutil.rmtree(cls.working_folder_path)
 
     def dataset(self, keep_in_memory: bool = True) -> Dataset:
         self.text_collection._set_dataset_kwargs(
@@ -220,6 +227,61 @@ class TestOptimizeScores:
         )
 
         self._test_optimize_score(score)
+
+    def test_optimize_holdout_perplexity_differs(self, keep_in_memory=False):
+        dataset = self.dataset(keep_in_memory)
+        num_documents = len(dataset.documents)
+        subsample_fraction = int(0.5 * num_documents)
+        dataset_subsample_folder = tempfile.mkdtemp(
+            dir=self.working_folder_path,
+        )
+
+        assert os.path.isdir(dataset_subsample_folder)
+        assert len(os.listdir(dataset_subsample_folder)) == 0
+
+        dataset_subsample = Dataset.from_dataframe(
+            dataset._data.sample(frac=1).head(subsample_fraction),
+            save_dataset_path=dataset_subsample_folder
+        )
+
+        perplexity_score = PerplexityScore(
+            'perplexity_score'
+        )
+        holdout_perplexity_score = HoldoutPerplexityScore(
+            'holdout_perplexity_score',
+            test_dataset=dataset_subsample,
+            class_ids=[self.main_modality, self.other_modality]
+        )
+
+        artm_model = init_simple_default_model(
+            dataset=dataset,
+            modalities_to_use=[self.main_modality, self.other_modality],
+            main_modality=self.main_modality,
+            specific_topics=5,
+            background_topics=1,
+        )
+        artm_model.num_processors = 2
+        topic_model = TopicModel(artm_model)
+        experiment = Experiment(
+            topic_model=topic_model,
+            experiment_id='test_optimize_holdout_perplexity_differs',
+            save_path=self.working_folder_path,
+        )
+
+        for score in [perplexity_score, holdout_perplexity_score]:
+            score._attach(topic_model)
+
+        topic_model._fit(dataset_trainable=dataset.get_batch_vectorizer(), num_iterations=10)
+
+        perplexity_score_values = topic_model.scores[perplexity_score.name]
+        holdout_perplexity_score_values = topic_model.scores[holdout_perplexity_score.name]
+
+        absolute_differences = np.abs(
+            np.array(perplexity_score_values) - np.array(holdout_perplexity_score_values)
+        )
+        tiny_number = 1e-6
+
+        assert any(v > tiny_number for v in absolute_differences)
 
     @pytest.mark.parametrize('entropy', ['renyi', 'shannon'])
     @pytest.mark.parametrize('threshold_factor', [1.0, 0.5, 1e-7, 1e7])
