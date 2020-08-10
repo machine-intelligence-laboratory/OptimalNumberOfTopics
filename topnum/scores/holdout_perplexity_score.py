@@ -41,6 +41,10 @@ class _HoldoutPerplexityScore(BaseTopicNetScore):
         self._dataset = test_dataset
         self._class_ids = class_ids
 
+        self._keep_dataset_in_memory = test_dataset._small_data
+        self._dataset_internals_folder_path = test_dataset._internals_folder_path
+        self._dataset_file_path = test_dataset._data_path
+
         self._call_number = 0
 
     def call(self, model: TopicModel) -> float:
