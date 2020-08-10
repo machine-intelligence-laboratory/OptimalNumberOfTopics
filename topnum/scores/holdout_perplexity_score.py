@@ -47,6 +47,8 @@ class _HoldoutPerplexityScore(BaseTopicNetScore):
         # TODO: maybe possible with only one score?
         score_name = f'{self._base_score_name}__{self._call_number}'
 
+        assert score_name not in model._model.scores.data
+
         model._model.scores.add(
             PerplexityScore(
                 name=score_name,
