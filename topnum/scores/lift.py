@@ -84,7 +84,7 @@ class _MeanLiftScore(BaseTopicNetScore):
         result = []
         phi_index_as_set = set(phi.index)  # TODO: dirty fix
         for t, words in zip(phi.columns, chosen_words_array):
-            words = set(words).intersection(phi_index_as_set)
+            words = list(set(words).intersection(phi_index_as_set))
             result.append(log_lift.loc[words, t].sum())
 
         log_lift_total = pd.Series(data=result, index=phi.columns)
