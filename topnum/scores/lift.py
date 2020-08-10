@@ -71,6 +71,7 @@ class _MeanLiftScore(BaseTopicNetScore):
 
         if chosen_words_array:
             merged_index = sum((idx.to_list() for idx in chosen_words_array), [])
+            merged_index = set(merged_index).intersection(set(dict_df.index))  # TODO: optimize?
             chosen_words = pd.Index(merged_index).drop_duplicates()
             dict_df = dict_df.loc[chosen_words]
             phi = phi.loc[chosen_words]
