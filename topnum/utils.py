@@ -7,7 +7,7 @@ import warnings
 
 from collections import defaultdict
 from inspect import signature
-from strictyaml import Map, Str, Optional, Int
+from strictyaml import Map, Str, Optional, Int, CommaSeparated
 
 from topicnet.cooking_machine.dataset import Dataset
 
@@ -255,6 +255,7 @@ def read_corpus_config(filename='corpus.yml'):
         'word': Str(),
         'name': Str(),
         Optional("num_topics_interval"): Int(),
+        Optional("nums_topics_list"): CommaSeparated(Int()),
         'min_num_topics': Int(),
         'max_num_topics': Int(),
         'num_fit_iterations': Int(),
@@ -285,9 +286,82 @@ def estimate_num_iterations_for_convergence(tm, score_name="PerplexityScore@all"
     return (contributions > 2e-3).sum()
 
 
+SCORES_DIRECTION = {
+    'PerplexityScore@all': min,
+    'SparsityThetaScore': max,
+    'SparsityPhiScore@lemmatized': max,
+    'PerplexityScore@lemmatized': None,
+    'TopicKernel@lemmatized.average_coherence': None,
+    'TopicKernel@lemmatized.average_contrast': max,
+    'TopicKernel@lemmatized.average_purity': max,
+    'TopicKernel@lemmatized.average_size': None,
+    'perp': None,
+    'sparsity_phi': None,
+    'sparsity_theta': None,
+    'holdout_perp': min,
+    'arun': min,
+    'diversity_euclidean_True': max,
+    'diversity_euclidean_False': max,
+    'diversity_jensenshannon_True': max,
+    'diversity_jensenshannon_False': max,
+    'diversity_cosine_True': max,
+    'diversity_cosine_False': max,
+    'diversity_hellinger_True': max,
+    'diversity_hellinger_False': max,
+    'calhar': max,
+    'silh': max,
+    'renyi_0.5': min,
+    'renyi_1': min,
+    'renyi_2': min,
+    'AIC_sparsity_True': min,
+    'AIC_sparsity_False': min,
+    'BIC_sparsity_True': min,
+    'BIC_sparsity_False': min,
+    'MDL_sparsity_True': min,
+    'MDL_sparsity_False': min,
+    'intra': max,
+    'toptok1': max
+}
+
+def classify_curve(my_data, FRAC_THRESHOLD, score_name):
+    colored_values = my_data.copy()
+    midrange = max(colored_values) - min(colored_values)
+
+    if SCORES_DIRECTION[score_name] == max:
+        threshold = max(colored_values) - midrange * FRAC_THRESHOLD
+        optimum_val = max(colored_values)
+        colored_values[colored_values < threshold] = np.nan
+    elif SCORES_DIRECTION[score_name] == min:
+        threshold = min(colored_values) + midrange * FRAC_THRESHOLD
+        optimum_val = min(colored_values)
+        colored_values[colored_values > threshold] = np.nan
+
+    intervals = colored_values[colored_values.notna()]
+    minx, maxx = min(intervals.index), max(intervals.index)
+    optimum_idx = set(intervals.index)
+    slice_idx = set(colored_values.loc[minx:maxx].index)
+    if (optimum_idx == slice_idx):
+        curve_type = f"interval {len(intervals)}"
+        if len(intervals) == 1:
+            curve_type = "sharp"
+
+        minx, maxx = min(colored_values.index), max(colored_values.index)
+        if minx in optimum_idx:
+            curve_type = "outside"
+        if maxx in optimum_idx:
+            # and abs(intervals.loc[maxx] - optimum_val) <= :
+            curve_type = "outside"
+    else:
+        curve_type = "jumping"
+    #print('++++')
+    #print(curve_type, optimum_idx == slice_idx)
+
+    return colored_values, curve_type
+
 def plot_everything_informative(
     experiment_directory, experiment_name_template,
-    true_criteria=None, false_criteria=None
+    true_criteria=None, false_criteria=None,
+    maxval=None, FRAC_THRESHOLD=0.07
 ):
     import matplotlib.pyplot as plt
     import matplotlib._color_data as mcd
@@ -316,10 +390,14 @@ def plot_everything_informative(
                 all(t_criterion in score for t_criterion in true_criteria)
                 and
                 all(f_criterion not in score for f_criterion in false_criteria)
+                and
+                all(useless_name not in score for useless_name in USELESS_SCORES)
             )
 
             if should_plot:
                 details[score][experiment_name] = detailed_result[score].T
+        ticks = detailed_result[score].T.index
+
 
     for score in details.keys():
         fig, axes = plt.subplots(1, 1, figsize=(10, 10))
@@ -332,15 +410,35 @@ def plot_everything_informative(
 
             *name_base, param_id, seed = experiment_name.split("_")
 
-            style = [':', "-.", "-"][int(seed)]
+            seed = int(seed) if seed != 'None' else 0
+            if seed > 3:
+                seed = seed % 3
+            style = [':', "-.", "--"][seed]
             names = list(WC3_COLORS.keys())
             color = "#" + WC3_COLORS[names[int(param_id)]]
-            # color = WC3_COLORS[names[int(param_id)]]
 
             my_data = data.T.mean(axis=0)
-            label = f"{experiment_name} ({data.shape[0]})" if seed == "0" else None
-            my_ax.plot(my_data, linestyle=style, label=label, color=color)
+
+            if maxval is not None:
+                my_data[my_data > maxval] = np.nan
+            label = f"{experiment_name} ({data.shape[0]})" if seed == 0 else None
+            my_ax.plot(my_data, linestyle=style, label=label, color=color, alpha=0.7)
+
+            if FRAC_THRESHOLD:
+                colored_values, curve_type = classify_curve(my_data, FRAC_THRESHOLD, score)
+                if curve_type == "jumping":
+                    marker = "x"
+                if curve_type.startswith('interval'):
+                    marker = "."
+                if curve_type == "sharp":
+                    marker = "*"
+                if curve_type == "outside":
+                    marker = "^"
+                my_ax.plot(colored_values, linestyle=style, color=color, alpha=1.0)
+                my_ax.plot(colored_values, marker=marker, linestyle='', color='black', alpha=1.0)
 
         my_ax.set_title(f"{score}")
         my_ax.legend()
+        my_ax.set_xticks(ticks)
+        my_ax.grid(True)
         fig.show()
