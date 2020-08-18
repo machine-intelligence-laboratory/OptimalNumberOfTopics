@@ -391,7 +391,7 @@ def plot_everything_informative(
                 and
                 all(f_criterion not in score for f_criterion in false_criteria)
                 and
-                all(useless_name not in score for useless_name in USELESS_SCORES)
+                SCORES_DIRECTION[score] is not None
             )
 
             if should_plot:
