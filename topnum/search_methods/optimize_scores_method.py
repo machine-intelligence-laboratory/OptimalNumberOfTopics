@@ -59,7 +59,29 @@ class OptimizeScoresMethod(BaseSearchMethod):
             experiment_name: str or None = None,
             save_experiment: bool = False,
             experiment_directory: str = DEFAULT_EXPERIMENT_DIR,
-            nums_topics_list: int = None):
+            nums_topics_list: List[int] = None):
+        """
+        Parameters
+        ----------
+            scores: list of scores to calculate
+            model_family: what kind of model to investigate
+            model_params: range of possible hyperparameters of model
+            num_restarts: number of random initializations
+            num_topics_interval:
+            min_num_topics:
+            max_num_topics:
+            nums_topics_list:
+                the range of T to consider
+                NOTE: nums_topics_list overrides num_topics_interval, min_num_topics, max_num_topics
+                if they all are specified
+
+            num_fit_iterations:
+            one_model_num_processors:
+            separate_thread:
+            experiment_name:
+            save_experiment:
+            experiment_directory:
+        """
 
         super().__init__(min_num_topics, max_num_topics, num_fit_iterations)
 
