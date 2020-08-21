@@ -343,6 +343,8 @@ class CurveOptimumType(IntEnum):
     PEAK = auto()
     JUMPING = auto()
     OUTSIDE = auto()
+    JUMP_OUTSIDE = auto()
+    EMPTY = auto()
 
 
 CURVETYPE_TO_MARKER = {
@@ -350,6 +352,8 @@ CURVETYPE_TO_MARKER = {
     CurveOptimumType.INTERVAL: ".",
     CurveOptimumType.PEAK: "*",
     CurveOptimumType.OUTSIDE: "^",
+    CurveOptimumType.JUMP_OUTSIDE: "v",
+    CurveOptimumType.EMPTY: "-",
 }
 
 
@@ -382,6 +386,8 @@ def classify_curve(my_data, optimum_tolerance, score_direction):
         colored_values[colored_values > threshold] = np.nan
 
     intervals = colored_values[colored_values.notna()]
+    if len(intervals) == 0 or len(intervals) == len(colored_values):
+        return colored_values, CurveOptimumType.EMPTY
     left_bound, right_bound = min(intervals.index), max(intervals.index)
     optimum_idx = set(intervals.index)
     slice_idx = set(colored_values.loc[left_bound:right_bound].index)
@@ -397,6 +403,10 @@ def classify_curve(my_data, optimum_tolerance, score_direction):
             curve_type = CurveOptimumType.OUTSIDE
     else:
         curve_type = CurveOptimumType.JUMPING
+        if min(colored_values.index) in optimum_idx:
+            curve_type = CurveOptimumType.JUMP_OUTSIDE
+        if max(colored_values.index) in optimum_idx:
+            curve_type = CurveOptimumType.JUMP_OUTSIDE
 
     return colored_values, curve_type
 
