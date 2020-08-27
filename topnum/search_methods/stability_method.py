@@ -270,15 +270,16 @@ class StabilitySearchMethod(BaseSearchMethod):
                 writer = csv.writer(f)
                 writer.writerow(dataset._data.columns)
 
-                for document_index in current_document_indices:
-                    # TODO: for big datasets maybe slow
-                    document_id = dataset.documents[document_index]
-                    document_df_row = dataset._data.loc[document_id, :]
+                if dataset._small_data:
+                    document_df_rows = dataset._data.iloc[current_document_indices, :]
+                else:
+                    current_document_ids = [
+                        dataset.documents[document_index]
+                        for document_index in current_document_indices
+                    ]
+                    document_df_rows = dataset._data.loc[current_document_ids, :]
 
-                    if not dataset._small_data:
-                        document_df_row = document_df_row.compute().loc[document_id]
-
-                    writer.writerow(document_df_row.to_list())
+                writer.writerows([r.to_list() for _, r in document_df_rows.iterrows()])
 
         _LOGGER.info('Subsampling finished')
 
