@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import numpy as np
 
+from functools import reduce
 from typing import (
     List
 )
@@ -50,7 +51,11 @@ class _MeanLiftScore(BaseTopicNetScore):
         self.modalities = modalities
         self.num_toptokens = 30
 
-    def _compute_lift(self, phi, chosen_words_array=None):
+    def _compute_lift(
+            self,
+            phi: pd.DataFrame,
+            chosen_words_array: List[pd.Index] = None,
+            ):
         # inspired by gist.github.com/jrnold/daa039f02486009a24cf3e83403dabf0
         artm_dict = artm.Dictionary(dictionary_path=self._dict_path)
         dict_df = artm_dict2df(artm_dict).query("class_id in @self.modalities")
@@ -69,30 +74,37 @@ class _MeanLiftScore(BaseTopicNetScore):
         dict_df.sort_index(inplace=True)
         phi.sort_index(inplace=True)
 
-        if chosen_words_array:
-            merged_index = sum((idx.to_list() for idx in chosen_words_array), [])
-            merged_index = set(merged_index).intersection(set(dict_df.index))  # TODO: optimize?
-            chosen_words = pd.Index(merged_index).drop_duplicates()
+        known_chosen_words_array = [
+            words.intersection(dict_df.index)
+            for words in chosen_words_array
+        ]
+
+        if known_chosen_words_array:
+            merged_index = reduce(
+                lambda idx1, idx2: idx1.union(idx2),
+                known_chosen_words_array
+            )
+            chosen_words = merged_index.drop_duplicates()
             dict_df = dict_df.loc[chosen_words]
             phi = phi.loc[chosen_words]
 
         data = np.log(phi.values) - np.log(dict_df[['token_freq']].values)
         log_lift = pd.DataFrame(data=np.log(data), index=phi.index, columns=phi.columns)
-        if not chosen_words_array:
+
+        if not known_chosen_words_array:
             return log_lift
 
         result = []
-        phi_index_as_set = set(phi.index)  # TODO: dirty fix
-        for t, words in zip(phi.columns, chosen_words_array):
-            words = list(set(words).intersection(phi_index_as_set))
+
+        for t, words in zip(phi.columns, known_chosen_words_array):
             result.append(log_lift.loc[words, t].sum())
 
         log_lift_total = pd.Series(data=result, index=phi.columns)
 
         return log_lift_total
 
-    def _select_topwords(self, phi):
-        relevant_words = []
+    def _select_topwords(self, phi: pd.DataFrame) -> List[pd.Index]:
+        relevant_words = list()
 
         for t in phi.columns:
             top30 = phi[t].sort_values().tail(self.num_toptokens)
@@ -114,4 +126,4 @@ class _MeanLiftScore(BaseTopicNetScore):
 
         total_loglift = loglift[topic_names]
 
-        return total_loglift.mean()
+        return float(total_loglift.mean())
