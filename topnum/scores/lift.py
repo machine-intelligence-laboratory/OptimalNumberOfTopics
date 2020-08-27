@@ -20,14 +20,11 @@ from .base_custom_score import BaseCustomScore
 
 
 class MeanLiftScore(BaseCustomScore):
-    """
-    Implements Arun metric to estimate the optimal number of topics:
-    Arun, R., V. Suresh, C. V. Madhavan, and M. N. Murthy
-    On finding the natural number of topics with latent dirichlet allocation: Some observations.
-    In PAKDD (2010), pp. 391–402.
+    """Implements log lift.
 
-    The code is based on analagous code from TOM:
-    https://github.com/AdrienGuille/TOM/blob/388c71ef/tom_lib/nlp/topic_model.py
+    Fan, A., Doshi‐Velez, F., & Miratrix, L.
+    Assessing topic model relevance: Evaluation and informative priors.
+    Statistical Analysis and Data Mining: The ASA Data Science Journal (2019), 12(3), 210-222.
     """
 
     def __init__(
