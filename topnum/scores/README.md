@@ -18,6 +18,9 @@ Here are the scores available for using for finding an appropriate number of top
             ├── diversity_score.py
             ├── entropy_score.py
             ├── holdout_perplexity_score.py
+            ├── lift.py
+            ├── plavin.py
+            ├── silhouette.py
             ├── likelihood.py
             └── silhouette.py
 
