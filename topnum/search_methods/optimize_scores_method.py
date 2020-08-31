@@ -270,7 +270,7 @@ def _summarize_models(
 
 def load_models_from_disk(experiment_directory, base_experiment_name, scores=None):
     from topicnet.cooking_machine.experiment import START
-    import glob
+    import glob, pickle
 
     result_models = []
 
@@ -292,7 +292,21 @@ def load_models_from_disk(experiment_directory, base_experiment_name, scores=Non
                     f.path for f in os.scandir(folder)
                     if f.is_dir() and f.name != START
                 ]
-            result_models += [DummyTopicModel.load(path) for path in model_pathes]
+            for path in model_pathes:
+                new_model = DummyTopicModel.load(path)
+                for entry in glob.glob(path + "/*.p"):
+                    name = os.path.basename(entry)
+                    score_key, _, klass = name.rpartition("._")
+                    klass = "_" + klass
+                    if score_key not in new_model.scores:
+                        print(name, score_key, klass)
+                        with open(entry, "rb") as f:
+                            loaded = pickle.load(f)
+                        print(type(loaded))
+                        print(loaded)
+                        new_model.scores[name] = loaded
+
+                result_models += [new_model]
             # result_models += [TopicModel.load(path).to_dummy() for path in model_pathes]
 
         return _summarize_models(result_models)
