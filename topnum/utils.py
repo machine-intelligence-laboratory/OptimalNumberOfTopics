@@ -334,7 +334,11 @@ SCORES_DIRECTION = {
     'MDL_sparsity_True': min,
     'MDL_sparsity_False': min,
     'intra': max,
-    'toptok1': max
+    'toptok1': max,
+    'lift': max,
+    'uni_theta_divergence': max,
+    'new_holdout_perp': min,
+    'RPC': min,
 }
 
 
@@ -380,9 +384,11 @@ def classify_curve(my_data, optimum_tolerance, score_direction):
 
     if score_direction == max:
         threshold = max(colored_values) - midrange * optimum_tolerance
+        optimum = max(colored_values)
         colored_values[colored_values < threshold] = np.nan
     elif score_direction == min:
         threshold = min(colored_values) + midrange * optimum_tolerance
+        optimum = min(colored_values)
         colored_values[colored_values > threshold] = np.nan
 
     intervals = colored_values[colored_values.notna()]
@@ -397,16 +403,25 @@ def classify_curve(my_data, optimum_tolerance, score_direction):
             curve_type = CurveOptimumType.PEAK
 
         if min(colored_values.index) in optimum_idx:
-            curve_type = CurveOptimumType.OUTSIDE
+            if optimum in colored_values[colored_values.index[:2]]:
+                curve_type = CurveOptimumType.OUTSIDE
         if max(colored_values.index) in optimum_idx:
             # and abs(intervals.loc[right_bound] - optimum_val) <= :
+            if optimum in colored_values[colored_values.index[-2:]]:
+                curve_type = CurveOptimumType.OUTSIDE
             curve_type = CurveOptimumType.OUTSIDE
     else:
         curve_type = CurveOptimumType.JUMPING
         if min(colored_values.index) in optimum_idx:
-            curve_type = CurveOptimumType.JUMP_OUTSIDE
+            if optimum in colored_values[colored_values.index[:2]]:
+                curve_type = CurveOptimumType.OUTSIDE
+            else:
+                curve_type = CurveOptimumType.JUMP_OUTSIDE
         if max(colored_values.index) in optimum_idx:
-            curve_type = CurveOptimumType.JUMP_OUTSIDE
+            if optimum in colored_values[colored_values.index[-2:]]:
+                curve_type = CurveOptimumType.OUTSIDE
+            else:
+                curve_type = CurveOptimumType.JUMP_OUTSIDE
 
     return colored_values, curve_type
 

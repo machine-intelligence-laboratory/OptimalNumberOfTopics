@@ -98,10 +98,11 @@ class _HoldoutPerplexityScore(BaseTopicNetScore):
         with open(path, 'rb') as f:
             score = dill.load(f)
 
-        score._dataset = Dataset(
-            score._dataset_file_path,
-            internals_folder_path=score._dataset_internals_folder_path,
-            keep_in_memory=score._keep_dataset_in_memory,
-        )
+        score._dataset = None
+        # score._dataset = Dataset(
+        #    score._dataset_file_path,
+        #    internals_folder_path=score._dataset_internals_folder_path,
+        #    keep_in_memory=score._keep_dataset_in_memory,
+        # )
 
         return score

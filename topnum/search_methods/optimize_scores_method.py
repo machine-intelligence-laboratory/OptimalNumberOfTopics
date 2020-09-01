@@ -268,9 +268,34 @@ def _summarize_models(
     return result, detailed_result
 
 
+def magic_clutch():
+    from topnum.scores import (
+        HoldoutPerplexityScore,
+        MeanLiftScore,
+        UniformThetaDivergenceScore,
+    )
+    from topicnet.cooking_machine.dataset import Dataset
+
+
+    # Just some dataset, whatever
+    test_dataset = Dataset(
+        '/home/alekseev/topicnet/tests/test_data/test_dataset.csv',
+        internals_folder_path="./DELETE_ME_PLZ"
+    )
+
+    # If not itialize a new score at least once in the notebook
+    # it won't be possible to load it
+    _ = HoldoutPerplexityScore('', test_dataset,)
+    _ = MeanLiftScore('', test_dataset, [])
+    _ = UniformThetaDivergenceScore('', test_dataset, [])
+
+
 def load_models_from_disk(experiment_directory, base_experiment_name, scores=None):
     from topicnet.cooking_machine.experiment import START
+    from topicnet.cooking_machine.models import scores as tn_scores
+
     import glob, pickle
+    magic_clutch()
 
     result_models = []
 
@@ -294,17 +319,22 @@ def load_models_from_disk(experiment_directory, base_experiment_name, scores=Non
                 ]
             for path in model_pathes:
                 new_model = DummyTopicModel.load(path)
-                for entry in glob.glob(path + "/*.p"):
-                    name = os.path.basename(entry)
-                    score_key, _, klass = name.rpartition("._")
-                    klass = "_" + klass
-                    if score_key not in new_model.scores:
-                        print(name, score_key, klass)
-                        with open(entry, "rb") as f:
-                            loaded = pickle.load(f)
-                        print(type(loaded))
-                        print(loaded)
-                        new_model.scores[name] = loaded
+                for score_path in glob.glob(path + "/*.p"):
+                    score_file_name = os.path.basename(score_path)
+                    *score_name, score_cls_name, _ = score_file_name.split('.')
+                    score_name = '.'.join(score_name)
+                    if score_name not in new_model.scores:
+                        size = os.path.getsize(score_path)
+                        # print(score_name, score_cls_name, size)
+                        score_cls = getattr(tn_scores, score_cls_name)
+                        loaded_score = score_cls.load(score_path)
+                        # TODO check what happens with score name
+                        loaded_score._name = score_name
+
+                        score_value = [loaded_score.value[-1]]
+                        new_model.scores[score_name] = score_value
+
+                        # print(loaded_score)
 
                 result_models += [new_model]
             # result_models += [TopicModel.load(path).to_dummy() for path in model_pathes]
