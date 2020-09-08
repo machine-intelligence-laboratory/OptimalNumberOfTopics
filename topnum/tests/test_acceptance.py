@@ -225,6 +225,60 @@ class TestAcceptance:
 
             assert len(model_folder_names) == num_search_points
 
+    def test_optimize_for_given_nums_topics(self, keep_in_memory=True):
+        batches_prefix = 'given_nums_topics'
+        train_dataset, test_dataset = split_into_train_test(
+            self.dataset(keep_in_memory=keep_in_memory),
+            config={'batches_prefix': batches_prefix},  # TODO: fragile
+            save_folder=self.working_folder_path,
+        )
+
+        assert train_dataset._small_data == keep_in_memory
+        assert test_dataset._small_data == keep_in_memory
+
+        text_collection = VowpalWabbitTextCollection.from_dataset(
+            train_dataset,
+            main_modality=self.main_modality,
+        )
+
+        assert text_collection._to_dataset()._small_data == keep_in_memory
+
+        score = PerplexityScore(
+            'perplexity_score',
+            class_ids=[self.main_modality, self.other_modality]
+        )
+
+        nums_topics = [1, 2, 5]
+        num_search_points = len(nums_topics)
+        num_restarts = 3
+        experiment_name = 'given_nums_topics'
+        experiment_folder = os.path.join(self.working_folder_path, 'experiment_given_nums_topics')
+
+        optimizer = OptimizeScoresMethod(
+            scores=[score],
+            min_num_topics=0,  # TODO: need to set some placeholders
+            max_num_topics=0,
+            nums_topics=nums_topics,
+            num_fit_iterations=3,
+            num_restarts=num_restarts,
+            one_model_num_processors=1,
+            separate_thread=False,
+            experiment_name=experiment_name,
+            experiment_directory=experiment_folder,
+        )
+
+        optimizer.search_for_optimum(text_collection=text_collection)
+        restart_folder_names = os.listdir(experiment_folder)
+
+        assert len(restart_folder_names) == num_restarts
+
+        for restart_folder_name in restart_folder_names:
+            assert restart_folder_name.startswith(experiment_name)
+
+            model_folder_names = os.listdir(os.path.join(experiment_folder, restart_folder_name))
+
+            assert len(model_folder_names) == num_search_points
+
     @pytest.mark.parametrize('keep_in_memory', [True, False])
     @pytest.mark.parametrize('model_family', list(KnownModel))
     def test_optimize_for_model(self, keep_in_memory, model_family):

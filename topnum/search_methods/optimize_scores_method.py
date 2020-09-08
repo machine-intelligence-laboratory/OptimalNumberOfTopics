@@ -62,7 +62,7 @@ class OptimizeScoresMethod(BaseSearchMethod):
             experiment_name: str or None = None,
             save_experiment: bool = False,
             experiment_directory: str = DEFAULT_EXPERIMENT_DIR,
-            nums_topics_list: List[int] = None):
+            nums_topics: List[int] = None):
         """
         Parameters
         ----------
@@ -77,10 +77,10 @@ class OptimizeScoresMethod(BaseSearchMethod):
         num_topics_interval
         min_num_topics
         max_num_topics
-        nums_topics_list
-            The range of T to consider
-            NOTE: nums_topics_list overrides num_topics_interval, min_num_topics, max_num_topics
-            if they all are specified
+        nums_topics
+            The range of `T` to consider
+            NOTE: `nums_topics` overrides `num_topics_interval`, `min_num_topics`, `max_num_topics`
+            if they all are specified!
         num_fit_iterations
         one_model_num_processors
         separate_thread
@@ -95,7 +95,7 @@ class OptimizeScoresMethod(BaseSearchMethod):
         self._model_params = model_params
         self._num_restarts = num_restarts
         self._num_topics_interval = num_topics_interval
-        self._nums_topics = nums_topics_list
+        self._nums_topics = nums_topics
 
         self._result = dict()
         self._detailed_result = dict()

@@ -274,7 +274,7 @@ def read_corpus_config(filename='corpus.yml'):
         'word': Str(),
         'name': Str(),
         Optional("num_topics_interval"): Int(),
-        Optional("nums_topics_list"): CommaSeparated(Int()),
+        Optional("nums_topics"): CommaSeparated(Int()),
         'min_num_topics': Int(),
         'max_num_topics': Int(),
         'num_fit_iterations': Int(),
