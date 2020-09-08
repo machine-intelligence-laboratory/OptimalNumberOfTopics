@@ -268,34 +268,11 @@ def _summarize_models(
     return result, detailed_result
 
 
-def magic_clutch():
-    from topnum.scores import (
-        HoldoutPerplexityScore,
-        MeanLiftScore,
-        UniformThetaDivergenceScore,
-    )
-    from topicnet.cooking_machine.dataset import Dataset
-
-
-    # Just some dataset, whatever
-    test_dataset = Dataset(
-        '/home/alekseev/topicnet/tests/test_data/test_dataset.csv',
-        internals_folder_path="./DELETE_ME_PLZ"
-    )
-
-    # If not itialize a new score at least once in the notebook
-    # it won't be possible to load it
-    _ = HoldoutPerplexityScore('', test_dataset,)
-    _ = MeanLiftScore('', test_dataset, [])
-    _ = UniformThetaDivergenceScore('', test_dataset, [])
-
-
 def load_models_from_disk(experiment_directory, base_experiment_name, scores=None):
     from topicnet.cooking_machine.experiment import START
     from topicnet.cooking_machine.models import scores as tn_scores
 
-    import glob, pickle
-    magic_clutch()
+    import glob
 
     result_models = []
 
@@ -324,8 +301,6 @@ def load_models_from_disk(experiment_directory, base_experiment_name, scores=Non
                     *score_name, score_cls_name, _ = score_file_name.split('.')
                     score_name = '.'.join(score_name)
                     if score_name not in new_model.scores:
-                        size = os.path.getsize(score_path)
-                        # print(score_name, score_cls_name, size)
                         score_cls = getattr(tn_scores, score_cls_name)
                         loaded_score = score_cls.load(score_path)
                         # TODO check what happens with score name

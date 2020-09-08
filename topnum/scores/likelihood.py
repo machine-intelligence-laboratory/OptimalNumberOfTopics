@@ -10,7 +10,13 @@ from .base_custom_score import BaseCustomScore
 
 
 def get_log_likelihood(model, modality):
-    raw_perplexity = model.score_tracker[f'PerplexityScore{modality}'].last_class_id_info[modality].raw
+    # somewhat hacky way to access model likelihood from BigARTM
+    # why: model.score_tracker[f'PerplexityScore{modality}'].raw is always zeros
+    # (at least, in 0.9 version)
+    raw_perplexity = model.score_tracker[
+        f'PerplexityScore{modality}'
+    ].last_class_id_info[modality].raw
+
     assert raw_perplexity != 0.0
     return raw_perplexity
 

@@ -518,3 +518,33 @@ def plot_everything_informative(
         my_ax.set_xticks(ticks)
         my_ax.grid(True)
         fig.show()
+
+
+def magic_clutch():
+    from .scores import (
+        HoldoutPerplexityScore,
+        MeanLiftScore,
+        UniformThetaDivergenceScore,
+        IntratextCoherenceScore, SophisticatedTopTokensCoherenceScore
+    )
+    from topicnet.cooking_machine.dataset import Dataset
+    import shutil
+
+    # Just some dataset, whatever
+    test_dataset = Dataset(
+        '/home/alekseev/topicnet/tests/test_data/test_dataset.csv',
+        internals_folder_path="./DELETE_ME_PLZ"
+    )
+
+    # If not itialize a new score at least once in the notebook
+    # it won't be possible to load it
+    _ = HoldoutPerplexityScore('', test_dataset,)
+    _ = MeanLiftScore('', test_dataset, [])
+    _ = UniformThetaDivergenceScore('', test_dataset, [])
+
+    _ = build_every_score(test_dataset, test_dataset, {"word": "@word"})
+
+    _ = IntratextCoherenceScore("jbi", test_dataset)
+    _ = SophisticatedTopTokensCoherenceScore("sds", test_dataset)
+
+    shutil.rmtree('./DELETE_ME_PLZ')

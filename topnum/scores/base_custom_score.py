@@ -10,6 +10,8 @@ from .base_score import BaseScore
 
 
 _logger = logging.getLogger()
+global __NO_LOADING_DATASET__
+__NO_LOADING_DATASET__ = [False]
 
 
 class BaseCustomScore(BaseScore):

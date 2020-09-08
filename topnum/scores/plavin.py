@@ -13,10 +13,7 @@ from typing import (
 )
 
 from .base_custom_score import BaseCustomScore
-
-
-import pandas as pd
-from topicnet.cooking_machine.dataset import get_modality_vw
+from .base_custom_score import __NO_LOADING_DATASET__
 
 from .dataset_utils import col_total_len, compute_document_details
 
@@ -96,10 +93,13 @@ class _UniformThetaDivergenceScore(BaseTopicNetScore):
         with open(path, 'rb') as f:
             score = dill.load(f)
 
-        # score._dataset = Dataset(
-        #    score._dataset_file_path,
-        #    internals_folder_path=score._dataset_internals_folder_path,
-        #    keep_in_memory=score._keep_dataset_in_memory,
-        #)
+        if __NO_LOADING_DATASET__[0]:
+            score._dataset = None
+        else:
+            score._dataset = Dataset(
+                score._dataset_file_path,
+                internals_folder_path=score._dataset_internals_folder_path,
+                keep_in_memory=score._keep_dataset_in_memory,
+            )
 
         return score
