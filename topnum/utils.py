@@ -7,7 +7,7 @@ import warnings
 
 from collections import defaultdict
 from inspect import signature
-from strictyaml import Map, Str, Optional, Int
+from strictyaml import Map, Str, Optional, Int, CommaSeparated
 
 from topicnet.cooking_machine.dataset import Dataset
 
@@ -22,6 +22,38 @@ from topnum.scores import (
     # SimpleTopTokensCoherenceScore,
     SophisticatedTopTokensCoherenceScore
 )
+from enum import (
+    auto,
+    IntEnum
+)
+
+WC3_COLORS = {
+    "Red": "ff0303",
+    "Blue": "0042ff",
+    "Teal": "1be7ba",
+    "Purple": "550081",
+    "Yellow": "fefc00",
+    "Orange": "fe890d",
+    "Green": "21bf00",
+    "Pink": "e45caf",
+    "Gray": "939596",
+    "Light Blue": "7ebff1",
+    "Dark Green": "106247",
+    "Brown": "4f2b05",
+    "Maroon": "9c0000",
+    "Navy": "0000c3",
+    "Turquoise": "00ebff",
+    "Violet": "bd00ff",
+    "Wheat": "ecce87",
+    "Peach": "f7a58b",
+    "Mint": "bfff81",
+    "Lavender": "dbb8eb",
+    "Coal": "4f5055",
+    "Snow": "ecf0ff",
+    "Emerald": "00781e",
+    "Peanut": "a56f34",
+    "Black": "2e2d2e",
+}
 
 
 def split_into_train_test(dataset: Dataset, config: dict, save_folder: str = None):
@@ -193,7 +225,10 @@ def monotonity_and_std_analysis(
 
     informative_df = pd.DataFrame()
 
-    all_subexperems_mask = os.path.join(experiment_directory, experiment_name_template.format("*", "*"))
+    all_subexperems_mask = os.path.join(
+        experiment_directory,
+        experiment_name_template.format("*", "*")
+    )
 
     for entry in glob.glob(all_subexperems_mask):
 
@@ -228,6 +263,7 @@ def read_corpus_config(filename='corpus.yml'):
         'word': Str(),
         'name': Str(),
         Optional("num_topics_interval"): Int(),
+        Optional("nums_topics_list"): CommaSeparated(Int()),
         'min_num_topics': Int(),
         'max_num_topics': Int(),
         'num_fit_iterations': Int(),
@@ -258,10 +294,144 @@ def estimate_num_iterations_for_convergence(tm, score_name="PerplexityScore@all"
     return (contributions > 2e-3).sum()
 
 
+SCORES_DIRECTION = {
+    'PerplexityScore@all': None,
+    'SparsityThetaScore': max,
+    'SparsityPhiScore@word': max,
+    'PerplexityScore@word': None,
+    'SparsityPhiScore@lemmatized': max,
+    'PerplexityScore@lemmatized': None,
+    'TopicKernel@word.average_coherence': None,
+    'TopicKernel@word.average_contrast': max,
+    'TopicKernel@word.average_purity': max,
+    'TopicKernel@word.average_size': None,
+    'TopicKernel@lemmatized.average_coherence': None,
+    'TopicKernel@lemmatized.average_contrast': max,
+    'TopicKernel@lemmatized.average_purity': max,
+    'TopicKernel@lemmatized.average_size': None,
+    'perp': min,
+    'sparsity_phi': None,
+    'sparsity_theta': None,
+    'holdout_perp': min,
+    'arun': min,
+    'diversity_euclidean_True': max,
+    'diversity_euclidean_False': max,
+    'diversity_jensenshannon_True': max,
+    'diversity_jensenshannon_False': max,
+    'diversity_cosine_True': max,
+    'diversity_cosine_False': max,
+    'diversity_hellinger_True': max,
+    'diversity_hellinger_False': max,
+    'calhar': max,
+    'silh': max,
+    'renyi_0.5': min,
+    'renyi_1': min,
+    'renyi_2': min,
+    'AIC_sparsity_True': min,
+    'AIC_sparsity_False': min,
+    'BIC_sparsity_True': min,
+    'BIC_sparsity_False': min,
+    'MDL_sparsity_True': min,
+    'MDL_sparsity_False': min,
+    'intra': max,
+    'toptok1': max
+}
+
+
+class CurveOptimumType(IntEnum):
+    INTERVAL = auto()
+    PEAK = auto()
+    JUMPING = auto()
+    OUTSIDE = auto()
+    JUMP_OUTSIDE = auto()
+    EMPTY = auto()
+
+
+CURVETYPE_TO_MARKER = {
+    CurveOptimumType.JUMPING: "x",
+    CurveOptimumType.INTERVAL: ".",
+    CurveOptimumType.PEAK: "*",
+    CurveOptimumType.OUTSIDE: "^",
+    CurveOptimumType.JUMP_OUTSIDE: "v",
+    CurveOptimumType.EMPTY: "-",
+}
+
+
+def classify_curve(my_data, optimum_tolerance, score_direction):
+    """
+    Parameters
+    ----------
+        my_data: pd.Series
+            index is number of topics, values are quality measurements
+
+        optimum_tolerance: float in [0, 1]
+        score_direction: min, max or None
+    Returns
+    -------
+    (pd.Series, CurveOptimumType)
+        pd.Series: the set of points where optimum is located
+            index is number of topics
+            values are quality measurements (around the optimum) or NaNs (non-optimal points)
+        CurveOptimumType: an heuristic estimate of curve type
+
+    """
+    colored_values = my_data.copy()
+    midrange = max(colored_values) - min(colored_values)
+
+    if score_direction == max:
+        threshold = max(colored_values) - midrange * optimum_tolerance
+        colored_values[colored_values < threshold] = np.nan
+    elif score_direction == min:
+        threshold = min(colored_values) + midrange * optimum_tolerance
+        colored_values[colored_values > threshold] = np.nan
+
+    intervals = colored_values[colored_values.notna()]
+    if len(intervals) == 0 or len(intervals) == len(colored_values):
+        return colored_values, CurveOptimumType.EMPTY
+    left_bound, right_bound = min(intervals.index), max(intervals.index)
+    optimum_idx = set(intervals.index)
+    slice_idx = set(colored_values.loc[left_bound:right_bound].index)
+    if (optimum_idx == slice_idx):
+        curve_type = CurveOptimumType.INTERVAL
+        if len(intervals) == 1:
+            curve_type = CurveOptimumType.PEAK
+
+        if min(colored_values.index) in optimum_idx:
+            curve_type = CurveOptimumType.OUTSIDE
+        if max(colored_values.index) in optimum_idx:
+            # and abs(intervals.loc[right_bound] - optimum_val) <= :
+            curve_type = CurveOptimumType.OUTSIDE
+    else:
+        curve_type = CurveOptimumType.JUMPING
+        if min(colored_values.index) in optimum_idx:
+            curve_type = CurveOptimumType.JUMP_OUTSIDE
+        if max(colored_values.index) in optimum_idx:
+            curve_type = CurveOptimumType.JUMP_OUTSIDE
+
+    return colored_values, curve_type
+
+
 def plot_everything_informative(
     experiment_directory, experiment_name_template,
-    true_criteria=None, false_criteria=None
+    true_criteria=None, false_criteria=None,
+    maxval=None, minval=None, optimum_tolerance=0.07
 ):
+    """
+    experiment_directory: str
+    experiment_name_template: str
+    true_criteria: list of str or None
+        the score will be displayed if every element of this list is substring of the score name
+
+    false_criteria: list of str or None
+        the score will be displayed if no element of this list is substring of the score name
+
+    maxval: float
+        trims plot to size (useful for cases when first values are anomalous)
+    minval: float
+        trims plot to size (useful for cases when first values are anomalous)
+    optimum_tolerance: float
+        used for auto-determening optimums
+    """
     import matplotlib.pyplot as plt
 
     if true_criteria is None:
@@ -288,28 +458,48 @@ def plot_everything_informative(
                 all(t_criterion in score for t_criterion in true_criteria)
                 and
                 all(f_criterion not in score for f_criterion in false_criteria)
+                and
+                SCORES_DIRECTION[score] is not None
             )
 
             if should_plot:
                 details[score][experiment_name] = detailed_result[score].T
+        ticks = detailed_result[score].T.index
 
     for score in details.keys():
         fig, axes = plt.subplots(1, 1, figsize=(10, 10))
 
         for experiment_name, data in details[score].items():
-            is_monotonous = check_if_monotonous(data)
 
             # I can make a grid of plots if I do something like this:
             # my_ax = axes[index // 3][index % 3]
             my_ax = axes
 
-            if is_monotonous:
-                style = ':'
-            else:
-                style = '-'
+            *name_base, param_id, seed = experiment_name.split("_")
 
-            my_ax.plot(data.T.mean(axis=0), linestyle=style, label=experiment_name)
+            seed = int(seed)
+            style = [':', "-.", "--"][seed % 3]
+            names = list(WC3_COLORS.keys())
+            color = "#" + WC3_COLORS[names[int(param_id)]]
+
+            my_data = data.T.mean(axis=0)
+
+            if maxval is not None:
+                my_data[my_data > maxval] = np.nan
+            if minval is not None:
+                my_data[my_data < minval] = np.nan
+            label = f"{experiment_name} ({data.shape[0]})" if seed == 0 else None
+            my_ax.plot(my_data, linestyle=style, label=label, color=color, alpha=0.7)
+
+            score_direction = SCORES_DIRECTION[score]
+            colored_values, curve_type = classify_curve(my_data, optimum_tolerance, score_direction)
+            marker = CURVETYPE_TO_MARKER[curve_type]
+
+            my_ax.plot(colored_values, linestyle=style, color=color, alpha=1.0)
+            my_ax.plot(colored_values, marker=marker, linestyle='', color='black', alpha=1.0)
 
         my_ax.set_title(f"{score}")
         my_ax.legend()
+        my_ax.set_xticks(ticks)
+        my_ax.grid(True)
         fig.show()

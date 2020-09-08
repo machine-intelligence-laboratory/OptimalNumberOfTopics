@@ -58,7 +58,30 @@ class OptimizeScoresMethod(BaseSearchMethod):
             separate_thread: bool = True,
             experiment_name: str or None = None,
             save_experiment: bool = False,
-            experiment_directory: str = DEFAULT_EXPERIMENT_DIR):
+            experiment_directory: str = DEFAULT_EXPERIMENT_DIR,
+            nums_topics_list: List[int] = None):
+        """
+        Parameters
+        ----------
+            scores: list of scores to calculate
+            model_family: what kind of model to investigate
+            model_params: range of possible hyperparameters of model
+            num_restarts: number of random initializations
+            num_topics_interval:
+            min_num_topics:
+            max_num_topics:
+            nums_topics_list:
+                the range of T to consider
+                NOTE: nums_topics_list overrides num_topics_interval, min_num_topics, max_num_topics
+                if they all are specified
+
+            num_fit_iterations:
+            one_model_num_processors:
+            separate_thread:
+            experiment_name:
+            save_experiment:
+            experiment_directory:
+        """
 
         super().__init__(min_num_topics, max_num_topics, num_fit_iterations)
 
@@ -67,6 +90,7 @@ class OptimizeScoresMethod(BaseSearchMethod):
         self._model_params = model_params
         self._num_restarts = num_restarts
         self._num_topics_interval = num_topics_interval
+        self._nums_topics = nums_topics_list
 
         self._result = dict()
         self._detailed_result = dict()
@@ -105,11 +129,14 @@ class OptimizeScoresMethod(BaseSearchMethod):
 
         seeds = list(range(0, self._num_restarts))
 
-        nums_topics = list(range(
-            self._min_num_topics,
-            self._max_num_topics + 1,
-            self._num_topics_interval)
-        )
+        if self._nums_topics:
+            nums_topics = self._nums_topics
+        else:
+            nums_topics = list(range(
+                self._min_num_topics,
+                self._max_num_topics + 1,
+                self._num_topics_interval)
+            )
 
         dataset_trainable = dataset._transform_data_for_training()
 
