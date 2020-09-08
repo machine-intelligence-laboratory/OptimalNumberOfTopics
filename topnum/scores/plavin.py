@@ -12,8 +12,10 @@ from typing import (
     List
 )
 
-from .base_custom_score import BaseCustomScore
-from .base_custom_score import __NO_LOADING_DATASET__
+from .base_custom_score import (
+    BaseCustomScore,
+    __NO_LOADING_DATASET__,
+)
 
 from .dataset_utils import col_total_len, compute_document_details
 

@@ -3,6 +3,8 @@ import numpy as np
 import os
 import pandas as pd
 import strictyaml
+import tempfile
+import shutil
 import warnings
 
 from collections import defaultdict
@@ -13,10 +15,19 @@ from topicnet.cooking_machine.dataset import Dataset
 
 from topnum.search_methods.optimize_scores_method import load_models_from_disk
 from topnum.scores import (
-    SpectralDivergenceScore, CalinskiHarabaszScore, DiversityScore, EntropyScore,
-    HoldoutPerplexityScore, IntratextCoherenceScore,
-    LikelihoodBasedScore, PerplexityScore, SilhouetteScore,
-    SparsityPhiScore, SparsityThetaScore,
+    SpectralDivergenceScore,
+    CalinskiHarabaszScore,
+    DiversityScore,
+    EntropyScore,
+    HoldoutPerplexityScore,
+    IntratextCoherenceScore,
+    LikelihoodBasedScore,
+    PerplexityScore,
+    SilhouetteScore,
+    SparsityPhiScore,
+    SparsityThetaScore,
+    MeanLiftScore,
+    UniformThetaDivergenceScore,
 
     # Unused:
     # SimpleTopTokensCoherenceScore,
@@ -365,11 +376,11 @@ def classify_curve(my_data, optimum_tolerance, score_direction):
     """
     Parameters
     ----------
-        my_data: pd.Series
-            index is number of topics, values are quality measurements
+    my_data: pd.Series
+        index is number of topics, values are quality measurements
+    optimum_tolerance: float in [0, 1]
+    score_direction: min, max or None
 
-        optimum_tolerance: float in [0, 1]
-        score_direction: min, max or None
     Returns
     -------
     (pd.Series, CurveOptimumType)
@@ -432,14 +443,14 @@ def plot_everything_informative(
     maxval=None, minval=None, optimum_tolerance=0.07
 ):
     """
+    Parameters
+    ----------
     experiment_directory: str
     experiment_name_template: str
     true_criteria: list of str or None
         the score will be displayed if every element of this list is substring of the score name
-
     false_criteria: list of str or None
         the score will be displayed if no element of this list is substring of the score name
-
     maxval: float
         trims plot to size (useful for cases when first values are anomalous)
     minval: float
@@ -521,30 +532,26 @@ def plot_everything_informative(
 
 
 def magic_clutch():
-    from .scores import (
-        HoldoutPerplexityScore,
-        MeanLiftScore,
-        UniformThetaDivergenceScore,
-        IntratextCoherenceScore, SophisticatedTopTokensCoherenceScore
-    )
-    from topicnet.cooking_machine.dataset import Dataset
-    import shutil
+    test_dataset = None
 
-    # Just some dataset, whatever
-    test_dataset = Dataset(
-        '/home/alekseev/topicnet/tests/test_data/test_dataset.csv',
-        internals_folder_path="./DELETE_ME_PLZ"
-    )
+    try:
+        # Just some dataset, whatever
+        test_dataset = Dataset(
+            '/home/alekseev/topicnet/tests/test_data/test_dataset.csv',
+            internals_folder_path=tempfile.mkdtemp(prefix='magic_clutch__')
+        )
 
-    # If not itialize a new score at least once in the notebook
-    # it won't be possible to load it
-    _ = HoldoutPerplexityScore('', test_dataset,)
-    _ = MeanLiftScore('', test_dataset, [])
-    _ = UniformThetaDivergenceScore('', test_dataset, [])
+        # If not itialize a new score at least once in the notebook
+        # it won't be possible to load it
+        _ = HoldoutPerplexityScore('', test_dataset,)
+        _ = MeanLiftScore('', test_dataset, [])
+        _ = UniformThetaDivergenceScore('', test_dataset, [])
 
-    _ = build_every_score(test_dataset, test_dataset, {"word": "@word"})
+        _ = build_every_score(test_dataset, test_dataset, {"word": "@word"})
 
-    _ = IntratextCoherenceScore("jbi", test_dataset)
-    _ = SophisticatedTopTokensCoherenceScore("sds", test_dataset)
+        _ = IntratextCoherenceScore("jbi", test_dataset)
+        _ = SophisticatedTopTokensCoherenceScore("sds", test_dataset)
 
-    shutil.rmtree('./DELETE_ME_PLZ')
+    finally:
+        if test_dataset is not None and os.path.isdir(test_dataset._internals_folder_path):
+            shutil.rmtree(test_dataset._internals_folder_path)
