@@ -11,6 +11,8 @@ from collections import defaultdict
 from inspect import signature
 from strictyaml import Map, Str, Optional, Int, CommaSeparated
 
+import topicnet
+
 from topicnet.cooking_machine.dataset import Dataset
 
 from topnum.search_methods.optimize_scores_method import load_models_from_disk
@@ -537,7 +539,10 @@ def magic_clutch():
     try:
         # Just some dataset, whatever
         test_dataset = Dataset(
-            '/home/alekseev/topicnet/tests/test_data/test_dataset.csv',
+            data_path=os.path.join(
+                os.path.dirname(topicnet.__file__),
+                'tests', 'test_data', 'test_dataset.csv'
+            ),
             internals_folder_path=tempfile.mkdtemp(prefix='magic_clutch__')
         )
 
