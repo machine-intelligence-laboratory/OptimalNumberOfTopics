@@ -8,7 +8,10 @@ from topicnet.cooking_machine.models import (
 )
 from typing import List
 
-from .base_custom_score import BaseCustomScore
+from .base_custom_score import (
+    BaseCustomScore,
+    __NO_LOADING_DATASET__,
+)
 
 
 class HoldoutPerplexityScore(BaseCustomScore):
@@ -98,10 +101,13 @@ class _HoldoutPerplexityScore(BaseTopicNetScore):
         with open(path, 'rb') as f:
             score = dill.load(f)
 
-        score._dataset = Dataset(
-            score._dataset_file_path,
-            internals_folder_path=score._dataset_internals_folder_path,
-            keep_in_memory=score._keep_dataset_in_memory,
-        )
+        if __NO_LOADING_DATASET__[0]:
+            score._dataset = None
+        else:
+            score._dataset = Dataset(
+                score._dataset_file_path,
+                internals_folder_path=score._dataset_internals_folder_path,
+                keep_in_memory=score._keep_dataset_in_memory,
+            )
 
         return score

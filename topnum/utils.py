@@ -3,20 +3,33 @@ import numpy as np
 import os
 import pandas as pd
 import strictyaml
+import tempfile
+import shutil
 import warnings
 
 from collections import defaultdict
 from inspect import signature
 from strictyaml import Map, Str, Optional, Int, CommaSeparated
 
+import topicnet
+
 from topicnet.cooking_machine.dataset import Dataset
 
 from topnum.search_methods.optimize_scores_method import load_models_from_disk
 from topnum.scores import (
-    SpectralDivergenceScore, CalinskiHarabaszScore, DiversityScore, EntropyScore,
-    HoldoutPerplexityScore, IntratextCoherenceScore,
-    LikelihoodBasedScore, PerplexityScore, SilhouetteScore,
-    SparsityPhiScore, SparsityThetaScore,
+    SpectralDivergenceScore,
+    CalinskiHarabaszScore,
+    DiversityScore,
+    EntropyScore,
+    HoldoutPerplexityScore,
+    IntratextCoherenceScore,
+    LikelihoodBasedScore,
+    PerplexityScore,
+    SilhouetteScore,
+    SparsityPhiScore,
+    SparsityThetaScore,
+    MeanLiftScore,
+    UniformThetaDivergenceScore,
 
     # Unused:
     # SimpleTopTokensCoherenceScore,
@@ -263,7 +276,7 @@ def read_corpus_config(filename='corpus.yml'):
         'word': Str(),
         'name': Str(),
         Optional("num_topics_interval"): Int(),
-        Optional("nums_topics_list"): CommaSeparated(Int()),
+        Optional("nums_topics"): CommaSeparated(Int()),
         'min_num_topics': Int(),
         'max_num_topics': Int(),
         'num_fit_iterations': Int(),
@@ -334,7 +347,11 @@ SCORES_DIRECTION = {
     'MDL_sparsity_True': min,
     'MDL_sparsity_False': min,
     'intra': max,
-    'toptok1': max
+    'toptok1': max,
+    'lift': max,
+    'uni_theta_divergence': max,
+    'new_holdout_perp': min,
+    'RPC': min,
 }
 
 
@@ -361,11 +378,11 @@ def classify_curve(my_data, optimum_tolerance, score_direction):
     """
     Parameters
     ----------
-        my_data: pd.Series
-            index is number of topics, values are quality measurements
+    my_data: pd.Series
+        index is number of topics, values are quality measurements
+    optimum_tolerance: float in [0, 1]
+    score_direction: min, max or None
 
-        optimum_tolerance: float in [0, 1]
-        score_direction: min, max or None
     Returns
     -------
     (pd.Series, CurveOptimumType)
@@ -380,9 +397,11 @@ def classify_curve(my_data, optimum_tolerance, score_direction):
 
     if score_direction == max:
         threshold = max(colored_values) - midrange * optimum_tolerance
+        optimum = max(colored_values)
         colored_values[colored_values < threshold] = np.nan
     elif score_direction == min:
         threshold = min(colored_values) + midrange * optimum_tolerance
+        optimum = min(colored_values)
         colored_values[colored_values > threshold] = np.nan
 
     intervals = colored_values[colored_values.notna()]
@@ -397,16 +416,25 @@ def classify_curve(my_data, optimum_tolerance, score_direction):
             curve_type = CurveOptimumType.PEAK
 
         if min(colored_values.index) in optimum_idx:
-            curve_type = CurveOptimumType.OUTSIDE
+            if optimum in colored_values[colored_values.index[:2]]:
+                curve_type = CurveOptimumType.OUTSIDE
         if max(colored_values.index) in optimum_idx:
             # and abs(intervals.loc[right_bound] - optimum_val) <= :
+            if optimum in colored_values[colored_values.index[-2:]]:
+                curve_type = CurveOptimumType.OUTSIDE
             curve_type = CurveOptimumType.OUTSIDE
     else:
         curve_type = CurveOptimumType.JUMPING
         if min(colored_values.index) in optimum_idx:
-            curve_type = CurveOptimumType.JUMP_OUTSIDE
+            if optimum in colored_values[colored_values.index[:2]]:
+                curve_type = CurveOptimumType.OUTSIDE
+            else:
+                curve_type = CurveOptimumType.JUMP_OUTSIDE
         if max(colored_values.index) in optimum_idx:
-            curve_type = CurveOptimumType.JUMP_OUTSIDE
+            if optimum in colored_values[colored_values.index[-2:]]:
+                curve_type = CurveOptimumType.OUTSIDE
+            else:
+                curve_type = CurveOptimumType.JUMP_OUTSIDE
 
     return colored_values, curve_type
 
@@ -417,14 +445,14 @@ def plot_everything_informative(
     maxval=None, minval=None, optimum_tolerance=0.07
 ):
     """
+    Parameters
+    ----------
     experiment_directory: str
     experiment_name_template: str
     true_criteria: list of str or None
         the score will be displayed if every element of this list is substring of the score name
-
     false_criteria: list of str or None
         the score will be displayed if no element of this list is substring of the score name
-
     maxval: float
         trims plot to size (useful for cases when first values are anomalous)
     minval: float
@@ -503,3 +531,32 @@ def plot_everything_informative(
         my_ax.set_xticks(ticks)
         my_ax.grid(True)
         fig.show()
+
+
+def magic_clutch():
+    test_dataset = None
+
+    try:
+        # Just some dataset, whatever
+        test_dataset = Dataset(
+            data_path=os.path.join(
+                os.path.dirname(topicnet.__file__),
+                'tests', 'test_data', 'test_dataset.csv'
+            ),
+            internals_folder_path=tempfile.mkdtemp(prefix='magic_clutch__')
+        )
+
+        # If not itialize a new score at least once in the notebook
+        # it won't be possible to load it
+        _ = HoldoutPerplexityScore('', test_dataset,)
+        _ = MeanLiftScore('', test_dataset, [])
+        _ = UniformThetaDivergenceScore('', test_dataset, [])
+
+        _ = build_every_score(test_dataset, test_dataset, {"word": "@word"})
+
+        _ = IntratextCoherenceScore("jbi", test_dataset)
+        _ = SophisticatedTopTokensCoherenceScore("sds", test_dataset)
+
+    finally:
+        if test_dataset is not None and os.path.isdir(test_dataset._internals_folder_path):
+            shutil.rmtree(test_dataset._internals_folder_path)

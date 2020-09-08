@@ -1,3 +1,4 @@
+import glob
 import logging
 import os
 import pandas as pd
@@ -11,10 +12,12 @@ from typing import (
     List,
 )
 
+from topicnet.cooking_machine.experiment import START
 from topicnet.cooking_machine.models import (
     BaseScore as BaseTopicNetScore,
     DummyTopicModel,
     TopicModel,
+    scores as tn_scores,
 )
 
 from .base_search_method import (
@@ -59,30 +62,32 @@ class OptimizeScoresMethod(BaseSearchMethod):
             experiment_name: str or None = None,
             save_experiment: bool = False,
             experiment_directory: str = DEFAULT_EXPERIMENT_DIR,
-            nums_topics_list: List[int] = None):
+            nums_topics: List[int] = None):
         """
         Parameters
         ----------
-            scores: list of scores to calculate
-            model_family: what kind of model to investigate
-            model_params: range of possible hyperparameters of model
-            num_restarts: number of random initializations
-            num_topics_interval:
-            min_num_topics:
-            max_num_topics:
-            nums_topics_list:
-                the range of T to consider
-                NOTE: nums_topics_list overrides num_topics_interval, min_num_topics, max_num_topics
-                if they all are specified
-
-            num_fit_iterations:
-            one_model_num_processors:
-            separate_thread:
-            experiment_name:
-            save_experiment:
-            experiment_directory:
+        scores
+            List of scores to calculate
+        model_family
+            What kind of model to investigate
+        model_params
+            Range of possible hyperparameters of model
+        num_restarts
+            Number of random initializations
+        num_topics_interval
+        min_num_topics
+        max_num_topics
+        nums_topics
+            The range of `T` to consider
+            NOTE: `nums_topics` overrides `num_topics_interval`, `min_num_topics`, `max_num_topics`
+            if they all are specified!
+        num_fit_iterations
+        one_model_num_processors
+        separate_thread
+        experiment_name
+        save_experiment
+        experiment_directory
         """
-
         super().__init__(min_num_topics, max_num_topics, num_fit_iterations)
 
         self._scores = scores
@@ -90,7 +95,7 @@ class OptimizeScoresMethod(BaseSearchMethod):
         self._model_params = model_params
         self._num_restarts = num_restarts
         self._num_topics_interval = num_topics_interval
-        self._nums_topics = nums_topics_list
+        self._nums_topics = nums_topics
 
         self._result = dict()
         self._detailed_result = dict()
@@ -269,21 +274,21 @@ def _summarize_models(
 
 
 def load_models_from_disk(experiment_directory, base_experiment_name, scores=None):
-    from topicnet.cooking_machine.experiment import START
-    import glob
-
     result_models = []
 
     masks = [
         f"{experiment_directory}/{base_experiment_name}_*",
         f"{experiment_directory}/{base_experiment_name}/*"
     ]
+
     for new_exp_format, mask in enumerate(masks):
         if not len(glob.glob(mask)):
             continue
+
         msg = (f'Trying to load models from {mask}.'
                f' {len(glob.glob(mask))} models found.')
         _logger.info(msg)
+
         for folder in glob.glob(mask):
             if new_exp_format:
                 model_pathes = [folder]
@@ -292,8 +297,24 @@ def load_models_from_disk(experiment_directory, base_experiment_name, scores=Non
                     f.path for f in os.scandir(folder)
                     if f.is_dir() and f.name != START
                 ]
-            result_models += [DummyTopicModel.load(path) for path in model_pathes]
-            # result_models += [TopicModel.load(path).to_dummy() for path in model_pathes]
+
+            for path in model_pathes:
+                new_model = DummyTopicModel.load(path)
+                for score_path in glob.glob(path + "/*.p"):
+                    score_file_name = os.path.basename(score_path)
+                    *score_name, score_cls_name, _ = score_file_name.split('.')
+                    score_name = '.'.join(score_name)
+                    if score_name not in new_model.scores:
+                        score_cls = getattr(tn_scores, score_cls_name)
+                        loaded_score = score_cls.load(score_path)
+                        # TODO check what happens with score name
+                        loaded_score._name = score_name
+
+                        score_value = [loaded_score.value[-1]]
+                        new_model.scores[score_name] = score_value
+
+                result_models += [new_model]
 
         return _summarize_models(result_models)
+
     raise ValueError(f"No models found in {masks}")
