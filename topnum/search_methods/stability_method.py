@@ -12,7 +12,7 @@ import shutil
 import sys
 import tempfile
 
-from lapsolver import solve_dense
+#from lapsolver import solve_dense
 from tqdm import tqdm
 from typing import (
     Any,

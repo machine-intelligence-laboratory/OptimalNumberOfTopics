@@ -15,6 +15,7 @@ from topnum.search_methods.topic_bank.phi_initialization import utils as init_ph
 
 def default_train_func(
         dataset: Dataset,
+        main_modality: str,
         model_number: int,
         num_topics: int,
         num_fit_iterations: int,
@@ -30,6 +31,7 @@ def default_train_func(
 
     topic_model = _get_topic_model(
         dataset,
+        main_modality=main_modality,
         num_topics=num_topics,
         seed=model_number,
         **kwargs,
@@ -233,6 +235,7 @@ def background_topics_train_func(
 
 def _get_topic_model(
         dataset: Dataset,
+        main_modality,
         phi: pd.DataFrame = None,
         num_topics: int = None,
         seed: int = None,
@@ -243,6 +246,10 @@ def _get_topic_model(
 
     dictionary = dataset.get_dictionary()
 
+    # for modality in dataset.get_possible_modalities():
+    #     if modality not in modalities_to_use:
+    #         dictionary.filter(class_id=modality, max_df=0, inplace=True)
+
     if num_topics is not None and phi is not None:
         assert num_topics >= phi.shape[1]
     elif num_topics is None and phi is not None:
@@ -252,21 +259,38 @@ def _get_topic_model(
 
     topic_names = [f'topic_{i}' for i in range(num_topics)]
 
+    # if seed is None:
+    #     artm_model = artm.ARTM(topic_names=topic_names)
+    # else:
+    #     artm_model = artm.ARTM(topic_names=topic_names, seed=seed)
+
     if seed is None:
-        artm_model = artm.ARTM(topic_names=topic_names)
+        artm_model = artm.ARTM(topic_names=topic_names, class_ids={main_modality: 1})  # TODO: not list, but dict!!!
     else:
-        artm_model = artm.ARTM(topic_names=topic_names, seed=seed)
+        artm_model = artm.ARTM(topic_names=topic_names, seed=seed, class_ids={main_modality: 1})
+
+    # artm_model = init_model(topic_names, class_ids=[MAIN_MODALITY])
+
+    # artm_model = init_plsa(DATASET, [MAIN_MODALITY], MAIN_MODALITY, 5)
 
     artm_model.num_processors = num_processors
     artm_model.initialize(dictionary)
 
+    """
     if phi is None:
         pass
     elif num_safe_fit_iterations is not None and num_safe_fit_iterations > 0:
         init_phi_utils._safe_copy_phi(artm_model, phi, dataset, num_safe_fit_iterations)
     else:
         init_phi_utils._copy_phi(artm_model, phi)
-
+    """
+    # this breaks smth in ARTM
+    # test_ppl@word [1827.4515380859375, 2707.63623046875, 2707.67919921875, 2707.679443359375, 2707.679443359375]
+    # test_ppl@word_with_d [4073.36328125, 6035.2822265625, 6035.3779296875, 6035.37841796875, 6035.37841796875]
+    # test_ppl@all [1827.4515380859375, 2707.63623046875, 2707.67919921875, 2707.679443359375, 2707.679443359375]
+    # test_ppl@all_2 [1827.4515380859375, 2707.63623046875, 2707.67919921875, 2707.679443359375, 2707.679443359375]
+    # test_ppl@all_2_with_d [4073.36328125, 6035.2822265625, 6035.3779296875, 6035.37841796875, 6035.37841796875]
+    
     topic_model = TopicModel(
         artm_model=artm_model,
         model_id='0',
