@@ -18,6 +18,7 @@ from typing import (
     Callable,
     Dict,
     List,
+    Optional,
     Tuple,
     Union
 )
@@ -79,6 +80,12 @@ _DEFAULT_WINDOW = 20
 _logger = logging.getLogger()
 
 
+TRAIN_FUNC_TYPE = Callable[
+    [Dataset, str, int, int, int, List[BaseScore]],
+    TopicModel
+]
+
+
 class TopicBankMethod(BaseSearchMethod):
     _MINIMUM_TOPIC_DISTANCE = 0.0
     _MAXIMUM_TOPIC_DISTANCE = 1.0
@@ -100,10 +107,9 @@ class TopicBankMethod(BaseSearchMethod):
             max_num_models: int = 100,
             one_model_num_topics: Union[int, List[int]] = 100,
             num_fit_iterations: int = DEFAULT_NUM_FIT_ITERATIONS,
-            train_funcs: Union[
-                Callable[[Dataset, int, int, int], TopicModel],
-                List[Callable[[Dataset, int, int, int], TopicModel]],
-                None] = None,
+            train_funcs: Optional[Union[
+                TRAIN_FUNC_TYPE,
+                List[TRAIN_FUNC_TYPE]]] = None,
             topic_score_threshold_percentile: int = 95,
             distance_threshold: float = 0.5,
             bank_update: BankUpdateMethod = BankUpdateMethod.PROVIDE_NON_LINEARITY,
@@ -205,7 +211,7 @@ class TopicBankMethod(BaseSearchMethod):
             ]
 
         self._one_model_num_topics: List[int] = one_model_num_topics
-        self._train_func: List[Callable[[Dataset, int, int, int], TopicModel]] = train_funcs
+        self._train_func: List[TRAIN_FUNC_TYPE] = train_funcs
 
         if topic_score_threshold_percentile % 1 != 0:
             warnings.warn(
@@ -323,7 +329,7 @@ class TopicBankMethod(BaseSearchMethod):
                 model_number=model_number,
                 num_topics=self._one_model_num_topics[model_number],
                 num_fit_iterations=self._num_fit_iterations,
-                scores=self._all_model_scores
+                scores=self._all_model_scores,
             )
 
             scores = dict()

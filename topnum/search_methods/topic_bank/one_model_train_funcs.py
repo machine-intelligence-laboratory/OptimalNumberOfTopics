@@ -128,7 +128,6 @@ def regularization_train_func(
         seed=model_number,
         **kwargs,
     )
-
     topic_model._model.regularizers.add(
         artm.regularizers.DecorrelatorPhiRegularizer(tau=decorrelating_tau)
     )
@@ -163,7 +162,7 @@ def regularization_train_func(
 
     topic_model._fit(
         dataset.get_batch_vectorizer(),
-        num_iterations=max(0, second_num_fit_iterations - num_fit_iterations_with_scores)
+        num_iterations=max(0, second_num_fit_iterations)
     )
     _fit_model_with_scores(
         topic_model,

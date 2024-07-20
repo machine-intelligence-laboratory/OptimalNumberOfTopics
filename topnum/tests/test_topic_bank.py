@@ -125,14 +125,28 @@ class TestTopicBank:
         ]
     )
     @pytest.mark.parametrize(
-        'train_funcs',
-        [None, background_topics_train_func, default_train_func, regularization_train_func]
+        'train_funcs, params',
+        [
+            (None, {}),
+            (background_topics_train_func, {}),
+            (default_train_func, {}),
+            (regularization_train_func, dict(
+                decorrelating_tau=1,
+                smoothing_tau=1e-5,
+                sparsing_tau=-1 * 1e-5,
+            ))
+        ]
     )
-    def test_topic_bank(self, keep_in_memory, bank_update, train_funcs):
+    def test_topic_bank(self, keep_in_memory, bank_update, train_funcs, params):
+        if params == {}:
+            train_func = train_funcs
+        else:
+            train_func = lambda *args, **kwargs: train_funcs(*args, **kwargs, **params)
+
         self._test_topic_bank(
             self.dataset(keep_in_memory=keep_in_memory),
             bank_update,
-            train_func=train_funcs,
+            train_func=train_func,
         )
 
     @pytest.mark.parametrize('keep_in_memory', [True, False])
@@ -324,6 +338,8 @@ class TestTopicBank:
         topic_bank = self.optimizer._topic_bank
         bank_topics = topic_bank.topics
         bank_topic_scores = topic_bank.topic_scores
+
+        print(f'Bank topics: {bank_topics}.')
 
         assert len(bank_topics) == len(bank_topic_scores)
         assert len(bank_topics) > 0
