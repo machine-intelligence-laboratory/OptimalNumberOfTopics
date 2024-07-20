@@ -68,13 +68,13 @@ class SpecificityEstimationMethod(IntEnum):
     Way to estimate how particular word is specific for particular topic.
     Unlike probability, eg. p(w | t), specificity_estimation takes into account
     values for all topics, eg. p(w | t_1), p(w | t_2), ..., p(w | t_n):
-    the higher the value p(w | t) comparing other p(w | t_i),
+    the higher the value p(w | t) comparing to other p(w | t_i),
     the higher the specificity_estimation of word "w" for the topic "t"
 
     Attributes
     ----------
         NONE
-            Don't try to estimate specificity_estimation, return the probability as is
+            Don't try to estimate specificity, return the probability as is
         MAXIMUM
             From probability, corresponding to word and topic,
             extract *maximum* among probabilities for the word and other topics
@@ -171,6 +171,8 @@ class _BaseCoherenceScore(TopicNetBaseScore):
 
         word_topic_relatednesses = self._get_word_topic_relatednesses(model)
 
+        # TODO: topic coherence may be evaluated on any peace of text
+        #   (paragraph, sentence, phrase), that is, not only on whole documents
         topic_document_coherences = np.zeros((len(topics), len(documents)))
         document_indices_with_topic_coherence = defaultdict(list)
 
@@ -330,8 +332,10 @@ class _BaseCoherenceScore(TopicNetBaseScore):
             topic: str,
             word_topic_relatednesses: pd.DataFrame) -> float:
 
-        if word in word_topic_relatednesses.index:
-            return word_topic_relatednesses.loc[word, topic]
+        # if word in word_topic_relatednesses.index:
+        #     return word_topic_relatednesses.loc[word, topic]
+
+        return word_topic_relatednesses.loc[word, topic]
 
         _logger.warning(
             f'The word "{word}" not found in Word-Topic relatedness matrix!'
