@@ -17,6 +17,11 @@ from . import (
 )
 
 
+np.int = np.int32  # Arora uses old NumPy (current version has not "int" attribute)
+                   # https://stackoverflow.com/q/74946845/8094251
+                   # https://github.com/scikit-learn-contrib/boruta_py/issues/122#issuecomment-1914122968
+
+
 def compute_phi(
         dataset: Dataset,
         main_modality: str,

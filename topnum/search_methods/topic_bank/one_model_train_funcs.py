@@ -193,6 +193,7 @@ def background_topics_train_func(
         dataset,
         num_topics=num_topics,
         seed=model_number,
+        **kwargs,
     )
 
     num_fit_iterations_with_scores = 1
@@ -235,7 +236,7 @@ def background_topics_train_func(
 
 def _get_topic_model(
         dataset: Dataset,
-        main_modality,
+        main_modality: str,
         phi: pd.DataFrame = None,
         num_topics: int = None,
         seed: int = None,

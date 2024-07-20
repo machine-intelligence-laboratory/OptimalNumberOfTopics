@@ -152,12 +152,14 @@ class TestTopicBank:
                 model_number: int,
                 num_topics: int,
                 num_fit_iterations: int,
-                scores: List[BaseScore] = None) -> TopicModel:
+                scores: List[BaseScore] = None,
+                **kwargs) -> TopicModel:
 
             return specific_initial_phi_train_func(
                 dataset, model_number, num_topics,
                 num_fit_iterations, scores,
-                initialize_phi_func=initialize_phi_func
+                initialize_phi_func=initialize_phi_func,
+                **kwargs
             )
 
         self._test_topic_bank(
@@ -198,12 +200,14 @@ class TestTopicBank:
                 model_number: int,
                 num_topics: int,
                 num_fit_iterations: int,
-                scores: List[BaseScore] = None) -> TopicModel:
+                scores: List[BaseScore] = None,
+                **kwargs) -> TopicModel:
 
             return specific_initial_phi_train_func(
                 dataset, model_number, num_topics,
                 num_fit_iterations, scores,
-                initialize_phi_func=initialize_phi_func
+                initialize_phi_func=initialize_phi_func,
+                **kwargs
             )
 
         self._test_topic_bank(
@@ -244,12 +248,14 @@ class TestTopicBank:
                 model_number: int,
                 num_topics: int,
                 num_fit_iterations: int,
-                scores: List[BaseScore] = None) -> TopicModel:
+                scores: List[BaseScore] = None,
+                **kwargs) -> TopicModel:
 
             return specific_initial_phi_train_func(
                 dataset, model_number, num_topics,
                 num_fit_iterations, scores,
-                initialize_phi_func=initialize_phi_func
+                initialize_phi_func=initialize_phi_func,
+                **kwargs
             )
 
         self._test_topic_bank(
