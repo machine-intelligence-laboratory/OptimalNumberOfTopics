@@ -88,6 +88,8 @@ class SpecificityEstimationMethod(IntEnum):
 
 
 class _BaseCoherenceScore(TopicNetBaseScore):
+    _EPS = np.finfo(float).tiny
+
     def __init__(
             self,
             dataset: Dataset,
@@ -257,7 +259,6 @@ class _BaseCoherenceScore(TopicNetBaseScore):
 
         elif self._word_topic_relatedness == WordTopicRelatednessType.PTW:
             # Treat all topics as equally probable
-            eps = np.finfo(float).tiny
 
             pwt = phi
             pwt_values = pwt.values
@@ -265,7 +266,7 @@ class _BaseCoherenceScore(TopicNetBaseScore):
             return pd.DataFrame(
                 index=pwt.index,
                 columns=pwt.columns,
-                data=pwt_values / (pwt_values.sum(axis=1).reshape(-1, 1) + eps)
+                data=pwt_values / (pwt_values.sum(axis=1).reshape(-1, 1) + self._EPS)
             )
 
         assert False

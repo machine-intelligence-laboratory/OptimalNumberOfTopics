@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import warnings
 
 from enum import (
     auto,
@@ -56,6 +57,12 @@ class ComputationMethod(IntEnum):
     SUM_OVER_WINDOW = auto()
     VARIANCE_IN_WINDOW = auto()
     FOCUS_CONSISTENCY = auto()
+
+
+_RESEARCH_COMPUTATION_METHODS = [
+    ComputationMethod.VARIANCE_IN_WINDOW,
+    ComputationMethod.FOCUS_CONSISTENCY,
+]
 
 
 class IntratextCoherenceScore(BaseTopicScore):
@@ -190,6 +197,16 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
             raise TypeError(
                 f'Wrong "computation_method": \"{computation_method}\". '
                 f'Expect to be \"{ComputationMethod}\"')
+
+        if computation_method in _RESEARCH_COMPUTATION_METHODS:
+            warnings.warn(
+                f"Coherences {_RESEARCH_COMPUTATION_METHODS} were also presented in the original paper"
+                f" but preference should be given to other (TopLen-based) methods."
+                f" Still, coherences {_RESEARCH_COMPUTATION_METHODS} are also implemented,"
+                f" partly as a tribute, partly for research purposes."
+                f" Once again, coherence {computation_method} is not intended for \"production\" use."
+                f" But you do you, it's not like there's a coherence police or something."
+            )
 
         if not isinstance(max_num_out_of_topic_words, int):
             raise TypeError(
@@ -403,7 +420,12 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
 
         while index == 0 or index + self._window - 1 < len(words):
             relatedness_window = topic_relatednesses[index:index + self._window]
+            # TODO: better differentiate good and bad topics?..
+            #  (low variance is not necessarily a good "goodness" sign:
+            #  for example, sequences [100, 100, 100]
+            #  and [-17.5, -17.5, -17.5] both have zero variance)
             variances.append(np.var(relatedness_window))
+
             index += 1
 
         if len(variances) == 0:
