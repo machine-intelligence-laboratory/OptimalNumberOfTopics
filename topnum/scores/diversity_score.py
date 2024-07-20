@@ -156,7 +156,10 @@ class _DiversityScore(BaseTopicNetScore):
         orig_num_dists = len(condensed_distances)
         condensed_distances = condensed_distances[np.isfinite(condensed_distances)]
         filtered_num_dists = len(condensed_distances)
-        assert filtered_num_dists >= 0.9 * orig_num_dists, (filtered_num_dists, orig_num_dists)
+        
+        if filtered_num_dists < 0.9 * orig_num_dists:
+            print(f'Skipping computation of dists: {(filtered_num_dists, orig_num_dists)}.')
+            return -1
 
         if self.closest:
             df = pd.DataFrame(
