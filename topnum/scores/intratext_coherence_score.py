@@ -297,7 +297,7 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
                 continue
 
             segment_length = 1
-            segment_weight = _IntratextCoherenceScore._get_relatedness(
+            segment_weight = self._get_relatedness(
                 words[index], topic, word_topic_relatednesses
             )
 
@@ -310,7 +310,7 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
                     num_out_of_topic_words += 1
                 else:
                     segment_length += 1
-                    segment_weight += _IntratextCoherenceScore._get_relatedness(
+                    segment_weight += self._get_relatedness(
                         words[index], topic, word_topic_relatednesses
                     )
 
@@ -374,9 +374,7 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
 
             sum_in_window = np.sum(
                 [
-                    _IntratextCoherenceScore._get_relatedness(
-                        w, topic, word_topic_relatednesses
-                    )
+                    self._get_relatedness(w, topic, word_topic_relatednesses)
                     for w in words[window_lower_bound:window_upper_bound]
                 ]
             )
@@ -396,9 +394,7 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
             word_topic_relatednesses: pd.DataFrame) -> Union[float, None]:
 
         topic_relatednesses = [
-            _IntratextCoherenceScore._get_relatedness(
-                word, topic, word_topic_relatednesses
-            )
+            self._get_relatedness(word, topic, word_topic_relatednesses)
             for word in words
         ]
 
@@ -445,16 +441,16 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
             cur_word, next_word = words[index], words[index + 1]
             cur_topic, next_topic = word_topics[index], word_topics[index + 1]
 
-            r_cw_ct = _IntratextCoherenceScore._get_relatedness(
+            r_cw_ct = self._get_relatedness(
                 cur_word, cur_topic, word_topic_relatednesses
             )
-            r_cw_nt = _IntratextCoherenceScore._get_relatedness(
+            r_cw_nt = self._get_relatedness(
                 cur_word, next_topic, word_topic_relatednesses
             )
-            r_nw_ct = _IntratextCoherenceScore._get_relatedness(
+            r_nw_ct = self._get_relatedness(
                 next_word, cur_topic, word_topic_relatednesses
             )
-            r_nw_nt = _IntratextCoherenceScore._get_relatedness(
+            r_nw_nt = self._get_relatedness(
                 next_word, next_topic, word_topic_relatednesses
             )
 
