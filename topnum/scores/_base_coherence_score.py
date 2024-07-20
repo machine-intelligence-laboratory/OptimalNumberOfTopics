@@ -332,17 +332,15 @@ class _BaseCoherenceScore(TopicNetBaseScore):
             topic: str,
             word_topic_relatednesses: pd.DataFrame) -> float:
 
-        # if word in word_topic_relatednesses.index:
-        #     return word_topic_relatednesses.loc[word, topic]
+        try:
+            return word_topic_relatednesses.loc[word, topic]
+        except KeyError as error:
+            _logger.warning(
+                f'Some word not found in Word-Topic relatedness matrix: "{error}"!'
+                f' Returning mean value over all word relatednesses for topic "{topic}".'
+            )
 
-        return word_topic_relatednesses.loc[word, topic]
-
-        _logger.warning(
-            f'The word "{word}" not found in Word-Topic relatedness matrix!'
-            f' Returning mean value over all word relatednesses for topic "{topic}"'
-        )
-
-        return float(np.mean(word_topic_relatednesses.values))
+            return float(np.mean(word_topic_relatednesses.values))
 
     # TODO: DRY
     def save(self, path: str) -> None:
