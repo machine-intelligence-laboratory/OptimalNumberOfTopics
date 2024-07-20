@@ -1,4 +1,5 @@
 import artm
+import numpy as np
 import pandas as pd
 
 from topicnet.cooking_machine.dataset import Dataset
@@ -82,7 +83,15 @@ def specific_initial_phi_train_func(
             initial_phi, modality=main_modality
         )
 
-    init_phi_utils._copy_phi(topic_model._model, initial_phi)
+    # TODO: However strange it may seem,
+    #  it is really crucial to initialize `phi_ref` variable here.
+    #  Otherwise, all this init-copy manipulation won't work.
+    #  (Yes, at first glance `phi_ref` is not used anywhere,
+    #  but apparently it is used somewhere...)
+    #  The owls are not what they seem.
+    phi_ref = init_phi_utils._copy_phi(topic_model._model, initial_phi)
+
+    assert np.allclose(phi_ref, topic_model.get_phi().to_numpy())
 
     num_fit_iterations_with_scores = 1
 
@@ -239,7 +248,7 @@ def background_topics_train_func(
     )
 
     # TODO: not very safe here? (if cache_theta us True, Theta not updated here)
-    init_phi_utils._copy_phi(
+    phi_ref = init_phi_utils._copy_phi(
         topic_model._model,
         specific_topics_phi,
         phi_ref=phi_ref

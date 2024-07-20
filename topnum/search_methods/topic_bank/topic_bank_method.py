@@ -659,6 +659,7 @@ class TopicBankMethod(BaseSearchMethod):
 
         # TODO: use FastFixPhiRegularizer
         #   (seems not critical here, but nevertheless)
+        # TODO: until then -- do not remove `phi_ref0` variable!
         phi_ref0 = _safe_copy_phi(
             level0, bank_phi, self._dataset,
             small_num_fit_iterations=1

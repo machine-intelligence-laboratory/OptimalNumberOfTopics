@@ -90,11 +90,10 @@ def _count_word_document_frequencies(
     for doc_index, doc_text in enumerate(dataset._data[text_column]):
         words = doc_text.split()
         preprocessed_words = list(utils._trim_vw(words))  # TODO: maybe require much memory
-
         if preprocessed_words[:100] != words[:100]:
             warnings.warn(WARNING_VW_TEXT_WRONG_FORMAT)
 
-        words_counter = Counter(words)
+        words_counter = Counter(preprocessed_words)
 
         for w, c in words_counter.items():
             if w not in word2index:
