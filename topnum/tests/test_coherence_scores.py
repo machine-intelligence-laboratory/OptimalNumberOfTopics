@@ -53,6 +53,8 @@ COMPUTATION_METHODS = [
     ComputationMethod.SEGMENT_LENGTH,
     ComputationMethod.SEGMENT_WEIGHT,
     ComputationMethod.SUM_OVER_WINDOW,
+    ComputationMethod.VARIANCE_IN_WINDOW,
+    ComputationMethod.FOCUS_CONSISTENCY,
 ]
 RESEARCH_COMPUTATION_METHODS = [
     ComputationMethod.VARIANCE_IN_WINDOW,
