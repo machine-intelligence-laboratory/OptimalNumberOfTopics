@@ -58,7 +58,10 @@ from topnum.search_methods.topic_bank.one_model_train_funcs import (
     default_train_func,
     _get_topic_model
 )
-from topnum.search_methods.topic_bank.phi_initialization.utils import _safe_copy_phi
+from topnum.search_methods.topic_bank.phi_initialization.utils import (
+    _safe_copy_phi,
+    get_modality_phi,
+)
 
 
 _KEY_BANK_SCORES = 'bank_scores'
@@ -314,7 +317,6 @@ class TopicBankMethod(BaseSearchMethod):
             # TODO: stop when perplexity stabilizes
 
             _logger.info(f'Building topic model number {model_number}...')
-
             topic_model = self._train_func[model_number](
                 dataset=self._dataset,
                 main_modality=self._main_modality,
@@ -359,10 +361,8 @@ class TopicBankMethod(BaseSearchMethod):
 
             phi = topic_model.get_phi()
 
-            if self._main_modality is None:
-                phi = phi
-            else:
-                phi = phi.iloc[phi.index.get_level_values(0).isin([self._main_modality])]
+            if self._main_modality is not None:
+                phi = get_modality_phi(phi, modality=self._main_modality)
 
             if word2index is None:
                 word2index = {
@@ -523,7 +523,7 @@ class TopicBankMethod(BaseSearchMethod):
                 bank_model = _get_topic_model(
                     self._dataset,
                     main_modality=self._main_modality,
-                    phi=bank_phi,
+                    num_topics=bank_phi.shape[1],
                     scores=self._all_model_scores,
                     num_safe_fit_iterations=1
                 )
@@ -657,6 +657,8 @@ class TopicBankMethod(BaseSearchMethod):
             f' First words: {bank_phi.index[:10]}'
         )
 
+        # TODO: use FastFixPhiRegularizer
+        #   (seems not critical here, but nevertheless)
         phi_ref0 = _safe_copy_phi(
             level0, bank_phi, self._dataset,
             small_num_fit_iterations=1

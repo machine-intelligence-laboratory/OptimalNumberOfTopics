@@ -5,7 +5,8 @@ from topicnet.cooking_machine.dataset import Dataset
 from topicnet.cooking_machine.models import TopicModel
 from typing import (
     Callable,
-    List
+    List,
+    Optional,
 )
 
 from topnum.scores.base_score import BaseScore
@@ -15,7 +16,7 @@ from topnum.search_methods.topic_bank.phi_initialization import utils as init_ph
 
 def default_train_func(
         dataset: Dataset,
-        main_modality: str,
+        main_modality: Optional[str],
         model_number: int,
         num_topics: int,
         num_fit_iterations: int,
@@ -55,6 +56,7 @@ def default_train_func(
 
 def specific_initial_phi_train_func(
         dataset: Dataset,
+        main_modality: Optional[str],
         model_number: int,
         num_topics: int,
         num_fit_iterations: int,
@@ -64,6 +66,7 @@ def specific_initial_phi_train_func(
 
     topic_model = _get_topic_model(
         dataset,
+        main_modality=main_modality,
         num_topics=num_topics,
         seed=model_number,
         **kwargs,
@@ -73,6 +76,12 @@ def specific_initial_phi_train_func(
         initialize_phi_func = initialize_phi_funcs.initialize_randomly
 
     initial_phi = initialize_phi_func(dataset, model_number, num_topics)
+
+    if main_modality is not None:
+        initial_phi = init_phi_utils.get_modality_phi(
+            initial_phi, modality=main_modality
+        )
+
     init_phi_utils._copy_phi(topic_model._model, initial_phi)
 
     num_fit_iterations_with_scores = 1
@@ -93,6 +102,7 @@ def specific_initial_phi_train_func(
 
 def regularization_train_func(
         dataset: Dataset,
+        main_modality: Optional[str],
         model_number: int,
         num_topics: int,
         num_fit_iterations: int,
@@ -104,6 +114,7 @@ def regularization_train_func(
 
     topic_model = _get_topic_model(
         dataset,
+        main_modality=main_modality,
         num_topics=num_topics,
         seed=model_number,
         **kwargs,
@@ -157,6 +168,7 @@ def regularization_train_func(
 
 def background_topics_train_func(
         dataset: Dataset,
+        main_modality: Optional[str],
         model_number: int,
         num_topics: int,
         num_fit_iterations: int,
@@ -167,6 +179,7 @@ def background_topics_train_func(
 
     topic_model = _get_topic_model(
         dataset,
+        main_modality=main_modality,
         num_topics=num_topics + num_background_topics,
         seed=model_number,
         **kwargs,
@@ -191,6 +204,7 @@ def background_topics_train_func(
 
     topic_model = _get_topic_model(
         dataset,
+        main_modality=main_modality,
         num_topics=num_topics,
         seed=model_number,
         **kwargs,
@@ -236,14 +250,24 @@ def background_topics_train_func(
 
 def _get_topic_model(
         dataset: Dataset,
-        main_modality: str,
+        main_modality: Optional[str],
         phi: pd.DataFrame = None,
         num_topics: int = None,
         seed: int = None,
         scores: List[BaseScore] = None,
-        num_safe_fit_iterations: int = 3,
+        num_safe_fit_iterations: int = 3,  # TODO: remove param (only FastFixPhiRegularizer to be used for safe copy)
         num_processors: int = 3,
         cache_theta: bool = False) -> TopicModel:
+
+    if phi is not None:
+        raise ValueError(
+            "Do not use `phi` parameter, use `num_topics` instead!"
+            " Currently, this method is not responsible for copying Phi matrix."
+            " We have temporarily turned off this functionality,"
+            " because the realization appeared not perfectly reliable."
+            " In the future, Phi copying will be improved and returned"
+            " (it will be based on FastFixPhiRegularizer)."
+        )
 
     dictionary = dataset.get_dictionary()
 
@@ -265,10 +289,15 @@ def _get_topic_model(
     # else:
     #     artm_model = artm.ARTM(topic_names=topic_names, seed=seed)
 
-    if seed is None:
-        artm_model = artm.ARTM(topic_names=topic_names, class_ids={main_modality: 1})  # TODO: not list, but dict!!!
+    if main_modality is not None:
+        class_ids = {main_modality: 1}
     else:
-        artm_model = artm.ARTM(topic_names=topic_names, seed=seed, class_ids={main_modality: 1})
+        class_ids = None
+
+    if seed is None:
+        seed = -1  # for ARTM, it means "no seed"
+
+    artm_model = artm.ARTM(topic_names=topic_names, seed=seed, class_ids=class_ids)  # TODO: not list, but dict!!!
 
     # artm_model = init_model(topic_names, class_ids=[MAIN_MODALITY])
 

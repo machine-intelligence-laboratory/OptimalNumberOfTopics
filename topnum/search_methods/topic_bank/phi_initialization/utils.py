@@ -32,6 +32,10 @@ def get_phi_index(dataset: Dataset) -> Index:
     return phi_index
 
 
+def get_modality_phi(phi: pd.DataFrame, modality: str) -> pd.DataFrame:
+    return phi.iloc[phi.index.get_level_values(0).isin([modality])]
+
+
 def _copy_phi(model: artm.ARTM, phi: pd.DataFrame, phi_ref: np.ndarray = None) -> np.ndarray:
     model_wrapper = TopicModel(artm_model=model)
     base_phi_index = model_wrapper.get_phi().index

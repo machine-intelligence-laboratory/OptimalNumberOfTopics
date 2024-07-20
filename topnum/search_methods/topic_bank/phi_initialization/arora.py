@@ -51,7 +51,10 @@ def compute_phi(
     }
 
     word_document_frequencies = _count_word_document_frequencies(
-        dataset, text_column, word2index
+        dataset=dataset,
+        vocabulary_size=len(phi_index),
+        text_column=text_column,
+        word2index=word2index,
     )
     word_document_frequencies = scipy.sparse.csc_matrix(word_document_frequencies)
 
@@ -73,12 +76,15 @@ def compute_phi(
 
 
 def _count_word_document_frequencies(
-        dataset: Dataset, text_column: str, word2index: Dict[str, int]) -> np.ndarray:
+        dataset: Dataset,
+        vocabulary_size: int,
+        text_column: str,
+        word2index: Dict[str, int],
+        ) -> np.ndarray:
 
     num_documents = len(dataset._data)  # TODO: for big data may be slow here
-    words_dimension_size = max(list(word2index.values())) + 1
     frequencies = np.zeros(
-        shape=(words_dimension_size, num_documents)
+        shape=(vocabulary_size, num_documents)
     )
 
     for doc_index, doc_text in enumerate(dataset._data[text_column]):
