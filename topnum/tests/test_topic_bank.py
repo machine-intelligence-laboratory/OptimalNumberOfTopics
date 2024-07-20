@@ -18,6 +18,7 @@ from typing import (
     Callable,
     Dict,
     List,
+    Optional,
 )
 
 from topnum.scores.base_score import BaseScore
@@ -197,6 +198,7 @@ class TestTopicBank:
 
         def train_func(
                 dataset: Dataset,
+                main_modality: Optional[str],
                 model_number: int,
                 num_topics: int,
                 num_fit_iterations: int,
@@ -204,8 +206,12 @@ class TestTopicBank:
                 **kwargs) -> TopicModel:
 
             return specific_initial_phi_train_func(
-                dataset, model_number, num_topics,
-                num_fit_iterations, scores,
+                dataset,
+                main_modality=main_modality,
+                model_number=model_number,
+                num_topics=num_topics,
+                num_fit_iterations=num_fit_iterations,
+                scores=scores,
                 initialize_phi_func=initialize_phi_func,
                 **kwargs
             )
@@ -245,6 +251,7 @@ class TestTopicBank:
 
         def train_func(
                 dataset: Dataset,
+                main_modality: Optional[str],
                 model_number: int,
                 num_topics: int,
                 num_fit_iterations: int,
@@ -252,8 +259,12 @@ class TestTopicBank:
                 **kwargs) -> TopicModel:
 
             return specific_initial_phi_train_func(
-                dataset, model_number, num_topics,
-                num_fit_iterations, scores,
+                dataset,
+                main_modality=main_modality,
+                model_number=model_number,
+                num_topics=num_topics,
+                num_fit_iterations=num_fit_iterations,
+                scores=scores,
                 initialize_phi_func=initialize_phi_func,
                 **kwargs
             )
