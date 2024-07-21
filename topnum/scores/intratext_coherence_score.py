@@ -9,8 +9,10 @@ from enum import (
 from topicnet.cooking_machine import Dataset
 from topicnet.cooking_machine.models.base_model import BaseModel
 from typing import (
+    Callable,
     Dict,
     List,
+    Optional,
     Tuple,
     Union
 )
@@ -90,6 +92,8 @@ class IntratextCoherenceScore(BaseTopicScore):
             max_num_out_of_topic_words=10,
             window=10,
             verbose: bool = False,
+            should_compute: Optional[
+                Union[Callable[[int], bool], bool]] = False,  # TODO: very slow on full collection
     ):
         """
         Parameters
@@ -137,6 +141,7 @@ class IntratextCoherenceScore(BaseTopicScore):
         self._window = window
 
         self._verbose = verbose
+        self._should_compute = should_compute
 
         self._score = self._initialize()
 
@@ -156,6 +161,7 @@ class IntratextCoherenceScore(BaseTopicScore):
             max_num_out_of_topic_words=self._max_num_out_of_topic_words,
             window=self._window,
             verbose=self._verbose,
+            should_compute=self._should_compute,
         )
 
     def compute(
@@ -181,7 +187,10 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
             specificity_estimation: SpecificityEstimationMethod = SpecificityEstimationMethod.NONE,
             max_num_out_of_topic_words: int = 10,
             window: int = 10,
-            verbose: bool = False):
+            verbose: bool = False,
+            should_compute: Optional[
+                Union[Callable[[int], bool], bool]] = None,
+            ):
 
         # TODO: word_topic_relatedness seems to be connected with TopTokensViewer stuff
         super().__init__(
@@ -191,6 +200,7 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
             word_topic_relatedness=word_topic_relatedness,
             specificity_estimation=specificity_estimation,
             verbose=verbose,
+            should_compute=should_compute,
         )
 
         if not isinstance(computation_method, ComputationMethod):

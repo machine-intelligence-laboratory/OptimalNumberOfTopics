@@ -11,6 +11,15 @@ from enum import (
     Enum,
     IntEnum
 )
+from typing import (
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Union
+)
+
 from topicnet.cooking_machine.dataset import (
     Dataset,
     VW_TEXT_COL,
@@ -20,12 +29,6 @@ from topicnet.cooking_machine.dataset import (
 )
 from topicnet.cooking_machine.models.base_model import BaseModel
 from topicnet.cooking_machine.models.base_score import BaseScore as TopicNetBaseScore
-from typing import (
-    Dict,
-    List,
-    Tuple,
-    Union
-)
 
 from .base_custom_score import BaseCustomScore
 from ..data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
@@ -98,8 +101,10 @@ class _BaseCoherenceScore(TopicNetBaseScore):
             word_topic_relatedness: WordTopicRelatednessType = WordTopicRelatednessType.PWT,
             specificity_estimation: SpecificityEstimationMethod = SpecificityEstimationMethod.NONE,
             verbose: bool = False,
-    ):
-        super().__init__()
+            should_compute: Optional[
+                Union[Callable[[int], bool], bool]] = None,
+            ):
+        super().__init__(should_compute=should_compute)
 
         if not isinstance(dataset, Dataset):
             raise TypeError(
