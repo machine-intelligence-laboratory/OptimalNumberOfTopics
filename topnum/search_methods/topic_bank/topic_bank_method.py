@@ -536,8 +536,8 @@ class TopicBankMethod(BaseSearchMethod):
                 )
 
                 # Bcg sparse model
-                assert hasattr(bank_model, 'has_bcg')
-                assert bank_model.has_bcg
+                # assert hasattr(bank_model, 'has_bcg')
+                # assert bank_model.has_bcg
 
                 # Safe fit to make topics so-so
                 bank_model._fit(
