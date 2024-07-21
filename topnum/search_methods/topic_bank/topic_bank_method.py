@@ -25,6 +25,7 @@ from typing import (
 
 from topnum.data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
 from topnum.model_constructor import init_model_from_family
+from topnum.regularizers import FastFixPhiRegularizer
 from topnum.scores._base_coherence_score import (
     SpecificityEstimationMethod,
     TextType,
@@ -485,47 +486,13 @@ class TopicBankMethod(BaseSearchMethod):
                 _logger.info('No topics in bank — returning empty default scores for bank model')
             else:
                 bank_phi = self._get_phi(self._topic_bank.topics, word2index)
-
-                # TODO: you know
-                from topicnet.cooking_machine.models.base_regularizer import BaseRegularizer
-
-                class FastFixPhiRegularizer(BaseRegularizer):
-                    _VERY_BIG_TAU = 10 ** 9
-                
-                    def __init__(self, name: str, phi, topic_names: List[str]):
-                        super().__init__(name, tau=self._VERY_BIG_TAU)
-                
-                        self._topic_names = topic_names
-                        self._topic_indices = None
-                        self._phi = phi
-                
-                    def grad(self, pwt, nwt):
-                        # print('Fixing')
-                
-                        rwt = np.zeros_like(pwt)
-                        parent_phi = self._phi
-                        
-                        rwt[:, self._topic_indices] += parent_phi.values[:, self._topic_indices]
-                
-                        return self.tau * rwt
-                
-                    def attach(self, model):
-                        super().attach(model)
-                        
-                        phi = self._model.get_phi()
-                        self._topic_indices = [
-                            phi.columns.get_loc(topic_name)
-                            for topic_name in self._topic_names
-                        ]
-                
                 regularizer = FastFixPhiRegularizer(
                     name='fix',
-                    phi=bank_phi,
+                    parent_phi=bank_phi,
                     topic_names=bank_phi.columns,
                 )
 
 
-                
                 bank_model = _get_topic_model(
                     self._dataset,
                     main_modality=self._main_modality,
@@ -533,17 +500,18 @@ class TopicBankMethod(BaseSearchMethod):
                     scores=self._all_model_scores,
                     num_safe_fit_iterations=1
                 )
+
                 # Safe fit to make topics so-so
                 bank_model._fit(
                     self._dataset.get_batch_vectorizer(),
                     num_iterations=1,
                 )
+
                 bank_model._model.scores.add(
                     artm.scores.PerplexityScore(
                         name=f'ppl_fair',
-                   )
+                    )
                 )
-                # bank_model._fit(self._dataset.get_batch_vectorizer(), 1)
                 bank_model._fit(
                     self._dataset.get_batch_vectorizer(),
                     num_iterations=5,
@@ -551,6 +519,8 @@ class TopicBankMethod(BaseSearchMethod):
                         regularizer.name: regularizer,
                     }
                 )
+
+                assert np.allclose(bank_phi.to_numpy(), bank_model.get_phi().to_numpy())
 
                 _logger.info('Computing default scores for bank model...')
 
@@ -558,9 +528,18 @@ class TopicBankMethod(BaseSearchMethod):
                 scores['ppl_fair'] = bank_model.scores['ppl_fair'][-1]
 
 
-                bank_model = init_model_from_family('sparse', self._dataset, self._main_modality, len(bank_phi.columns), 0)
+                # TODO: Second bank model is needed for experiments with regularizers
+                bank_model = init_model_from_family(
+                    family='sparse',
+                    dataset=self._dataset, main_modality=self._main_modality,
+                    num_topics=len(bank_phi.columns), seed=0,
+                )
+
+                # Bcg sparse model
+                assert hasattr(bank_model, 'has_bcg')
+                assert bank_model.has_bcg
+
                 # Safe fit to make topics so-so
-                # bank_model.has_bcg = True
                 bank_model._fit(
                     self._dataset.get_batch_vectorizer(),
                     num_iterations=1,
@@ -568,7 +547,7 @@ class TopicBankMethod(BaseSearchMethod):
                 bank_model._model.scores.add(
                     artm.scores.PerplexityScore(
                         name=f'ppl_cheatty',
-                   )
+                    )
                 )
                 bank_model._fit(
                     self._dataset.get_batch_vectorizer(),
@@ -577,6 +556,9 @@ class TopicBankMethod(BaseSearchMethod):
                         regularizer.name: regularizer,
                     }
                 )
+
+                assert bank_model.get_phi().shape[1] == bank_phi.shape[1] + 1
+                assert np.allclose(bank_phi.to_numpy(), bank_model.get_phi().to_numpy()[:, :-1])
 
                 scores['ppl_cheatty'] = bank_model.scores['ppl_cheatty'][-1]
 
