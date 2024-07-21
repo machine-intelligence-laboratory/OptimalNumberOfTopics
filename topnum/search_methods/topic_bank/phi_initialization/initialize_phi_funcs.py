@@ -17,12 +17,20 @@ def initialize_randomly(
     phi_template = _get_phi_template(dataset, num_topics)
 
     random = np.random.RandomState(seed=model_number)
-    phi_values = random.random(phi_template.shape)
+    modality_phi_datas = []
+
+    for modality in phi_template.index.unique(level=0):
+        modality_phi_template = phi_template.xs(modality)
+        modality_phi_data = random.random(modality_phi_template.shape)
+        modality_phi_data = modality_phi_data / modality_phi_data.sum(axis=0)
+        modality_phi_datas.append(modality_phi_data)
+
+    phi_data = np.vstack(modality_phi_datas)
 
     return pd.DataFrame(
         index=phi_template.index,
         columns=phi_template.columns,
-        data=phi_values
+        data=phi_data,
     )
 
 

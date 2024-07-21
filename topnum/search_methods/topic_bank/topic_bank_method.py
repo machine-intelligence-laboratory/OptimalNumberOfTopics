@@ -18,11 +18,14 @@ from typing import (
     Callable,
     Dict,
     List,
+    Optional,
     Tuple,
     Union
 )
 
 from topnum.data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
+from topnum.model_constructor import init_model_from_family
+from topnum.regularizers import FastFixPhiRegularizer
 from topnum.scores._base_coherence_score import (
     SpecificityEstimationMethod,
     TextType,
@@ -57,7 +60,10 @@ from topnum.search_methods.topic_bank.one_model_train_funcs import (
     default_train_func,
     _get_topic_model
 )
-from topnum.search_methods.topic_bank.phi_initialization.utils import _safe_copy_phi
+from topnum.search_methods.topic_bank.phi_initialization.utils import (
+    _safe_copy_phi,
+    get_modality_phi,
+)
 
 
 _KEY_BANK_SCORES = 'bank_scores'
@@ -73,6 +79,12 @@ _DEFAULT_WINDOW = 20
 
 
 _logger = logging.getLogger()
+
+
+TRAIN_FUNC_TYPE = Callable[
+    [Dataset, str, int, int, int, List[BaseScore]],
+    TopicModel
+]
 
 
 class TopicBankMethod(BaseSearchMethod):
@@ -96,10 +108,9 @@ class TopicBankMethod(BaseSearchMethod):
             max_num_models: int = 100,
             one_model_num_topics: Union[int, List[int]] = 100,
             num_fit_iterations: int = DEFAULT_NUM_FIT_ITERATIONS,
-            train_funcs: Union[
-                Callable[[Dataset, int, int, int], TopicModel],
-                List[Callable[[Dataset, int, int, int], TopicModel]],
-                None] = None,
+            train_funcs: Optional[Union[
+                TRAIN_FUNC_TYPE,
+                List[TRAIN_FUNC_TYPE]]] = None,
             topic_score_threshold_percentile: int = 95,
             distance_threshold: float = 0.5,
             bank_update: BankUpdateMethod = BankUpdateMethod.PROVIDE_NON_LINEARITY,
@@ -201,21 +212,21 @@ class TopicBankMethod(BaseSearchMethod):
             ]
 
         self._one_model_num_topics: List[int] = one_model_num_topics
-        self._train_func: List[Callable[[Dataset, int, int, int], TopicModel]] = train_funcs
+        self._train_func: List[TRAIN_FUNC_TYPE] = train_funcs
 
-        if topic_score_threshold_percentile < 1:
+        if topic_score_threshold_percentile % 1 != 0:
             warnings.warn(
                 f'topic_score_threshold_percentile {topic_score_threshold_percentile}'
                 f' is less than one! It is expected to be in [0, 100].'
                 f' Are you sure you want to proceed (yes/no)?'
             )
 
-            answer = input()
+            #answer = input()
 
-            if strtobool(answer) is False:
-                warnings.warn('Exiting')
+            #if strtobool(answer) is False:
+            #    warnings.warn('Exiting')
 
-                exit(0)
+            #    exit(0)
 
         self._topic_score_threshold_percentile = topic_score_threshold_percentile
 
@@ -313,13 +324,13 @@ class TopicBankMethod(BaseSearchMethod):
             # TODO: stop when perplexity stabilizes
 
             _logger.info(f'Building topic model number {model_number}...')
-
             topic_model = self._train_func[model_number](
                 dataset=self._dataset,
+                main_modality=self._main_modality,
                 model_number=model_number,
                 num_topics=self._one_model_num_topics[model_number],
                 num_fit_iterations=self._num_fit_iterations,
-                scores=self._all_model_scores
+                scores=self._all_model_scores,
             )
 
             scores = dict()
@@ -343,19 +354,22 @@ class TopicBankMethod(BaseSearchMethod):
 
             self.save()
 
-            threshold = self._aggregate_scores_for_models(
-                raw_topic_scores[self._main_topic_score.name],
-                self._topic_score_threshold_percentile
-            )
+            if self._topic_score_threshold_percentile % 1 != 0:
+                print(f'Using absoulte threshold: {self._topic_score_threshold_percentile}.')
+                
+                threshold = self._topic_score_threshold_percentile
+            else:
+                threshold = self._aggregate_scores_for_models(
+                    raw_topic_scores[self._main_topic_score.name],
+                    self._topic_score_threshold_percentile
+                )
 
             _logger.info('Finding new topics...')
 
             phi = topic_model.get_phi()
 
-            if self._main_modality is None:
-                phi = phi
-            else:
-                phi = phi.iloc[phi.index.get_level_values(0).isin([self._main_modality])]
+            if self._main_modality is not None:
+                phi = get_modality_phi(phi, modality=self._main_modality)
 
             if word2index is None:
                 word2index = {
@@ -380,7 +394,8 @@ class TopicBankMethod(BaseSearchMethod):
 
             good_new_topics = [
                 topic_index for topic_index, topic_name in enumerate(phi.columns)
-                if raw_topic_scores[self._main_topic_score.name][topic_name] is not None and
+                if topic_name in raw_topic_scores[self._main_topic_score.name] and
+                raw_topic_scores[self._main_topic_score.name][topic_name] is not None and
                 raw_topic_scores[self._main_topic_score.name][topic_name] >= threshold
             ]
             topics_for_append, topics_for_update, topics_for_update_reverse = (
@@ -390,10 +405,15 @@ class TopicBankMethod(BaseSearchMethod):
             )
 
             model_topic_current_scores = list()
+            num_model_topics = len(topic_model.get_phi().columns)
 
             _logger.info('Calculating model topic scores...')
 
             for topic_index, topic_name in enumerate(topic_model.get_phi().columns):
+                if hasattr(topic_model, 'has_bcg') and topic_index == num_model_topics - 1:
+                    print('Skipping saving scores for bcg topic')
+                    continue
+
                 topic_scores = dict()
 
                 topic_word_prob_values = topic_model.get_phi()[topic_name].values
@@ -443,7 +463,9 @@ class TopicBankMethod(BaseSearchMethod):
                     self._topic_bank.delete_topic(topics_for_update_reverse[topic_index])
 
             self._result[_KEY_MODEL_TOPIC_SCORES].append(model_topic_current_scores)
-            self._result[_KEY_BANK_TOPIC_SCORES] = self._topic_bank.topic_scores  # TODO: append
+            self._result[_KEY_BANK_TOPIC_SCORES].append(
+                self._topic_bank.topic_scores  # TODO: append
+            )
 
             self.save()
 
@@ -464,18 +486,92 @@ class TopicBankMethod(BaseSearchMethod):
                 _logger.info('No topics in bank — returning empty default scores for bank model')
             else:
                 bank_phi = self._get_phi(self._topic_bank.topics, word2index)
+                regularizer = FastFixPhiRegularizer(
+                    name='fix',
+                    parent_phi=bank_phi,
+                    topic_names=bank_phi.columns,
+                )
+
 
                 bank_model = _get_topic_model(
                     self._dataset,
-                    phi=bank_phi,
+                    main_modality=self._main_modality,
+                    num_topics=bank_phi.shape[1],
                     scores=self._all_model_scores,
                     num_safe_fit_iterations=1
                 )
-                bank_model._fit(self._dataset.get_batch_vectorizer(), 1)
+
+                # Safe fit to make topics so-so
+                bank_model._fit(
+                    self._dataset.get_batch_vectorizer(),
+                    num_iterations=1,
+                )
+
+                bank_model._model.scores.add(
+                    artm.scores.PerplexityScore(
+                        name=f'ppl_fair',
+                    )
+                )
+                bank_model._fit(
+                    self._dataset.get_batch_vectorizer(),
+                    num_iterations=5,
+                    custom_regularizers={
+                        regularizer.name: regularizer,
+                    }
+                )
+
+                assert np.allclose(
+                    bank_phi.to_numpy(),
+                    bank_model.get_phi().to_numpy(),
+                    atol=1e-6,
+                )
 
                 _logger.info('Computing default scores for bank model...')
 
                 scores.update(self._get_default_scores(bank_model))
+                scores['ppl_fair'] = bank_model.scores['ppl_fair'][-1]
+
+
+                # TODO: Second bank model is needed for experiments with regularizers
+                bank_model = init_model_from_family(
+                    family='sparse',
+                    dataset=self._dataset, main_modality=self._main_modality,
+                    num_topics=len(bank_phi.columns), seed=0,
+                )
+
+                # Bcg sparse model
+                # assert hasattr(bank_model, 'has_bcg')
+                # assert bank_model.has_bcg
+
+                # Safe fit to make topics so-so
+                bank_model._fit(
+                    self._dataset.get_batch_vectorizer(),
+                    num_iterations=1,
+                )
+                bank_model._model.scores.add(
+                    artm.scores.PerplexityScore(
+                        name=f'ppl_cheatty',
+                    )
+                )
+                bank_model._fit(
+                    self._dataset.get_batch_vectorizer(),
+                    num_iterations=5,
+                    custom_regularizers={
+                        regularizer.name: regularizer,
+                    }
+                )
+
+                assert bank_model.get_phi().shape[1] == bank_phi.shape[1] + 1
+                assert np.allclose(
+                    bank_phi.to_numpy(),
+                    bank_model.get_phi().to_numpy()[:, :-1],
+                    atol=1e-6,
+                )
+
+                scores['ppl_cheatty'] = bank_model.scores['ppl_cheatty'][-1]
+
+                print(f'Bank scores: {scores}')
+                
 
             # Topic scores already calculated
 
@@ -544,25 +640,28 @@ class TopicBankMethod(BaseSearchMethod):
 
         hierarchy = artm.hARTM(num_processors=1)
 
-        _logger.debug(f'Creating first level with {bank_phi.shape[1]} topics')
+        print(f'Creating first level with {bank_phi.shape[1]} topics. Dictionary: {self._dictionary}.')
 
         level0 = hierarchy.add_level(
             num_topics=bank_phi.shape[1]
         )
         level0.initialize(dictionary=self._dictionary)
 
-        _logger.debug(
+        print(
             f'Copying phi for the first level.'
             f' Phi shape: {bank_phi.shape}.'
             f' First words: {bank_phi.index[:10]}'
         )
 
+        # TODO: use FastFixPhiRegularizer
+        #   (seems not critical here, but nevertheless)
+        # TODO: until then -- do not remove `phi_ref0` variable!
         phi_ref0 = _safe_copy_phi(
             level0, bank_phi, self._dataset,
             small_num_fit_iterations=1
         )
 
-        _logger.debug(f'Creating second level with {new_model_phi.shape[1]} topics')
+        print(f'Creating second level with {new_model_phi.shape[1]} topics')
 
         level1 = hierarchy.add_level(
             num_topics=new_model_phi.shape[1],
@@ -585,7 +684,7 @@ class TopicBankMethod(BaseSearchMethod):
             )
         )
 
-        _logger.debug(
+        print(
             f'Copying phi for the second level.'
             f' Phi shape: {new_model_phi.shape}.'
             f' First words: {new_model_phi.index[:10]}'

@@ -18,6 +18,7 @@ from typing import (
     Callable,
     Dict,
     List,
+    Optional,
 )
 
 from topnum.scores.base_score import BaseScore
@@ -124,14 +125,28 @@ class TestTopicBank:
         ]
     )
     @pytest.mark.parametrize(
-        'train_funcs',
-        [None, background_topics_train_func, default_train_func, regularization_train_func]
+        'train_funcs, params',
+        [
+            (None, {}),
+            (background_topics_train_func, {}),
+            (default_train_func, {}),
+            (regularization_train_func, dict(
+                decorrelating_tau=1,
+                smoothing_tau=1e-5,
+                sparsing_tau=-1 * 1e-5,
+            ))
+        ]
     )
-    def test_topic_bank(self, keep_in_memory, bank_update, train_funcs):
+    def test_topic_bank(self, keep_in_memory, bank_update, train_funcs, params):
+        if params == {}:
+            train_func = train_funcs
+        else:
+            train_func = lambda *args, **kwargs: train_funcs(*args, **kwargs, **params)
+
         self._test_topic_bank(
             self.dataset(keep_in_memory=keep_in_memory),
             bank_update,
-            train_func=train_funcs,
+            train_func=train_func,
         )
 
     @pytest.mark.parametrize('keep_in_memory', [True, False])
@@ -149,15 +164,22 @@ class TestTopicBank:
 
         def train_func(
                 dataset: Dataset,
+                main_modality: Optional[str],
                 model_number: int,
                 num_topics: int,
                 num_fit_iterations: int,
-                scores: List[BaseScore] = None) -> TopicModel:
+                scores: List[BaseScore] = None,
+                **kwargs) -> TopicModel:
 
             return specific_initial_phi_train_func(
-                dataset, model_number, num_topics,
-                num_fit_iterations, scores,
-                initialize_phi_func=initialize_phi_func
+                dataset,
+                main_modality=main_modality,
+                model_number=model_number,
+                num_topics=num_topics,
+                num_fit_iterations=num_fit_iterations,
+                scores=scores,
+                initialize_phi_func=initialize_phi_func,
+                **kwargs
             )
 
         self._test_topic_bank(
@@ -183,6 +205,10 @@ class TestTopicBank:
             min_samples=1
         )
 
+        print(f'CDC Phi: {phi}')
+
+        assert not phi.isnull().any(axis=None)
+
         def initialize_phi_func(
                 dataset: Dataset,
                 model_number: int,
@@ -195,15 +221,22 @@ class TestTopicBank:
 
         def train_func(
                 dataset: Dataset,
+                main_modality: Optional[str],
                 model_number: int,
                 num_topics: int,
                 num_fit_iterations: int,
-                scores: List[BaseScore] = None) -> TopicModel:
+                scores: List[BaseScore] = None,
+                **kwargs) -> TopicModel:
 
             return specific_initial_phi_train_func(
-                dataset, model_number, num_topics,
-                num_fit_iterations, scores,
-                initialize_phi_func=initialize_phi_func
+                dataset,
+                main_modality=main_modality,
+                model_number=model_number,
+                num_topics=num_topics,
+                num_fit_iterations=num_fit_iterations,
+                scores=scores,
+                initialize_phi_func=initialize_phi_func,
+                **kwargs
             )
 
         self._test_topic_bank(
@@ -229,6 +262,10 @@ class TestTopicBank:
             document_occurrences_threshold_percentage=0.001
         )
 
+        print(f'Arora Phi: {phi}')
+
+        assert not phi.isnull().any(axis=None)
+
         def initialize_phi_func(
                 dataset: Dataset,
                 model_number: int,
@@ -241,15 +278,22 @@ class TestTopicBank:
 
         def train_func(
                 dataset: Dataset,
+                main_modality: Optional[str],
                 model_number: int,
                 num_topics: int,
                 num_fit_iterations: int,
-                scores: List[BaseScore] = None) -> TopicModel:
+                scores: List[BaseScore] = None,
+                **kwargs) -> TopicModel:
 
             return specific_initial_phi_train_func(
-                dataset, model_number, num_topics,
-                num_fit_iterations, scores,
-                initialize_phi_func=initialize_phi_func
+                dataset,
+                main_modality=main_modality,
+                model_number=model_number,
+                num_topics=num_topics,
+                num_fit_iterations=num_fit_iterations,
+                scores=scores,
+                initialize_phi_func=initialize_phi_func,
+                **kwargs
             )
 
         self._test_topic_bank(
@@ -266,6 +310,7 @@ class TestTopicBank:
             one_model_num_topics: int = 2,
             train_func: Callable = None):
 
+        small_probability = 0.001
         self.optimizer = TopicBankMethod(
             data=dataset,
             main_modality=self.main_modality,
@@ -289,3 +334,16 @@ class TestTopicBank:
         for result_key in ['optimum', 'optimum_std']:
             assert result_key in self.optimizer._result
             assert isinstance(self.optimizer._result[result_key], Number)
+
+        topic_bank = self.optimizer._topic_bank
+        bank_topics = topic_bank.topics
+        bank_topic_scores = topic_bank.topic_scores
+
+        print(f'Bank topics: {bank_topics}.')
+
+        assert len(bank_topics) == len(bank_topic_scores)
+        assert len(bank_topics) > 0
+
+        for bank_topic in bank_topics:
+            assert len(bank_topic) > 0
+            assert any(v >= small_probability for v in bank_topic.values())

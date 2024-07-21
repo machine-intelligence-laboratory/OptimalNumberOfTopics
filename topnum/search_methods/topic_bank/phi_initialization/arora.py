@@ -17,6 +17,11 @@ from . import (
 )
 
 
+np.int = np.int32  # Arora uses old NumPy (current version has not "int" attribute)
+                   # https://stackoverflow.com/q/74946845/8094251
+                   # https://github.com/scikit-learn-contrib/boruta_py/issues/122#issuecomment-1914122968
+
+
 def compute_phi(
         dataset: Dataset,
         main_modality: str,
@@ -46,7 +51,10 @@ def compute_phi(
     }
 
     word_document_frequencies = _count_word_document_frequencies(
-        dataset, text_column, word2index
+        dataset=dataset,
+        vocabulary_size=len(phi_index),
+        text_column=text_column,
+        word2index=word2index,
     )
     word_document_frequencies = scipy.sparse.csc_matrix(word_document_frequencies)
 
@@ -68,22 +76,24 @@ def compute_phi(
 
 
 def _count_word_document_frequencies(
-        dataset: Dataset, text_column: str, word2index: Dict[str, int]) -> np.ndarray:
+        dataset: Dataset,
+        vocabulary_size: int,
+        text_column: str,
+        word2index: Dict[str, int],
+        ) -> np.ndarray:
 
     num_documents = len(dataset._data)  # TODO: for big data may be slow here
-    words_dimension_size = max(list(word2index.values())) + 1
     frequencies = np.zeros(
-        shape=(words_dimension_size, num_documents)
+        shape=(vocabulary_size, num_documents)
     )
 
     for doc_index, doc_text in enumerate(dataset._data[text_column]):
         words = doc_text.split()
         preprocessed_words = list(utils._trim_vw(words))  # TODO: maybe require much memory
-
         if preprocessed_words[:100] != words[:100]:
             warnings.warn(WARNING_VW_TEXT_WRONG_FORMAT)
 
-        words_counter = Counter(words)
+        words_counter = Counter(preprocessed_words)
 
         for w, c in words_counter.items():
             if w not in word2index:

@@ -68,13 +68,13 @@ class SpecificityEstimationMethod(IntEnum):
     Way to estimate how particular word is specific for particular topic.
     Unlike probability, eg. p(w | t), specificity_estimation takes into account
     values for all topics, eg. p(w | t_1), p(w | t_2), ..., p(w | t_n):
-    the higher the value p(w | t) comparing other p(w | t_i),
+    the higher the value p(w | t) comparing to other p(w | t_i),
     the higher the specificity_estimation of word "w" for the topic "t"
 
     Attributes
     ----------
         NONE
-            Don't try to estimate specificity_estimation, return the probability as is
+            Don't try to estimate specificity, return the probability as is
         MAXIMUM
             From probability, corresponding to word and topic,
             extract *maximum* among probabilities for the word and other topics
@@ -88,6 +88,8 @@ class SpecificityEstimationMethod(IntEnum):
 
 
 class _BaseCoherenceScore(TopicNetBaseScore):
+    _EPS = np.finfo(float).tiny
+
     def __init__(
             self,
             dataset: Dataset,
@@ -171,6 +173,8 @@ class _BaseCoherenceScore(TopicNetBaseScore):
 
         word_topic_relatednesses = self._get_word_topic_relatednesses(model)
 
+        # TODO: topic coherence may be evaluated on any peace of text
+        #   (paragraph, sentence, phrase), that is, not only on whole documents
         topic_document_coherences = np.zeros((len(topics), len(documents)))
         document_indices_with_topic_coherence = defaultdict(list)
 
@@ -255,7 +259,6 @@ class _BaseCoherenceScore(TopicNetBaseScore):
 
         elif self._word_topic_relatedness == WordTopicRelatednessType.PTW:
             # Treat all topics as equally probable
-            eps = np.finfo(float).tiny
 
             pwt = phi
             pwt_values = pwt.values
@@ -263,7 +266,7 @@ class _BaseCoherenceScore(TopicNetBaseScore):
             return pd.DataFrame(
                 index=pwt.index,
                 columns=pwt.columns,
-                data=pwt_values / (pwt_values.sum(axis=1).reshape(-1, 1) + eps)
+                data=pwt_values / (pwt_values.sum(axis=1).reshape(-1, 1) + self._EPS)
             )
 
         assert False
@@ -330,15 +333,15 @@ class _BaseCoherenceScore(TopicNetBaseScore):
             topic: str,
             word_topic_relatednesses: pd.DataFrame) -> float:
 
-        if word in word_topic_relatednesses.index:
+        try:
             return word_topic_relatednesses.loc[word, topic]
+        except KeyError as error:
+            _logger.warning(
+                f'Some word not found in Word-Topic relatedness matrix: "{error}"!'
+                f' Returning mean value over all word relatednesses for topic "{topic}".'
+            )
 
-        _logger.warning(
-            f'The word "{word}" not found in Word-Topic relatedness matrix!'
-            f' Returning mean value over all word relatednesses for topic "{topic}"'
-        )
-
-        return float(np.mean(word_topic_relatednesses.values))
+            return float(np.mean(word_topic_relatednesses.values))
 
     # TODO: DRY
     def save(self, path: str) -> None:

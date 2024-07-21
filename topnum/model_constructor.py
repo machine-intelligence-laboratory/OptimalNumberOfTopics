@@ -99,8 +99,8 @@ def init_model_from_family(
             dataset, modalities_to_use, main_modality, num_topics, 1, model_params
         )
     elif family == "decorrelation":
-        model = init_decorrelated_plsa(
-            dataset, modalities_to_use, main_modality, num_topics, model_params
+        model = init_decorrelated_artm(
+            dataset, modalities_to_use, main_modality, num_topics, 1, model_params
         )
     elif family == "ARTM":
         model = init_baseline_artm(
@@ -209,6 +209,82 @@ def init_decorrelated_plsa(
             class_ids=modalities_to_use,
         )
     )
+
+    return model
+
+
+def init_decorrelated_artm(
+        dataset,
+        modalities_to_use,
+        main_modality,
+        num_topics,
+        bcg_topics,
+        model_params: dict = None
+):
+    """
+    Creates simple artm model with standard scores.
+
+    Parameters
+    ----------
+    dataset : Dataset
+    modalities_to_use : list of str
+    main_modality : str
+    num_topics : int
+    model_params : dict
+
+    Returns
+    -------
+    model: artm.ARTM() instance
+    """
+    if model_params is None:
+        model_params = dict()
+
+    model = init_plsa(
+        dataset, modalities_to_use, main_modality, num_topics
+    )
+    tau = model_params.get('decorrelation_tau', 0.01)
+
+    specific_topic_names = model.topic_names  # let's decorrelate everything
+    model.regularizers.add(
+        artm.DecorrelatorPhiRegularizer(
+            gamma=0,
+            tau=tau,
+            name='decorrelation',
+            topic_names=specific_topic_names,
+            class_ids=modalities_to_use,
+        )
+    )
+
+
+    dictionary = dataset.get_dictionary()
+    baseline_class_ids = {class_id: 1 for class_id in modalities_to_use}
+    data_stats = count_vocab_size(dictionary, baseline_class_ids)
+
+    background_topic_names = model.topic_names[-bcg_topics:]
+    specific_topic_names = model.topic_names[:-bcg_topics]
+
+    # all coefficients are relative
+    regularizers = [
+        artm.SmoothSparsePhiRegularizer(
+             name='smooth_phi_bcg',
+             topic_names=background_topic_names,
+             tau=model_params.get("smooth_bcg_tau", 0.1),
+             class_ids=[main_modality],
+        ),
+        artm.SmoothSparseThetaRegularizer(
+             name='smooth_theta_bcg',
+             topic_names=background_topic_names,
+             tau=model_params.get("smooth_bcg_tau", 0.1),
+        ),
+    ]
+
+    for reg in regularizers:
+        model.regularizers.add(transform_regularizer(
+            data_stats,
+            reg,
+            model.class_ids,
+            n_topics=len(reg.topic_names)
+        ))
 
     return model
 
