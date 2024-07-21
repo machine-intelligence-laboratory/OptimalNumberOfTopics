@@ -381,8 +381,8 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
         def find_next_topic_word(starting_index: int) -> int:
             index = starting_index
 
-            while index < len(words) and\
-                    get_word_topic_index(words[index]) != topic_index:
+            while (index < len(words)
+                   and get_word_topic_index(words[index]) != topic_index):
                 index += 1
 
             if index == len(words):

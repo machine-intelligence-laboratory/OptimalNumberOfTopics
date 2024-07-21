@@ -520,6 +520,9 @@ class TopicBankMethod(BaseSearchMethod):
                     }
                 )
 
+                print(f'!!! Bank Phi: {bank_phi.to_numpy()}.')
+                print(f'!!! Bank model Phi: {bank_model.get_phi().to_numpy()}.')
+
                 assert np.allclose(
                     bank_phi.to_numpy(),
                     bank_model.get_phi().to_numpy(),
@@ -560,6 +563,9 @@ class TopicBankMethod(BaseSearchMethod):
                         regularizer.name: regularizer,
                     }
                 )
+
+                print(f'!!! Bank Phi: {bank_phi.to_numpy()}.')
+                print(f'!!! Bank model Phi: {bank_model.get_phi().to_numpy()}.')
 
                 assert bank_model.get_phi().shape[1] == bank_phi.shape[1] + 1
                 assert np.allclose(
