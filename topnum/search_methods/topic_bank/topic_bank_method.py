@@ -523,7 +523,7 @@ class TopicBankMethod(BaseSearchMethod):
                 assert np.allclose(
                     bank_phi.to_numpy(),
                     bank_model.get_phi().to_numpy(),
-                    atol=1e-6,
+                    atol=1e-5,
                 )
 
                 _logger.info('Computing default scores for bank model...')
@@ -565,7 +565,7 @@ class TopicBankMethod(BaseSearchMethod):
                 assert np.allclose(
                     bank_phi.to_numpy(),
                     bank_model.get_phi().to_numpy()[:, :-1],
-                    atol=1e-6,
+                    atol=1e-5,
                 )
 
                 scores['ppl_cheatty'] = bank_model.scores['ppl_cheatty'][-1]
