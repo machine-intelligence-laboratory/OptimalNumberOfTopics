@@ -173,6 +173,18 @@ class _BaseCoherenceScore(TopicNetBaseScore):
 
         word_topic_relatednesses = self._get_word_topic_relatednesses(model)
 
+        self._word_topic_relatednesses_fast = word_topic_relatednesses.to_dict()
+        self._neutral_word_topic_relatedness = float(np.mean(word_topic_relatednesses.values))
+        self._word2index = {
+            word: index  # word_topic_relatednesses.index.get_loc(word)
+            for index, word in enumerate(word_topic_relatednesses.index)
+        }
+        self._topic2index = {
+            topic: index  # word_topic_relatednesses.columns.get_loc(topic)
+            for index, topic in enumerate(word_topic_relatednesses.columns)
+        }
+        self._word_topic_indices = np.argmax(word_topic_relatednesses.values, axis=1)
+
         # TODO: topic coherence may be evaluated on any peace of text
         #   (paragraph, sentence, phrase), that is, not only on whole documents
         topic_document_coherences = np.zeros((len(topics), len(documents)))
@@ -327,21 +339,31 @@ class _BaseCoherenceScore(TopicNetBaseScore):
     def _get_vw_document(self, document_id: str) -> str:
         return self._dataset.get_vw_document(document_id).loc[document_id, VW_TEXT_COL]
 
-    @staticmethod
     def _get_relatedness(
+            self,
             word: Tuple[str, str],
             topic: str,
             word_topic_relatednesses: pd.DataFrame) -> float:
 
+        # try:
+        #     return word_topic_relatednesses.loc[word, topic]
+        # except KeyError as error:
+        #     _logger.warning(
+        #         f'Some word not found in Word-Topic relatedness matrix: "{error}"!'
+        #         f' Returning mean value over all word relatednesses for topic "{topic}".'
+        #     )
+        #
+        #     return float(np.mean(word_topic_relatednesses.values))
+
         try:
-            return word_topic_relatednesses.loc[word, topic]
+            return self._word_topic_relatednesses_fast[topic][word]
         except KeyError as error:
             _logger.warning(
                 f'Some word not found in Word-Topic relatedness matrix: "{error}"!'
                 f' Returning mean value over all word relatednesses for topic "{topic}".'
             )
 
-            return float(np.mean(word_topic_relatednesses.values))
+            return self._neutral_word_topic_relatedness
 
     # TODO: DRY
     def save(self, path: str) -> None:

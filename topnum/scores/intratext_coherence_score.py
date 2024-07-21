@@ -270,18 +270,22 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
         elif self._computation_method == ComputationMethod.SEGMENT_WEIGHT:
             return topic_segment_weight
 
-    @staticmethod
     def _get_word_topic_index(
+            self,
             word: WordType,
             word_topic_relatednesses: pd.DataFrame,
             word_topic_indices: np.array,
             ) -> int:
-        if word not in word_topic_relatednesses.index:
+        # if word not in word_topic_relatednesses.index:
+        #     return -1
+        # else:
+        #     return word_topic_indices[
+        #         word_topic_relatednesses.index.get_loc(word)
+        #     ]
+        if word not in self._word2index:
             return -1
         else:
-            return word_topic_indices[
-                word_topic_relatednesses.index.get_loc(word)
-            ]
+            return word_topic_indices[self._word2index[word]]
 
     def _compute_segment_characteristics(
             self,
@@ -293,14 +297,14 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
         topic_segment_lengths = []
         topic_segment_weights = []
 
-        topic_index = word_topic_relatednesses.columns.get_loc(topic)
-        word_topic_indices = np.argmax(word_topic_relatednesses.values, axis=1)
+        topic_index = self._topic2index[topic]  # word_topic_relatednesses.columns.get_loc(topic)
+        # word_topic_indices = np.argmax(word_topic_relatednesses.values, axis=1)
 
         def get_word_topic_index(word: WordType) -> int:
             return self._get_word_topic_index(
                 word=word,
                 word_topic_relatednesses=word_topic_relatednesses,
-                word_topic_indices=word_topic_indices,
+                word_topic_indices=self._word_topic_indices,
             )
 
         index = 0
@@ -354,14 +358,14 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
             words: List[WordType],
             word_topic_relatednesses: pd.DataFrame) -> Union[float, None]:
 
-        topic_index = word_topic_relatednesses.columns.get_loc(topic)
-        word_topic_indices = np.argmax(word_topic_relatednesses.values, axis=1)
+        topic_index = self._topic2index[topic]  # word_topic_relatednesses.columns.get_loc(topic)
+        # word_topic_indices = np.argmax(word_topic_relatednesses.values, axis=1)
 
         def get_word_topic_index(word: WordType) -> int:
             return self._get_word_topic_index(
                 word=word,
                 word_topic_relatednesses=word_topic_relatednesses,
-                word_topic_indices=word_topic_indices,
+                word_topic_indices=self._word_topic_indices,
             )
 
         def find_next_topic_word(starting_index: int) -> int:
@@ -442,13 +446,13 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
         if len(words) == 0:
             return None
 
-        word_topic_indices = np.argmax(word_topic_relatednesses.values, axis=1)
+        # word_topic_indices = np.argmax(word_topic_relatednesses.values, axis=1)
 
         def get_word_topic_index(word: WordType) -> int:
             return self._get_word_topic_index(
                 word=word,
                 word_topic_relatednesses=word_topic_relatednesses,
-                word_topic_indices=word_topic_indices,
+                word_topic_indices=self._word_topic_indices,
             )
 
         word_topics = [
