@@ -292,10 +292,16 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
         #     return word_topic_indices[
         #         word_topic_relatednesses.index.get_loc(word)
         #     ]
-        if word not in self._word2index:
-            return -1
-        else:
+
+        # if word not in self._word2index:
+        #     return -1
+        # else:
+        #     return word_topic_indices[self._word2index[word]]
+
+        try:
             return word_topic_indices[self._word2index[word]]
+        except KeyError:
+            return -1
 
     def _compute_segment_characteristics(
             self,
