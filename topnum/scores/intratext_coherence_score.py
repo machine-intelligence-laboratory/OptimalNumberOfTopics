@@ -424,6 +424,7 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
             sums.append(sum_in_window)
 
             word_index = find_next_topic_word(window_upper_bound)
+            border_left_index = window_upper_bound
 
             assert word_index > original_word_index or word_index == -1
 
