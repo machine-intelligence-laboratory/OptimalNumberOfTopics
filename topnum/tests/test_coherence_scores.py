@@ -271,6 +271,22 @@ class TestIntratextCoherenceScore:
 
         self._check_compute(score)
 
+    @pytest.mark.parametrize(
+        'window',
+        [2, 4, 10]  # TODO: window = 1 -> fail (sometimes?)
+    )
+    def test_compute_topden(self, window) -> None:
+        score = _IntratextCoherenceScore(
+            self.dataset,
+            text_type=TextType.VW_TEXT,
+            computation_method=ComputationMethod.SUM_OVER_WINDOW,
+            word_topic_relatedness=WordTopicRelatednessType.PTW,
+            specificity_estimation=SpecificityEstimationMethod.NONE,
+            window=window,
+        )
+
+        self._check_compute(score)
+
     @pytest.mark.parametrize('keep_in_memory', [True, False])
     def test_compute_intratext_small_big_data(self, keep_in_memory) -> None:
         dataset = Dataset(self.dataset_file_path, keep_in_memory=keep_in_memory)
