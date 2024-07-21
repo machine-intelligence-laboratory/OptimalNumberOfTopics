@@ -406,8 +406,8 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
         while word_index < len(words) and word_index != -1:
             original_word_index = word_index
 
-            window_lower_bound = word_index - int(np.floor(self._window // 2))
-            window_upper_bound = word_index + int(np.floor(self._window // 2)) + 1
+            window_lower_bound = word_index - self._window // 2
+            window_upper_bound = word_index + self._window // 2 + 1
 
             sum_in_window = np.sum(
                 [
