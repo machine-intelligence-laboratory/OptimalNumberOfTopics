@@ -93,7 +93,7 @@ class IntratextCoherenceScore(BaseTopicScore):
             window=10,
             verbose: bool = False,
             should_compute: Optional[
-                Union[Callable[[int], bool], bool]] = False,  # TODO: very slow on full collection
+                Union[Callable[[int], bool], bool]] = True,  # TODO: very slow on full collection
     ):
         """
         Parameters
