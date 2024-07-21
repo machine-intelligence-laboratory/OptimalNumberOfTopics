@@ -33,7 +33,6 @@ setup(
         'matplotlib==3.7.5',
         'numpy==1.24.4',
         'pandas==2.0.3',
-        'protobuf==3.20.3',  # TODO: BigARTM dependency
         'pytest==8.1.1',
         'scikit-learn==1.3.2',
         'scipy==1.10.1',
