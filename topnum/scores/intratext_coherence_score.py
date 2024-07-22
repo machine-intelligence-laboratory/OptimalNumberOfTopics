@@ -403,6 +403,7 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
 
         sums = list()
         border_left_index = 0
+        border_right_index = len(words) - 1
 
         while word_index < len(words) and word_index != -1:
             original_word_index = word_index
@@ -410,7 +411,9 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
             window_lower_bound = max(
                 border_left_index, word_index - self._window // 2
             )
-            window_upper_bound = word_index + self._window // 2 + 1
+            window_upper_bound = min(
+                border_right_index, word_index + self._window // 2
+            ) + 1
 
             assert window_lower_bound <= word_index
 
