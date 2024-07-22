@@ -414,12 +414,19 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
 
             assert window_lower_bound <= word_index
 
-            sum_in_window = sum(
-                [
-                    self._get_relatedness(w, topic, word_topic_relatednesses)
-                    for w in words[window_lower_bound:window_upper_bound]
-                ]
-            )
+            # sum_in_window = sum(  # np.sum
+            #     [
+            #         self._get_relatedness(w, topic, word_topic_relatednesses)
+            #         for w in words[window_lower_bound:window_upper_bound]
+            #     ]
+            # )
+
+            sum_in_window = 0.0
+
+            for j in range(window_lower_bound, window_upper_bound):
+                sum_in_window = sum_in_window + self._get_relatedness(
+                    words[j], topic, word_topic_relatednesses
+                )
 
             sums.append(sum_in_window)
 
