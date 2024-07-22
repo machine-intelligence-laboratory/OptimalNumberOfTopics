@@ -6,6 +6,7 @@ from enum import (
     auto,
     IntEnum
 )
+from functools import lru_cache
 from typing import (
     Callable,
     Dict,
@@ -281,6 +282,7 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
         elif self._computation_method == ComputationMethod.SEGMENT_WEIGHT:
             return topic_segment_weight
 
+    @lru_cache(maxsize=None)
     def _get_word_topic_index(
             self,
             word: WordType,
@@ -300,7 +302,7 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
         #     return word_topic_indices[self._word2index[word]]
 
         try:
-            return word_topic_indices[self._word2index[word]]
+            return self._word_topic_indices[self._word2index[word]]
         except KeyError:
             return -1
 
@@ -320,8 +322,8 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
         def get_word_topic_index(word: WordType) -> int:
             return self._get_word_topic_index(
                 word=word,
-                word_topic_relatednesses=word_topic_relatednesses,
-                word_topic_indices=self._word_topic_indices,
+                word_topic_relatednesses=None,
+                word_topic_indices=None,
             )
 
         index = 0
@@ -336,7 +338,8 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
 
             segment_length = 1
             segment_weight = self._get_relatedness(
-                words[index], topic, None
+                words[index], topic, None  # word_topic_relatednesses is not used here
+                                           # (besides, lru_cache is applied and who knows how it would react to pd.DataFrame as param)
             )
 
             num_out_of_topic_words = 0
@@ -381,8 +384,8 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
         def get_word_topic_index(word: WordType) -> int:
             return self._get_word_topic_index(
                 word=word,
-                word_topic_relatednesses=word_topic_relatednesses,
-                word_topic_indices=self._word_topic_indices,
+                word_topic_relatednesses=None,
+                word_topic_indices=None,
             )
 
         def find_next_topic_word(starting_index: int) -> int:
@@ -484,8 +487,8 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
         def get_word_topic_index(word: WordType) -> int:
             return self._get_word_topic_index(
                 word=word,
-                word_topic_relatednesses=word_topic_relatednesses,
-                word_topic_indices=self._word_topic_indices,
+                word_topic_relatednesses=None,
+                word_topic_indices=None,
             )
 
         word_topics = [
