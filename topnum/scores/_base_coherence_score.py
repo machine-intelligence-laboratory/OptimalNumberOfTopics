@@ -11,6 +11,7 @@ from enum import (
     Enum,
     IntEnum
 )
+from functools import lru_cache
 from typing import (
     Callable,
     Dict,
@@ -344,6 +345,7 @@ class _BaseCoherenceScore(TopicNetBaseScore):
     def _get_vw_document(self, document_id: str) -> str:
         return self._dataset.get_vw_document(document_id).loc[document_id, VW_TEXT_COL]
 
+    @lru_cache(maxsize=None)
     def _get_relatedness(
             self,
             word: Tuple[str, str],

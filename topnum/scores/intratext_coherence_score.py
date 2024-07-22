@@ -6,8 +6,6 @@ from enum import (
     auto,
     IntEnum
 )
-from topicnet.cooking_machine import Dataset
-from topicnet.cooking_machine.models.base_model import BaseModel
 from typing import (
     Callable,
     Dict,
@@ -16,6 +14,9 @@ from typing import (
     Tuple,
     Union
 )
+
+from topicnet.cooking_machine import Dataset
+from topicnet.cooking_machine.models.base_model import BaseModel
 
 from ..data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
 from ._base_coherence_score import (
@@ -335,7 +336,7 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
 
             segment_length = 1
             segment_weight = self._get_relatedness(
-                words[index], topic, word_topic_relatednesses
+                words[index], topic, None
             )
 
             num_out_of_topic_words = 0
@@ -348,7 +349,7 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
                 else:
                     segment_length += 1
                     segment_weight += self._get_relatedness(
-                        words[index], topic, word_topic_relatednesses
+                        words[index], topic, None
                     )
 
                     num_out_of_topic_words = 0
@@ -428,7 +429,7 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
 
             for j in range(window_lower_bound, window_upper_bound):
                 sum_in_window = sum_in_window + self._get_relatedness(
-                    words[j], topic, word_topic_relatednesses
+                    words[j], topic, None
                 )
 
             sums.append(sum_in_window)
@@ -447,7 +448,7 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
             word_topic_relatednesses: pd.DataFrame) -> Union[float, None]:
 
         topic_relatednesses = [
-            self._get_relatedness(word, topic, word_topic_relatednesses)
+            self._get_relatedness(word, topic, None)
             for word in words
         ]
 
@@ -500,16 +501,16 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
             cur_topic, next_topic = word_topics[index], word_topics[index + 1]
 
             r_cw_ct = self._get_relatedness(
-                cur_word, cur_topic, word_topic_relatednesses
+                cur_word, cur_topic, None
             )
             r_cw_nt = self._get_relatedness(
-                cur_word, next_topic, word_topic_relatednesses
+                cur_word, next_topic, None
             )
             r_nw_ct = self._get_relatedness(
-                next_word, cur_topic, word_topic_relatednesses
+                next_word, cur_topic, None
             )
             r_nw_nt = self._get_relatedness(
-                next_word, next_topic, word_topic_relatednesses
+                next_word, next_topic, None
             )
 
             diff1 = abs(r_cw_ct - r_nw_ct)
