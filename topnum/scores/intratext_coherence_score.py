@@ -6,7 +6,6 @@ from enum import (
     auto,
     IntEnum
 )
-from functools import lru_cache
 from typing import (
     Callable,
     Dict,
@@ -282,7 +281,7 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
         elif self._computation_method == ComputationMethod.SEGMENT_WEIGHT:
             return topic_segment_weight
 
-    @lru_cache(maxsize=None)
+    # @lru_cache(maxsize=None)  # did't provide speed up
     def _get_word_topic_index(
             self,
             word: WordType,
