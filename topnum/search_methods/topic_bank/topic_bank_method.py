@@ -352,7 +352,7 @@ class TopicBankMethod(BaseSearchMethod):
             self._result[_KEY_MODEL_SCORES].append(scores)
             self._result[_KEY_NUM_MODEL_TOPICS].append(topic_model.get_phi().shape[1])
 
-            self.save()
+            # self.save()
 
             if self._topic_score_threshold_percentile % 1 != 0:
                 print(f'Using absoulte threshold: {self._topic_score_threshold_percentile}.')
@@ -382,8 +382,18 @@ class TopicBankMethod(BaseSearchMethod):
                 topics_for_append = list(range(len(phi.columns)))
                 topics_for_update = dict()
             elif self._bank_update == BankUpdateMethod.PROVIDE_NON_LINEARITY:
+                self._last_bank_phi = self._get_phi(self._topic_bank.topics, word2index)
+                self._last_model_phi = phi
+
+                if hasattr(topic_model, 'has_bcg'):
+                    print(f'Eliminating bcg topic before Hier. Cur |T| is {phi.shape[1]}, topics are: {phi.columns}.')
+
+                    phi = phi.iloc[:, :-1]
+
+                    print(f'Now |T| is {phi.shape[1]}, topics are: {phi.columns}.')
+
                 topics_for_append, topics_for_update = self._extract_hierarchical_relationship(
-                    bank_phi=self._get_phi(self._topic_bank.topics, word2index),
+                    bank_phi=self._last_bank_phi,
                     new_model_phi=phi,
                     psi_threshold=self._child_parent_relationship_threshold
                 )
@@ -467,7 +477,7 @@ class TopicBankMethod(BaseSearchMethod):
                 self._topic_bank.topic_scores  # TODO: append
             )
 
-            self.save()
+            # self.save()
 
             if self._save_model_topics:
                 self._topic_bank.save_model_topics(
