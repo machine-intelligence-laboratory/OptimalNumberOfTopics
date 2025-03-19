@@ -385,10 +385,16 @@ class TopicBankMethod(BaseSearchMethod):
                 self._last_bank_phi = self._get_phi(self._topic_bank.topics, word2index)
                 self._last_model_phi = phi
 
-                if hasattr(topic_model, 'has_bcg'):
-                    print(f'Eliminating bcg topic before Hier. Cur |T| is {phi.shape[1]}, topics are: {phi.columns}.')
+                # TODO: TopicNet's model should be able to tell
+                #  what topics are subject topics,
+                #  and what topics are background ones
+                if hasattr(topic_model, 'num_bcg') and topic_model.num_bcg > 0:
+                    print(
+                        f'Eliminating {topic_model.num_bcg} bcg topic before Hierarchy.'
+                        f' Current |T| is {phi.shape[1]}, topics are: {phi.columns}.'
+                    )
 
-                    phi = phi.iloc[:, :-1]
+                    phi = phi.iloc[:, :-topic_model.num_bcg]
 
                     print(f'Now |T| is {phi.shape[1]}, topics are: {phi.columns}.')
 
@@ -420,8 +426,12 @@ class TopicBankMethod(BaseSearchMethod):
             _logger.info('Calculating model topic scores...')
 
             for topic_index, topic_name in enumerate(topic_model.get_phi().columns):
-                if hasattr(topic_model, 'has_bcg') and topic_index == num_model_topics - 1:
-                    print('Skipping saving scores for bcg topic')
+                if hasattr(topic_model, 'num_bcg') and topic_index >= num_model_topics - topic_model.num_bcg:
+                    print(
+                        f'Skipping saving scores for bcg topic number {topic_index}'
+                        f'  of {num_model_topics} model topics.'
+                    )
+
                     continue
 
                 topic_scores = dict()
@@ -502,16 +512,14 @@ class TopicBankMethod(BaseSearchMethod):
                     topic_names=bank_phi.columns,
                 )
 
-
                 bank_model = _get_topic_model(
                     self._dataset,
                     main_modality=self._main_modality,
                     num_topics=bank_phi.shape[1],
                     scores=self._all_model_scores,
-                    num_safe_fit_iterations=1
+                    num_safe_fit_iterations=1,
                 )
-
-                # Safe fit to make topics so-so
+                # Safe fit to make topics so-so adequate (just in case)
                 bank_model._fit(
                     self._dataset.get_batch_vectorizer(),
                     num_iterations=1,
@@ -530,9 +538,6 @@ class TopicBankMethod(BaseSearchMethod):
                     }
                 )
 
-                print(f'!!! Bank Phi: {bank_phi.to_numpy()}.')
-                print(f'!!! Bank model Phi: {bank_model.get_phi().to_numpy()}.')
-
                 assert np.allclose(
                     bank_phi.to_numpy(),
                     bank_model.get_phi().to_numpy(),
@@ -544,23 +549,22 @@ class TopicBankMethod(BaseSearchMethod):
                 scores.update(self._get_default_scores(bank_model))
                 scores['ppl_fair'] = bank_model.scores['ppl_fair'][-1]
 
-
                 # TODO: Second bank model is needed for experiments with regularizers
+
+                # Model with one bcg topic
                 bank_model = init_model_from_family(
                     family='sparse',
-                    dataset=self._dataset, main_modality=self._main_modality,
-                    num_topics=len(bank_phi.columns), seed=0,
+                    dataset=self._dataset,
+                    main_modality=self._main_modality,
+                    num_topics=len(bank_phi.columns),
+                    seed=0,
                 )
-
-                # Bcg sparse model
-                # assert hasattr(bank_model, 'has_bcg')
-                # assert bank_model.has_bcg
-
-                # Safe fit to make topics so-so
+                # Safe fit to make topics so-so adequate (just in case)
                 bank_model._fit(
                     self._dataset.get_batch_vectorizer(),
                     num_iterations=1,
                 )
+
                 bank_model._model.scores.add(
                     artm.scores.PerplexityScore(
                         name=f'ppl_cheatty',
@@ -574,9 +578,6 @@ class TopicBankMethod(BaseSearchMethod):
                     }
                 )
 
-                print(f'!!! Bank Phi: {bank_phi.to_numpy()}.')
-                print(f'!!! Bank model Phi: {bank_model.get_phi().to_numpy()}.')
-
                 assert bank_model.get_phi().shape[1] == bank_phi.shape[1] + 1
                 assert np.allclose(
                     bank_phi.to_numpy(),
@@ -586,8 +587,7 @@ class TopicBankMethod(BaseSearchMethod):
 
                 scores['ppl_cheatty'] = bank_model.scores['ppl_cheatty'][-1]
 
-                print(f'Bank scores: {scores}')
-                
+                print(f'Bank scores: {scores}.')
 
             # Topic scores already calculated
 
