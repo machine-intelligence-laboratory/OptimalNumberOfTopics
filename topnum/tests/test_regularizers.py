@@ -1,39 +1,21 @@
 import logging
-import numpy as np
 import os
-
-import pandas as pd
-import pytest
 import shutil
 import tempfile
-import warnings
 
 from copy import deepcopy
-from itertools import combinations
-from numbers import Number
-from time import sleep
-from typing import (
-    Dict,
-    List,
-)
+from typing import List
+
+import numpy as np
+import pytest
 
 from pandas import DataFrame
 
-import artm
-
-from topicnet.cooking_machine import Experiment
-from topicnet.cooking_machine.cubes import (
-    CubeCreator,
-    RegularizersModifierCube,
-)
 from topicnet.cooking_machine.dataset import (
     Dataset,
     W_DIFF_BATCHES_1,
 )
-from topicnet.cooking_machine.models import (
-    BaseModel,
-    TopicModel,
-)
+from topicnet.cooking_machine.models import TopicModel
 from topicnet.cooking_machine.model_constructor import init_simple_default_model
 
 
@@ -67,8 +49,6 @@ class TestOptimizeScores:
     other_modality = None
     text_collection = None
 
-    optimizer = None
-
     working_folder_path = None
 
     @classmethod
@@ -94,9 +74,6 @@ class TestOptimizeScores:
         self.text_collection._set_dataset_kwargs()
         self.text_collection._dataset = None
 
-        if self.optimizer is not None:
-            self.optimizer.clear()
-
         if os.path.isdir(self.working_folder_path):
             shutil.rmtree(self.working_folder_path)
 
@@ -108,7 +85,7 @@ class TestOptimizeScores:
         if os.path.isdir(cls.working_folder_path):
             shutil.rmtree(cls.working_folder_path)
 
-    def _dataset(self, keep_in_memory: bool = True) -> Dataset:
+    def _get_dataset(self, keep_in_memory: bool = True) -> Dataset:
         self.text_collection._set_dataset_kwargs(
             keep_in_memory=keep_in_memory
         )
@@ -116,7 +93,7 @@ class TestOptimizeScores:
 
         return dataset
 
-    def _topic_model_and_topics(
+    def _get_topic_model_and_topics(
             self,
             dataset: Dataset,
             num_specific_topics=5,
@@ -173,6 +150,26 @@ class TestOptimizeScores:
 
         return fix_regularizer
 
+    def _get_decorr_regularizer_base(
+            self,
+            name: str,
+            tau: float,
+            target_topic_names: List[str],
+            other_topic_model: TopicModel,
+            other_topic_names: List[str],
+            decorrelate_regularizer_class,
+            ):
+        other_phi = other_topic_model._model.get_phi()[other_topic_names]
+        other_phi = deepcopy(other_phi)
+        decorr_regularizer = decorrelate_regularizer_class(
+            name=name,
+            tau=tau,
+            topic_names=target_topic_names,
+            other_phi=other_phi,
+        )
+
+        return decorr_regularizer, other_phi
+
     def _get_decorr_regularizer(
             self,
             name: str,
@@ -181,16 +178,13 @@ class TestOptimizeScores:
             other_topic_model: TopicModel,
             other_topic_names: List[str],
             ):
-        other_phi = other_topic_model._model.get_phi()[other_topic_names]
-        other_phi = deepcopy(other_phi)
-        decorr_regularizer = DecorrelateWithOtherPhiRegularizer(
-            name=name,
-            tau=tau,
-            topic_names=target_topic_names,
-            other_phi=other_phi,
+        return self._get_decorr_regularizer_base(
+            name=name, tau=tau,
+            target_topic_names=target_topic_names,
+            other_topic_model=other_topic_model,
+            other_topic_names=other_topic_names,
+            decorrelate_regularizer_class=DecorrelateWithOtherPhiRegularizer,
         )
-
-        return decorr_regularizer, other_phi
 
     def _get_decorr_regularizer2(
             self,
@@ -200,24 +194,21 @@ class TestOptimizeScores:
             other_topic_model: TopicModel,
             other_topic_names: List[str],
             ):
-        other_phi = other_topic_model._model.get_phi()[other_topic_names]
-        other_phi = deepcopy(other_phi)
-        decorr_regularizer = DecorrelateWithOtherPhiRegularizer2(
-            name=name,
-            tau=tau,
-            topic_names=target_topic_names,
-            other_phi=other_phi,
+        return self._get_decorr_regularizer_base(
+            name=name, tau=tau,
+            target_topic_names=target_topic_names,
+            other_topic_model=other_topic_model,
+            other_topic_names=other_topic_names,
+            decorrelate_regularizer_class=DecorrelateWithOtherPhiRegularizer2,
         )
-
-        return decorr_regularizer, other_phi
 
     @pytest.mark.parametrize('keep_in_memory', [True, False])
     def test_fix_good(self, keep_in_memory):
-        dataset = self._dataset(keep_in_memory=keep_in_memory)
+        dataset = self._get_dataset(keep_in_memory=keep_in_memory)
         (topic_model,
          good_topic_names,
          bad_topic_names,
-         not_good_topic_names) = self._topic_model_and_topics(dataset=dataset)
+         not_good_topic_names) = self._get_topic_model_and_topics(dataset=dataset)
 
         good_phi = deepcopy(
             topic_model._model.get_phi()[good_topic_names]
@@ -243,25 +234,36 @@ class TestOptimizeScores:
             new_phi[good_topic_names], good_phi
         )
 
+    @pytest.mark.parametrize('decorr_v2', [False, True])
     @pytest.mark.parametrize('keep_in_memory', [True, False])
-    def test_decorr_bad(self, keep_in_memory):
-        dataset = self._dataset(keep_in_memory=keep_in_memory)
+    def test_decorr_bad(self, decorr_v2, keep_in_memory):
+        dataset = self._get_dataset(keep_in_memory=keep_in_memory)
         (topic_model,
          good_topic_names,
          bad_topic_names,
-         not_good_topic_names) = self._topic_model_and_topics(dataset=dataset)
+         not_good_topic_names) = self._get_topic_model_and_topics(dataset=dataset)
 
         good_phi = deepcopy(
             topic_model._model.get_phi()[good_topic_names]
         )
-
-        decorr_bad_regularizer, bad_phi = self._get_decorr_regularizer(
-            name='ext_decorr_bad',
-            tau=1e5,
+        base_topic_decorr_kwargs = dict(
             target_topic_names=not_good_topic_names,
             other_topic_model=topic_model,
             other_topic_names=bad_topic_names,
         )
+
+        if not decorr_v2:
+            decorr_bad_regularizer, bad_phi = self._get_decorr_regularizer(
+                name='ext_decorr_bad',
+                tau=1e5,
+                **base_topic_decorr_kwargs,
+            )
+        else:
+            decorr_bad_regularizer, bad_phi = self._get_decorr_regularizer2(
+                name='ext_decorr_bad2',
+                tau=1e8,
+                **base_topic_decorr_kwargs,
+            )
 
         topic_model._fit(
             dataset.get_batch_vectorizer(),
@@ -283,123 +285,49 @@ class TestOptimizeScores:
             new_phi[not_good_topic_names], bad_phi, rtol=0.5
         )
 
-    @pytest.mark.parametrize('keep_in_memory', [True, False])
-    def test_decorr_bad2(self, keep_in_memory):
-        dataset = self._dataset(keep_in_memory=keep_in_memory)
+    @pytest.mark.parametrize('decorr_v2', [False, True])
+    def test_fix_good_and_decorr_good_bad(self, decorr_v2):
+        dataset = self._get_dataset(keep_in_memory=True)
         (topic_model,
          good_topic_names,
          bad_topic_names,
-         not_good_topic_names) = self._topic_model_and_topics(dataset=dataset)
-
-        good_phi = deepcopy(
-            topic_model._model.get_phi()[good_topic_names]
-        )
-
-        decorr_bad_regularizer, bad_phi = self._get_decorr_regularizer2(
-            name='ext_decorr_bad2',
-            tau=1e8,
-            target_topic_names=not_good_topic_names,
-            other_topic_model=topic_model,
-            other_topic_names=bad_topic_names,
-        )
-
-        topic_model._fit(
-            dataset.get_batch_vectorizer(),
-            num_iterations=self.ONE_FIT_NUM_ITERS,
-            custom_regularizers={
-                decorr_bad_regularizer.name: decorr_bad_regularizer,
-            }
-        )
-
-        new_phi = topic_model._model.get_phi()
-
-        # TODO: good topics also change (as they are not fixed)
-        #   so, the meaningfulness of this test is questionable
-        #   (other than the fact that it simply tests runnability)
-        # assert np.allclose(
-        #     new_phi[good_topic_names], good_phi, rtol=0.05
-        # )
-        assert not np.allclose(
-            new_phi[not_good_topic_names], bad_phi, rtol=0.5
-        )
-
-    def test_fix_good_and_decorr_good_bad(self):
-        dataset = self._dataset(keep_in_memory=True)
-        (topic_model,
-         good_topic_names,
-         bad_topic_names,
-         not_good_topic_names) = self._topic_model_and_topics(dataset=dataset)
-
-        fix_regularizer = self._get_fix_regularizer(
-            name='fix',
-            target_topic_names=good_topic_names,
-            parent_topic_model=topic_model._model,  # TODO: test breaks if pass just `topic_model`
-                                                    #   aah, I guess, there are some score saving issues
-        )
-        decorr_bad_regularizer, bad_phi = self._get_decorr_regularizer(
-            name='ext_decorr_bad',
-            tau=1e5,
-            target_topic_names=not_good_topic_names,
-            other_topic_model=topic_model,
-            other_topic_names=bad_topic_names,
-        )
-        decorr_good_regularizer, good_phi = self._get_decorr_regularizer(
-            name='ext_decorr_good',
-            tau=1e5,
-            target_topic_names=not_good_topic_names,
-            other_topic_model=topic_model,
-            other_topic_names=good_topic_names,
-        )
-
-        topic_model._fit(
-            dataset.get_batch_vectorizer(),
-            num_iterations=self.ONE_FIT_NUM_ITERS,
-            custom_regularizers={
-                fix_regularizer.name: fix_regularizer,
-                decorr_bad_regularizer.name: decorr_bad_regularizer,
-                decorr_good_regularizer.name: decorr_good_regularizer,
-            }
-        )
-
-        new_phi = topic_model._model.get_phi()
-
-        assert np.allclose(
-            new_phi[good_topic_names], good_phi
-        )
-
-        assert not np.allclose(
-            new_phi[not_good_topic_names], good_phi, rtol=0.5
-        )
-        assert not np.allclose(
-            new_phi[not_good_topic_names], bad_phi, rtol=0.5
-        )
-
-    def test_fix_good_and_decorr_good_bad2(self):
-        dataset = self._dataset(keep_in_memory=True)
-        (topic_model,
-         good_topic_names,
-         bad_topic_names,
-         not_good_topic_names) = self._topic_model_and_topics(dataset=dataset)
+         not_good_topic_names) = self._get_topic_model_and_topics(dataset=dataset)
 
         fix_regularizer = self._get_fix_regularizer(
             name='fix',
             target_topic_names=good_topic_names,
             parent_topic_model=topic_model._model,
         )
-        decorr_bad_regularizer, bad_phi = self._get_decorr_regularizer2(
-            name='ext_decorr_bad2',
-            tau=1e8,
+        # TODO: test breaks if pass just `topic_model` for `parent_topic_model`
+        #   aah, I guess, there are some score saving issues (_score_caches=None)
+
+        base_topic_decorr_kwargs = dict(
             target_topic_names=not_good_topic_names,
             other_topic_model=topic_model,
-            other_topic_names=bad_topic_names,
         )
-        decorr_good_regularizer, good_phi = self._get_decorr_regularizer2(
-            name='ext_decorr_good2',
-            tau=1e8,
-            target_topic_names=not_good_topic_names,
-            other_topic_model=topic_model,
-            other_topic_names=good_topic_names,
-        )
+
+        if not decorr_v2:
+            decorr_bad_regularizer, bad_phi = self._get_decorr_regularizer(
+                name='ext_decorr_bad', tau=1e5,
+                other_topic_names=bad_topic_names,
+                **base_topic_decorr_kwargs,
+            )
+            decorr_good_regularizer, good_phi = self._get_decorr_regularizer(
+                name='ext_decorr_good', tau=1e5,
+                other_topic_names=good_topic_names,
+                **base_topic_decorr_kwargs
+            )
+        else:
+            decorr_bad_regularizer, bad_phi = self._get_decorr_regularizer2(
+                name='ext_decorr_bad2', tau=1e8,
+                other_topic_names=bad_topic_names,
+                **base_topic_decorr_kwargs
+            )
+            decorr_good_regularizer, good_phi = self._get_decorr_regularizer2(
+                name='ext_decorr_good2', tau=1e8,
+                other_topic_names=good_topic_names,
+                **base_topic_decorr_kwargs
+            )
 
         topic_model._fit(
             dataset.get_batch_vectorizer(),
