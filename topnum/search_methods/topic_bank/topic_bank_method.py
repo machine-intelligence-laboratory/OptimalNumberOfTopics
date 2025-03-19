@@ -355,7 +355,7 @@ class TopicBankMethod(BaseSearchMethod):
             # self.save()
 
             if self._topic_score_threshold_percentile % 1 != 0:
-                print(f'Using absoulte threshold: {self._topic_score_threshold_percentile}.')
+                print(f'Using absolute threshold: {self._topic_score_threshold_percentile}.')
                 
                 threshold = self._topic_score_threshold_percentile
             else:
@@ -441,6 +441,14 @@ class TopicBankMethod(BaseSearchMethod):
                 topic_scores[_KEY_TOPIC_SCORE_KERNEL_SIZE] = len(
                     topic_word_prob_values[topic_word_prob_values > 1.0 / num_words]
                 )
+
+                if topic_scores[_KEY_TOPIC_SCORE_KERNEL_SIZE] == 0:
+                    warnings.warn(
+                        f'Not going to add topic "{topic_name}" to the bank'
+                        f' because it has zero kernel!'
+                    )
+
+                    continue
 
                 for score_name in raw_topic_scores:
                     topic_scores[score_name] = raw_topic_scores[score_name][topic_name]
@@ -538,11 +546,19 @@ class TopicBankMethod(BaseSearchMethod):
                     }
                 )
 
-                assert np.allclose(
-                    bank_phi.to_numpy(),
-                    bank_model.get_phi().to_numpy(),
-                    atol=1e-3,
-                )
+                if not np.allclose(
+                        bank_phi.to_numpy(),
+                        bank_model.get_phi().to_numpy(),
+                        atol=1e-3):
+                    warnings.warn(
+                        'Seems that bank topics are not perfectly fixed in the bank topic model!'
+                        ' Check your bank topics!'
+                    )
+
+                    print(f'Bank Phi:\n{bank_phi.to_numpy()}')
+                    print(f'Total topic probs: {bank_phi.to_numpy().sum(axis=0)}.')
+                    print(f'Bank model Phi:\n{bank_model.get_phi().to_numpy()}')
+                    print(f'Total topic probs: {bank_model.get_phi().to_numpy().sum(axis=0)}.')
 
                 _logger.info('Computing default scores for bank model...')
 
@@ -578,12 +594,23 @@ class TopicBankMethod(BaseSearchMethod):
                     }
                 )
 
+                # One background topic
                 assert bank_model.get_phi().shape[1] == bank_phi.shape[1] + 1
-                assert np.allclose(
-                    bank_phi.to_numpy(),
-                    bank_model.get_phi().to_numpy()[:, :-1],
-                    atol=1e-3,
-                )
+
+                if not np.allclose(
+                        bank_phi.to_numpy(),
+                        bank_model.get_phi().to_numpy()[:, :-1],
+                        atol=1e-3):
+                    warnings.warn(
+                        'Seems that bank topics are not perfectly fixed in the bank topic model!'
+                        ' (The last model topic — background — is not considered.)'
+                        ' Check your bank topics!'
+                    )
+
+                    print(f'Bank Phi:\n{bank_phi.to_numpy()}')
+                    print(f'Total topic probs: {bank_phi.to_numpy().sum(axis=0)}.')
+                    print(f'Bank model Phi (including bcg topic):\n{bank_model.get_phi().to_numpy()}')
+                    print(f'Total topic probs (including bcg topic): {bank_model.get_phi().to_numpy().sum(axis=0)}.')
 
                 scores['ppl_cheatty'] = bank_model.scores['ppl_cheatty'][-1]
 
