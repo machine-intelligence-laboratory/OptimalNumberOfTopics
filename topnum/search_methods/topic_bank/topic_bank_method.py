@@ -221,12 +221,12 @@ class TopicBankMethod(BaseSearchMethod):
                 f' Are you sure you want to proceed (yes/no)?'
             )
 
-            #answer = input()
+            answer = input()
 
-            #if strtobool(answer) is False:
-            #    warnings.warn('Exiting')
+            if strtobool(answer) is False:
+                warnings.warn('Exiting')
 
-            #    exit(0)
+                exit(0)
 
         self._topic_score_threshold_percentile = topic_score_threshold_percentile
 
