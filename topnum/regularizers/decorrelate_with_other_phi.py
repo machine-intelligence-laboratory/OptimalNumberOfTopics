@@ -9,6 +9,8 @@ from artm import ARTM
 from topicnet.cooking_machine.models.base_regularizer import BaseRegularizer
 
 
+# TODO: find (and make possible to use) relative taus for these regularizers
+
 class DecorrelateWithOtherPhiRegularizer(BaseRegularizer):
     def __init__(
             self,
@@ -17,6 +19,19 @@ class DecorrelateWithOtherPhiRegularizer(BaseRegularizer):
             topic_names: List[str],
             other_phi: DataFrame,
             ):
+        """
+
+        Parameters
+        ----------
+        name
+        tau
+            To select a value, try a few test runs to find the tau
+            that affects the perplexity (worsens, but not very much).
+            Recommendation based on experimentation: try 1e5 or 1e6.
+        topic_names
+        other_phi
+
+        """
         super().__init__(name, tau=tau)
 
         self._topic_names = topic_names
@@ -54,6 +69,20 @@ class DecorrelateWithOtherPhiRegularizer2(BaseRegularizer):
             other_phi: DataFrame,
             num_iters: Optional[int] = None,
             ):
+        """
+
+        Parameters
+        ----------
+        name
+        tau
+            To select a value, try a few test runs to find the tau
+            that affects the perplexity (worsens, but not very much).
+            Recommendation based on experimentation: try 1e8, 1e9, or 1e10.
+        topic_names
+        other_phi
+        num_iters
+
+        """
         super().__init__(name, tau=tau)
 
         self._topic_names = topic_names

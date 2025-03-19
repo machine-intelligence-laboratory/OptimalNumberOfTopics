@@ -16,7 +16,7 @@ class FastFixPhiRegularizer(BaseRegularizer):
             self,
             name: str,
             topic_names: List[str],
-            parent_model: Optional[TopicModel] = None,
+            parent_model: Optional[TopicModel] = None,  # TODO: TopicModel or ARTM?
             parent_phi: DataFrame = None,
             tau: float = _VERY_BIG_TAU,
             ):
