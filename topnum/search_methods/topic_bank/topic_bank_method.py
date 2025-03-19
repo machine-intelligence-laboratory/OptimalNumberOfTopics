@@ -352,6 +352,8 @@ class TopicBankMethod(BaseSearchMethod):
             self._result[_KEY_MODEL_SCORES].append(scores)
             self._result[_KEY_NUM_MODEL_TOPICS].append(topic_model.get_phi().shape[1])
 
+            # Better one time at the end of the iteration
+            # (otherwise, incomplete information will be saved)
             # self.save()
 
             if self._topic_score_threshold_percentile % 1 != 0:
@@ -495,6 +497,8 @@ class TopicBankMethod(BaseSearchMethod):
                 self._topic_bank.topic_scores  # TODO: append
             )
 
+            # Better one time at the end of the iteration
+            # (otherwise, incomplete information will be saved)
             # self.save()
 
             if self._save_model_topics:
