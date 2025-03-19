@@ -786,6 +786,11 @@ class TopicBankMethod(BaseSearchMethod):
             q: Dict[str, float],
             kernel_only: bool = True) -> float:
 
+        # TODO: Can topics appear close if
+        #   top words are the same, but in different order?
+        #   (with different probabilities)
+        #   In other words, "same top words (no matter the order)" == "similar topics"?
+        #   (seems like it should be so)
         numerator = 0
         denominator = 0
 
