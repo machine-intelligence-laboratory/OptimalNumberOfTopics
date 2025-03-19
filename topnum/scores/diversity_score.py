@@ -117,7 +117,7 @@ class DiversityScore(BaseCustomScore):
         if self._topic_names is None:
             warnings.warn(
                 'Make sure you do not compute diversity with background topics!'
-                 'Specify the `topic_names` parameter if needed.'
+                ' Specify the `topic_names` parameter if needed.'
             )
 
     def _initialize(self) -> BaseTopicNetScore:

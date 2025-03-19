@@ -99,9 +99,12 @@ def init_model_from_family(
             dataset, modalities_to_use, main_modality, num_topics, 1, model_params
         )
     elif family == "decorrelation":
-        model = init_decorrelated_artm(
-            dataset, modalities_to_use, main_modality, num_topics, 1, model_params
+        model = init_decorrelated_plsa(
+            dataset, modalities_to_use, main_modality, num_topics, model_params
         )
+        # model = init_decorrelated_artm(
+        #     dataset, modalities_to_use, main_modality, num_topics, 1, model_params
+        # )
     elif family == "ARTM":
         model = init_baseline_artm(
             dataset, modalities_to_use, main_modality, num_topics, 1, model_params
@@ -213,6 +216,7 @@ def init_decorrelated_plsa(
     return model
 
 
+# TODO: is it the same as init_baseline_artm?
 def init_decorrelated_artm(
         dataset,
         modalities_to_use,
@@ -254,7 +258,6 @@ def init_decorrelated_artm(
             class_ids=modalities_to_use,
         )
     )
-
 
     dictionary = dataset.get_dictionary()
     baseline_class_ids = {class_id: 1 for class_id in modalities_to_use}

@@ -687,14 +687,14 @@ class TopicBankMethod(BaseSearchMethod):
 
         hierarchy = artm.hARTM(num_processors=1)
 
-        print(f'Creating first level with {bank_phi.shape[1]} topics. Dictionary: {self._dictionary}.')
+        _logger.debug(f'Creating first level with {bank_phi.shape[1]} topics. Dictionary: {self._dictionary}.')
 
         level0 = hierarchy.add_level(
             num_topics=bank_phi.shape[1]
         )
         level0.initialize(dictionary=self._dictionary)
 
-        print(
+        _logger.debug(
             f'Copying phi for the first level.'
             f' Phi shape: {bank_phi.shape}.'
             f' First words: {bank_phi.index[:10]}'
@@ -708,7 +708,7 @@ class TopicBankMethod(BaseSearchMethod):
             small_num_fit_iterations=1
         )
 
-        print(f'Creating second level with {new_model_phi.shape[1]} topics')
+        _logger.debug(f'Creating second level with {new_model_phi.shape[1]} topics')
 
         level1 = hierarchy.add_level(
             num_topics=new_model_phi.shape[1],
@@ -731,7 +731,7 @@ class TopicBankMethod(BaseSearchMethod):
             )
         )
 
-        print(
+        _logger.debug(
             f'Copying phi for the second level.'
             f' Phi shape: {new_model_phi.shape}.'
             f' First words: {new_model_phi.index[:10]}'

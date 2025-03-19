@@ -262,7 +262,7 @@ class TestTopicBank:
             document_occurrences_threshold_percentage=0.001
         )
 
-        print(f'Arora Phi: {phi}')
+        print(f'Arora Phi: {phi}.')
 
         assert not phi.isnull().any(axis=None)
 
