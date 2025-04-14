@@ -1,5 +1,15 @@
 # OptimalNumberOfTopics
 
+## Update
+
+[2025/04] Our paper [Iterative Improvement of an Additively Regularized Topic Model](https://link.springer.com/chapter/10.1007/978-3-031-88036-0_4) is published!
+
+Experiments (notebooks + results) are available here: [experiments/itar](.experiments/itar).
+The code (ITAR regularizers + improved TopicBank) [will be integrated in the repo](https://github.com/machine-intelligence-laboratory/OptimalNumberOfTopics/pull/104) a bit later (stay tuned 🙂).
+
+
+## Introduction
+
 To begin with, searching for an optimal number of topics in a text collection seems a very poorly stated task, because this number of topics heavily depends on the task at hand.
 One can take 10 topics and it might be enough, or 100 topics, or 1000.
 What's more, the whole notion of a *topic* is a bit obscure: people think of topics just as of some meaningful stories, concepts or ideas.
