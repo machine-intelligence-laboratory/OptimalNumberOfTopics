@@ -1,0 +1,2521 @@
+[
+    {
+        "scores": {
+            "perplexity": 6035.1533203125,
+            "coherence_20": 1.0957612870904738,
+            "diversity_euclidean": 0.047217504571665715,
+            "diversity_jensenshannon": 0.6530968919169996,
+            "diversity_hellinger": 0.7560219035462798,
+            "diversity_cosine": 0.7935253825490648,
+            "fair_ppl_free": 4086.966796875,
+            "fair_ppl_fix": null,
+            "unfair_ppl_banklike": 6035.1533203125
+        },
+        "topic_coherences": {
+            "0": 0.08792085445491832,
+            "1": 0.5238786601664907,
+            "2": 0.7080778176806818,
+            "3": 0.8711255744732963,
+            "4": 1.187836750410373,
+            "5": 0.7624536123452113,
+            "6": 0.7722797224249125,
+            "7": 1.0853704161890685,
+            "8": 1.1351592539642983,
+            "9": 1.754076915467018,
+            "10": 0.701493328558335,
+            "11": 0.7838654511708677,
+            "12": 1.4847047481368003,
+            "13": 1.185807628360797,
+            "14": 1.8388393254481474,
+            "15": 1.6629123668247345,
+            "16": 2.0821394544621064
+        },
+        "stats": {
+            "num_topics": 17,
+            "num_common_words": 264923,
+            "num_model_words": 264943,
+            "num_bt_words": 264925,
+            "top_diffs": [
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                }
+            ]
+        }
+    },
+    {
+        "scores": {
+            "perplexity": 6199.32373046875,
+            "coherence_20": 1.1571826237894138,
+            "diversity_euclidean": 0.048870209538642,
+            "diversity_jensenshannon": 0.6598716455302631,
+            "diversity_hellinger": 0.7648008406615652,
+            "diversity_cosine": 0.8168238775052938,
+            "fair_ppl_free": 4221.17333984375,
+            "fair_ppl_fix": null,
+            "unfair_ppl_banklike": 6199.32373046875
+        },
+        "topic_coherences": {
+            "0": 0.08622105557802984,
+            "1": 0.7080778176806818,
+            "2": 0.8711255744732963,
+            "3": 1.187836750410373,
+            "4": 0.7587471243645579,
+            "5": 0.7722797224249125,
+            "6": 1.0853704161890685,
+            "7": 1.1699380021739874,
+            "8": 1.1351592539642983,
+            "9": 1.754076915467018,
+            "10": 0.7838654511708677,
+            "11": 1.4847047481368003,
+            "12": 0.990498668237224,
+            "13": 1.300311957413929,
+            "14": 1.8388393254481474,
+            "15": 1.6629123668247345,
+            "16": 2.0821394544621064
+        },
+        "stats": {
+            "num_topics": 17,
+            "num_common_words": 264923,
+            "num_model_words": 264943,
+            "num_bt_words": 264925,
+            "top_diffs": [
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                }
+            ]
+        }
+    },
+    {
+        "scores": {
+            "perplexity": 6075.5244140625,
+            "coherence_20": 1.080132897881024,
+            "diversity_euclidean": 0.048400688366902166,
+            "diversity_jensenshannon": 0.6495679423735212,
+            "diversity_hellinger": 0.7515531384009706,
+            "diversity_cosine": 0.8012117905059291,
+            "fair_ppl_free": 4109.3603515625,
+            "fair_ppl_fix": null,
+            "unfair_ppl_banklike": 6075.5244140625
+        },
+        "topic_coherences": {
+            "0": 0.08666574739409649,
+            "1": 0.7080778176806818,
+            "2": 0.6455202875323387,
+            "3": 0.7587471243645579,
+            "4": 1.2574928870903448,
+            "5": 0.7722797224249125,
+            "6": 1.0853704161890685,
+            "7": 0.5811375105094415,
+            "8": 1.1699380021739874,
+            "9": 1.1351592539642983,
+            "10": 1.754076915467018,
+            "11": 0.701493328558335,
+            "12": 0.7838654511708677,
+            "13": 1.4847047481368003,
+            "14": 1.185807628360797,
+            "15": 1.5870034995540445,
+            "16": 1.6629123668247345,
+            "17": 2.0821394544621064
+        },
+        "stats": {
+            "num_topics": 18,
+            "num_common_words": 264923,
+            "num_model_words": 264943,
+            "num_bt_words": 264925,
+            "top_diffs": [
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                }
+            ]
+        }
+    },
+    {
+        "scores": {
+            "perplexity": 6017.65576171875,
+            "coherence_20": 1.1578073980537948,
+            "diversity_euclidean": 0.04896020207476864,
+            "diversity_jensenshannon": 0.6597024854384531,
+            "diversity_hellinger": 0.7640656677565968,
+            "diversity_cosine": 0.8098473772996138,
+            "fair_ppl_free": 4061.340576171875,
+            "fair_ppl_fix": null,
+            "unfair_ppl_banklike": 6017.65576171875
+        },
+        "topic_coherences": {
+            "0": 0.09225595145609251,
+            "1": 0.49623269667341846,
+            "2": 0.7080778176806818,
+            "3": 0.8711255744732963,
+            "4": 0.7587471243645579,
+            "5": 1.2574928870903448,
+            "6": 0.7722797224249126,
+            "7": 1.0853704161890685,
+            "8": 1.1699380021739874,
+            "9": 1.1351592539642983,
+            "10": 1.754076915467018,
+            "11": 0.7838654511708678,
+            "12": 1.4847047481368003,
+            "13": 1.300311957413929,
+            "14": 1.5870034995540445,
+            "15": 1.838839325448148,
+            "16": 1.6629123668247345,
+            "17": 2.0821394544621064
+        },
+        "stats": {
+            "num_topics": 18,
+            "num_common_words": 264923,
+            "num_model_words": 264943,
+            "num_bt_words": 264925,
+            "top_diffs": [
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                }
+            ]
+        }
+    },
+    {
+        "scores": {
+            "perplexity": 6120.39111328125,
+            "coherence_20": 1.1675470238265404,
+            "diversity_euclidean": 0.046777957162077825,
+            "diversity_jensenshannon": 0.6547704870420616,
+            "diversity_hellinger": 0.758199375906231,
+            "diversity_cosine": 0.808956900029794,
+            "fair_ppl_free": 4153.93212890625,
+            "fair_ppl_fix": null,
+            "unfair_ppl_banklike": 6120.39111328125
+        },
+        "topic_coherences": {
+            "0": 0.08622105557802986,
+            "1": 0.7080778176806818,
+            "2": 0.6455202875323387,
+            "3": 1.187836750410373,
+            "4": 0.7587471243645579,
+            "5": 0.7722797224249125,
+            "6": 1.0853704161890685,
+            "7": 1.1699380021739874,
+            "8": 1.1351592539642985,
+            "9": 0.6057517355755039,
+            "10": 1.754076915467018,
+            "11": 1.7374585554364022,
+            "12": 1.4847047481368003,
+            "13": 1.1332658733822227,
+            "14": 1.8388393254481474,
+            "15": 1.6629123668247345,
+            "16": 2.0821394544621064
+        },
+        "stats": {
+            "num_topics": 17,
+            "num_common_words": 264923,
+            "num_model_words": 264943,
+            "num_bt_words": 264925,
+            "top_diffs": [
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                }
+            ]
+        }
+    },
+    {
+        "scores": {
+            "perplexity": 6200.0673828125,
+            "coherence_20": 1.1157208651756583,
+            "diversity_euclidean": 0.049805860503810744,
+            "diversity_jensenshannon": 0.6552574478672506,
+            "diversity_hellinger": 0.7588114057443728,
+            "diversity_cosine": 0.8113265098157785,
+            "fair_ppl_free": 4219.30029296875,
+            "fair_ppl_fix": null,
+            "unfair_ppl_banklike": 6200.0673828125
+        },
+        "topic_coherences": {
+            "0": 0.08622105557802984,
+            "1": 0.7080778176806818,
+            "2": 0.6455202875323387,
+            "3": 0.7587471243645579,
+            "4": 1.2574928870903448,
+            "5": 0.7722797224249125,
+            "6": 1.0853704161890685,
+            "7": 1.1699380021739874,
+            "8": 1.1351592539642983,
+            "9": 1.754076915467018,
+            "10": 0.7838654511708677,
+            "11": 1.4847047481368003,
+            "12": 0.990498668237224,
+            "13": 1.003247037135175,
+            "14": 1.5870034995540445,
+            "15": 1.6629123668247345,
+            "16": 2.0821394544621064
+        },
+        "stats": {
+            "num_topics": 17,
+            "num_common_words": 264923,
+            "num_model_words": 264943,
+            "num_bt_words": 264925,
+            "top_diffs": [
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                }
+            ]
+        }
+    },
+    {
+        "scores": {
+            "perplexity": 6214.54296875,
+            "coherence_20": 1.0742750284900418,
+            "diversity_euclidean": 0.04867251866856465,
+            "diversity_jensenshannon": 0.6507679965354117,
+            "diversity_hellinger": 0.7522184358507966,
+            "diversity_cosine": 0.8008266435167416,
+            "fair_ppl_free": 4229.80615234375,
+            "fair_ppl_fix": null,
+            "unfair_ppl_banklike": 6214.54296875
+        },
+        "topic_coherences": {
+            "0": 0.08622105557802984,
+            "1": 0.7080778176806818,
+            "2": 0.6455202875323387,
+            "3": 1.187836750410373,
+            "4": 0.7587471243645579,
+            "5": 0.7722797224249125,
+            "6": 1.0853704161890685,
+            "7": 1.1699380021739874,
+            "8": 1.1351592539642983,
+            "9": 1.754076915467018,
+            "10": 0.7523023508449836,
+            "11": 1.4847047481368003,
+            "12": 1.003247037135175,
+            "13": 1.6629123668247345,
+            "14": 1.907731578623667
+        },
+        "stats": {
+            "num_topics": 15,
+            "num_common_words": 264923,
+            "num_model_words": 264943,
+            "num_bt_words": 264925,
+            "top_diffs": [
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                }
+            ]
+        }
+    },
+    {
+        "scores": {
+            "perplexity": 5966.7021484375,
+            "coherence_20": 1.0868538560755057,
+            "diversity_euclidean": 0.04716184629791634,
+            "diversity_jensenshannon": 0.6460393502126864,
+            "diversity_hellinger": 0.7465227990999728,
+            "diversity_cosine": 0.786150903140125,
+            "fair_ppl_free": 4017.44873046875,
+            "fair_ppl_fix": null,
+            "unfair_ppl_banklike": 5966.7021484375
+        },
+        "topic_coherences": {
+            "0": 0.09225595145609251,
+            "1": 0.7080778176806818,
+            "2": 0.5426133585393322,
+            "3": 0.6455202875323387,
+            "4": 0.7587471243645579,
+            "5": 1.2574928870903448,
+            "6": 0.7722797224249125,
+            "7": 1.0853704161890685,
+            "8": 1.1699380021739874,
+            "9": 1.1351592539642983,
+            "10": 1.754076915467018,
+            "11": 1.0507134840906913,
+            "12": 0.7838654511708677,
+            "13": 1.4847047481368003,
+            "14": 0.990498668237224,
+            "15": 1.5870034995540445,
+            "16": 1.6629123668247345,
+            "17": 2.0821394544621064
+        },
+        "stats": {
+            "num_topics": 18,
+            "num_common_words": 264923,
+            "num_model_words": 264943,
+            "num_bt_words": 264925,
+            "top_diffs": [
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                }
+            ]
+        }
+    },
+    {
+        "scores": {
+            "perplexity": 5979.07421875,
+            "coherence_20": 1.0352777298797262,
+            "diversity_euclidean": 0.044899837064488066,
+            "diversity_jensenshannon": 0.6440740118185292,
+            "diversity_hellinger": 0.7435195410870772,
+            "diversity_cosine": 0.7855671966859872,
+            "fair_ppl_free": 4045.834716796875,
+            "fair_ppl_fix": null,
+            "unfair_ppl_banklike": 5979.07421875
+        },
+        "topic_coherences": {
+            "0": 0.09225595145609251,
+            "1": 0.46039623745449165,
+            "2": 0.7080778176806818,
+            "3": 0.8711255744732963,
+            "4": 1.187836750410373,
+            "5": 0.7587471243645579,
+            "6": 0.7722797224249125,
+            "7": 1.0853704161890685,
+            "8": 1.4966687791661417,
+            "9": 1.1699380021739874,
+            "10": 1.1351592539642983,
+            "11": 1.754076915467018,
+            "12": 0.7838654511708677,
+            "13": 1.4847047481368003,
+            "14": 0.990498668237224,
+            "15": 1.185807628360797,
+            "16": 1.6629123668247345
+        },
+        "stats": {
+            "num_topics": 17,
+            "num_common_words": 264923,
+            "num_model_words": 264943,
+            "num_bt_words": 264925,
+            "top_diffs": [
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                }
+            ]
+        }
+    },
+    {
+        "scores": {
+            "perplexity": 5895.42626953125,
+            "coherence_20": 1.1196676849338756,
+            "diversity_euclidean": 0.046595504069194583,
+            "diversity_jensenshannon": 0.6525033258730681,
+            "diversity_hellinger": 0.7551224333058685,
+            "diversity_cosine": 0.8021593817512747,
+            "fair_ppl_free": 3949.231201171875,
+            "fair_ppl_fix": 5893.16357421875,
+            "unfair_ppl_banklike": 5895.42626953125
+        },
+        "topic_coherences": {
+            "0": 0.09455930507069481,
+            "1": 0.49623269667341846,
+            "2": 0.7080778176806818,
+            "3": 0.931631127203936,
+            "4": 1.187836750410373,
+            "5": 0.8271031290355039,
+            "6": 0.7722797224249125,
+            "7": 1.103771269657012,
+            "8": 0.5811375105094415,
+            "9": 1.1699380021739874,
+            "10": 1.1351592539642983,
+            "11": 1.754076915467018,
+            "12": 0.8833212710928099,
+            "13": 1.4847047481368003,
+            "14": 1.5562826925911057,
+            "15": 1.0036826549166544,
+            "16": 1.838839325448148,
+            "17": 1.6629123668247345,
+            "18": 2.0821394544621064
+        },
+        "stats": {
+            "num_topics": 20,
+            "num_common_words": 264923,
+            "num_model_words": 264943,
+            "num_bt_words": 264925,
+            "top_diffs": [
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                }
+            ]
+        }
+    },
+    {
+        "scores": {
+            "perplexity": 6403.1298828125,
+            "coherence_20": 1.1029059509527626,
+            "diversity_euclidean": 0.049180012980306116,
+            "diversity_jensenshannon": 0.6554041351443206,
+            "diversity_hellinger": 0.759122260710975,
+            "diversity_cosine": 0.8119884527962906,
+            "fair_ppl_free": 4348.85546875,
+            "fair_ppl_fix": null,
+            "unfair_ppl_banklike": 6403.1298828125
+        },
+        "topic_coherences": {
+            "0": 0.08622105557802982,
+            "1": 0.7080778176806818,
+            "2": 1.187836750410373,
+            "3": 0.7587471243645579,
+            "4": 1.0511023216152813,
+            "5": 0.7722797224249126,
+            "6": 1.1351592539642983,
+            "7": 1.754076915467018,
+            "8": 0.7523023508449835,
+            "9": 1.4847047481368003,
+            "10": 0.990498668237224,
+            "11": 1.003247037135175,
+            "12": 1.6629123668247345,
+            "13": 1.2886915529837037,
+            "14": 1.907731578623667
+        },
+        "stats": {
+            "num_topics": 15,
+            "num_common_words": 264923,
+            "num_model_words": 264943,
+            "num_bt_words": 264925,
+            "top_diffs": [
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                }
+            ]
+        }
+    },
+    {
+        "scores": {
+            "perplexity": 5802.18505859375,
+            "coherence_20": 1.0534770406884486,
+            "diversity_euclidean": 0.047727349440320775,
+            "diversity_jensenshannon": 0.6475520845549428,
+            "diversity_hellinger": 0.7485759239040483,
+            "diversity_cosine": 0.7858666141760837,
+            "fair_ppl_free": 3867.205810546875,
+            "fair_ppl_fix": null,
+            "unfair_ppl_banklike": 5802.18505859375
+        },
+        "topic_coherences": {
+            "0": 0.0879208544549183,
+            "1": 0.5238786601664907,
+            "2": 0.7080778176806818,
+            "3": 0.5426133585393322,
+            "4": 0.6455202875323387,
+            "5": 0.7587471243645579,
+            "6": 1.2574928870903448,
+            "7": 0.7722797224249126,
+            "8": 1.085370416189068,
+            "9": 1.1699380021739874,
+            "10": 1.1351592539642983,
+            "11": 1.754076915467018,
+            "12": 0.701493328558335,
+            "13": 0.8283088895749345,
+            "14": 1.4847047481368003,
+            "15": 0.7256205340189607,
+            "16": 1.5562826925911057,
+            "17": 1.5870034995540445,
+            "18": 1.6629123668247345,
+            "19": 2.0821394544621064
+        },
+        "stats": {
+            "num_topics": 20,
+            "num_common_words": 264923,
+            "num_model_words": 264943,
+            "num_bt_words": 264925,
+            "top_diffs": [
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                }
+            ]
+        }
+    },
+    {
+        "scores": {
+            "perplexity": 5847.990234375,
+            "coherence_20": 1.1098364875592734,
+            "diversity_euclidean": 0.04640226152975057,
+            "diversity_jensenshannon": 0.6533440653243332,
+            "diversity_hellinger": 0.7564265144425691,
+            "diversity_cosine": 0.8067909616283576,
+            "fair_ppl_free": 3920.33984375,
+            "fair_ppl_fix": null,
+            "unfair_ppl_banklike": 5847.990234375
+        },
+        "topic_coherences": {
+            "0": 0.0879208544549183,
+            "1": 0.5238786601664907,
+            "2": 0.7080778176806818,
+            "3": 0.6455202875323387,
+            "4": 1.187836750410373,
+            "5": 0.8271031290355039,
+            "6": 0.7722797224249126,
+            "7": 1.085370416189068,
+            "8": 1.1699380021739874,
+            "9": 1.1351592539642983,
+            "10": 1.2787986018139745,
+            "11": 1.754076915467018,
+            "12": 1.056845417425886,
+            "13": 0.7523023508449835,
+            "14": 1.4847047481368003,
+            "15": 0.9904986682372242,
+            "16": 1.1525270084920192,
+            "17": 1.838839325448148,
+            "18": 1.6629123668247345,
+            "19": 2.0821394544621064
+        },
+        "stats": {
+            "num_topics": 20,
+            "num_common_words": 264923,
+            "num_model_words": 264943,
+            "num_bt_words": 264925,
+            "top_diffs": [
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                }
+            ]
+        }
+    },
+    {
+        "scores": {
+            "perplexity": 6124.7294921875,
+            "coherence_20": 1.1939362759906933,
+            "diversity_euclidean": 0.04876450854551621,
+            "diversity_jensenshannon": 0.6589477690779391,
+            "diversity_hellinger": 0.7634722854210099,
+            "diversity_cosine": 0.8155489859451857,
+            "fair_ppl_free": 4148.36279296875,
+            "fair_ppl_fix": null,
+            "unfair_ppl_banklike": 6124.7294921875
+        },
+        "topic_coherences": {
+            "0": 0.08622105557802981,
+            "1": 0.7080778176806818,
+            "2": 0.8711255744732963,
+            "3": 0.7587471243645579,
+            "4": 1.2574928870903448,
+            "5": 1.0511023216152813,
+            "6": 0.7722797224249125,
+            "7": 1.4966687791661417,
+            "8": 1.1699380021739874,
+            "9": 1.1351592539642983,
+            "10": 1.754076915467018,
+            "11": 0.7838654511708677,
+            "12": 1.4847047481368003,
+            "13": 0.990498668237224,
+            "14": 1.5870034995540445,
+            "15": 1.838839325448148,
+            "16": 1.6629123668247345,
+            "17": 2.0821394544621064
+        },
+        "stats": {
+            "num_topics": 18,
+            "num_common_words": 264923,
+            "num_model_words": 264943,
+            "num_bt_words": 264925,
+            "top_diffs": [
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                }
+            ]
+        }
+    },
+    {
+        "scores": {
+            "perplexity": 5911.71044921875,
+            "coherence_20": 1.1195322844683164,
+            "diversity_euclidean": 0.04583980525234484,
+            "diversity_jensenshannon": 0.6487987671143488,
+            "diversity_hellinger": 0.7504401070829374,
+            "diversity_cosine": 0.7964384930641221,
+            "fair_ppl_free": 3959.352294921875,
+            "fair_ppl_fix": null,
+            "unfair_ppl_banklike": 5911.71044921875
+        },
+        "topic_coherences": {
+            "0": 0.0879208544549183,
+            "1": 0.5238786601664909,
+            "2": 0.7080778176806818,
+            "3": 0.6455202875323387,
+            "4": 1.187836750410373,
+            "5": 0.7587471243645579,
+            "6": 0.7722797224249125,
+            "7": 1.0853704161890685,
+            "8": 1.1699380021739874,
+            "9": 1.1351592539642983,
+            "10": 1.080241591766254,
+            "11": 1.754076915467018,
+            "12": 0.7523023508449833,
+            "13": 1.4847047481368003,
+            "14": 0.990498668237224,
+            "15": 1.5506690943491122,
+            "16": 1.838839325448148,
+            "17": 1.6629123668247345,
+            "18": 2.0821394544621064
+        },
+        "stats": {
+            "num_topics": 19,
+            "num_common_words": 264923,
+            "num_model_words": 264943,
+            "num_bt_words": 264925,
+            "top_diffs": [
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                }
+            ]
+        }
+    },
+    {
+        "scores": {
+            "perplexity": 5986.90185546875,
+            "coherence_20": 1.0768124710721338,
+            "diversity_euclidean": 0.04769296967190488,
+            "diversity_jensenshannon": 0.6434023954291492,
+            "diversity_hellinger": 0.7433121531799243,
+            "diversity_cosine": 0.7832083010046635,
+            "fair_ppl_free": 4059.8076171875,
+            "fair_ppl_fix": null,
+            "unfair_ppl_banklike": 5986.90185546875
+        },
+        "topic_coherences": {
+            "0": 0.0837163985789657,
+            "1": 0.7080778176806818,
+            "2": 0.8711255744732963,
+            "3": 0.5384920290309787,
+            "4": 0.7587471243645579,
+            "5": 1.2574928870903448,
+            "6": 0.5722448091198962,
+            "7": 0.7722797224249125,
+            "8": 1.0853704161890685,
+            "9": 1.1351592539642983,
+            "10": 1.754076915467018,
+            "11": 0.7838654511708677,
+            "12": 1.4847047481368003,
+            "13": 1.168403539693699,
+            "14": 1.5870034995540445,
+            "15": 1.6629123668247345,
+            "16": 2.0821394544621064
+        },
+        "stats": {
+            "num_topics": 17,
+            "num_common_words": 264923,
+            "num_model_words": 264943,
+            "num_bt_words": 264925,
+            "top_diffs": [
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                }
+            ]
+        }
+    },
+    {
+        "scores": {
+            "perplexity": 5960.85595703125,
+            "coherence_20": 1.1353820623976068,
+            "diversity_euclidean": 0.04592260340939134,
+            "diversity_jensenshannon": 0.6502660369219002,
+            "diversity_hellinger": 0.7531628578990164,
+            "diversity_cosine": 0.8065988191934875,
+            "fair_ppl_free": 3987.77490234375,
+            "fair_ppl_fix": null,
+            "unfair_ppl_banklike": 5960.85595703125
+        },
+        "topic_coherences": {
+            "0": 0.09455930507069481,
+            "1": 0.7080778176806818,
+            "2": 0.6455202875323387,
+            "3": 1.187836750410373,
+            "4": 0.7587471243645579,
+            "5": 0.7722797224249126,
+            "6": 1.085370416189068,
+            "7": 0.5512306403887086,
+            "8": 1.1699380021739874,
+            "9": 1.1351592539642983,
+            "10": 1.0507134840906913,
+            "11": 1.754076915467018,
+            "12": 0.7523023508449835,
+            "13": 0.701493328558335,
+            "14": 1.4847047481368003,
+            "15": 1.7257382183064534,
+            "16": 1.1163202666567982,
+            "17": 1.565063531354056,
+            "18": 1.838839325448148,
+            "19": 1.6629123668247345,
+            "20": 2.0821394544621064
+        },
+        "stats": {
+            "num_topics": 21,
+            "num_common_words": 264923,
+            "num_model_words": 264943,
+            "num_bt_words": 264925,
+            "top_diffs": [
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                }
+            ]
+        }
+    },
+    {
+        "scores": {
+            "perplexity": 5992.18359375,
+            "coherence_20": 1.0930774310141775,
+            "diversity_euclidean": 0.048036218133063614,
+            "diversity_jensenshannon": 0.6478780085010933,
+            "diversity_hellinger": 0.7493326143540024,
+            "diversity_cosine": 0.7966634655432945,
+            "fair_ppl_free": 4035.344970703125,
+            "fair_ppl_fix": null,
+            "unfair_ppl_banklike": 5992.18359375
+        },
+        "topic_coherences": {
+            "0": 0.0879208544549183,
+            "1": 0.7080778176806818,
+            "2": 0.5238786601664909,
+            "3": 0.6455202875323387,
+            "4": 0.7587471243645579,
+            "5": 1.2574928870903448,
+            "6": 0.7722797224249125,
+            "7": 1.0853704161890685,
+            "8": 1.1699380021739874,
+            "9": 1.1351592539642983,
+            "10": 1.754076915467018,
+            "11": 0.7838654511708677,
+            "12": 1.4847047481368003,
+            "13": 0.990498668237224,
+            "14": 1.185807628360797,
+            "15": 1.5870034995540445,
+            "16": 1.6629123668247345,
+            "17": 2.0821394544621064
+        },
+        "stats": {
+            "num_topics": 18,
+            "num_common_words": 264923,
+            "num_model_words": 264943,
+            "num_bt_words": 264925,
+            "top_diffs": [
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                }
+            ]
+        }
+    },
+    {
+        "scores": {
+            "perplexity": 6006.9013671875,
+            "coherence_20": 1.1946819355160077,
+            "diversity_euclidean": 0.04867373147741286,
+            "diversity_jensenshannon": 0.6568019697282852,
+            "diversity_hellinger": 0.7610876702424425,
+            "diversity_cosine": 0.8225186116846672,
+            "fair_ppl_free": 4053.443115234375,
+            "fair_ppl_fix": null,
+            "unfair_ppl_banklike": 6006.9013671875
+        },
+        "topic_coherences": {
+            "0": 0.09225595145609254,
+            "1": 0.7080778176806818,
+            "2": 0.931631127203936,
+            "3": 0.7587471243645579,
+            "4": 1.2574928870903448,
+            "5": 0.7722797224249126,
+            "6": 1.085370416189068,
+            "7": 1.4149535639743227,
+            "8": 1.1699380021739874,
+            "9": 1.1351592539642983,
+            "10": 1.2787986018139745,
+            "11": 1.754076915467018,
+            "12": 0.7523023508449833,
+            "13": 1.4847047481368003,
+            "14": 1.0036826549166544,
+            "15": 1.5870034995540445,
+            "16": 1.565063531354056,
+            "17": 1.6629123668247345,
+            "18": 1.3970487204235784,
+            "19": 2.0821394544621064
+        },
+        "stats": {
+            "num_topics": 20,
+            "num_common_words": 264923,
+            "num_model_words": 264943,
+            "num_bt_words": 264925,
+            "top_diffs": [
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                }
+            ]
+        }
+    },
+    {
+        "scores": {
+            "perplexity": 6198.82470703125,
+            "coherence_20": 1.167396157915651,
+            "diversity_euclidean": 0.04846391519781991,
+            "diversity_jensenshannon": 0.6637423358186256,
+            "diversity_hellinger": 0.7705792274710391,
+            "diversity_cosine": 0.8199637123306177,
+            "fair_ppl_free": 4194.4365234375,
+            "fair_ppl_fix": null,
+            "unfair_ppl_banklike": 6198.82470703125
+        },
+        "topic_coherences": {
+            "0": 0.08622105557802984,
+            "1": 0.7080778176806818,
+            "2": 0.6455202875323387,
+            "3": 1.187836750410373,
+            "4": 0.7587471243645579,
+            "5": 0.7722797224249125,
+            "6": 1.0853704161890685,
+            "7": 1.1351592539642983,
+            "8": 1.754076915467018,
+            "9": 0.7838654511708677,
+            "10": 1.4847047481368003,
+            "11": 0.9904986682372242,
+            "12": 1.5562826925911057,
+            "13": 1.185807628360797,
+            "14": 1.8449389361030981,
+            "15": 1.6629123668247345,
+            "16": 1.2886915529837037,
+            "17": 2.0821394544621064
+        },
+        "stats": {
+            "num_topics": 18,
+            "num_common_words": 264923,
+            "num_model_words": 264943,
+            "num_bt_words": 264925,
+            "top_diffs": [
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                },
+                {
+                    "total": 0,
+                    "lost_bt": 0,
+                    "lost_model": 0
+                }
+            ]
+        }
+    }
+]
