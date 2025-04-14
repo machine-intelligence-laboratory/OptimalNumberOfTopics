@@ -4,7 +4,7 @@
 
 [2025/04] Our paper [Iterative Improvement of an Additively Regularized Topic Model](https://link.springer.com/chapter/10.1007/978-3-031-88036-0_4) is published!
 
-Experiments (notebooks + results) are available here: [experiments/itar](.experiments/itar).
+Experiments (notebooks + results) are available here: [experiments/itar](experiments/itar).
 The code (ITAR regularizers + improved TopicBank) [will be integrated in the repo](https://github.com/machine-intelligence-laboratory/OptimalNumberOfTopics/pull/104) a bit later (stay tuned 🙂).
 
 
