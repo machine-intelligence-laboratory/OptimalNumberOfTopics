@@ -1,0 +1,162 @@
+[
+    {
+        "perplexity": 3568.923095703125,
+        "coherence_20": 0.5652765077981442,
+        "diversity_euclidean": 0.04151903238828226,
+        "diversity_jensenshannon": 0.5967508853408056,
+        "diversity_hellinger": 0.6839170513341035,
+        "diversity_cosine": 0.7379828421055898
+    },
+    {
+        "perplexity": 3508.67333984375,
+        "coherence_20": 0.6351976665826926,
+        "diversity_euclidean": 0.0417398762907053,
+        "diversity_jensenshannon": 0.5966318698680039,
+        "diversity_hellinger": 0.6836359012895517,
+        "diversity_cosine": 0.7409157511779757
+    },
+    {
+        "perplexity": 3491.23291015625,
+        "coherence_20": 0.6469149598771119,
+        "diversity_euclidean": 0.04343376200867733,
+        "diversity_jensenshannon": 0.6002267069987599,
+        "diversity_hellinger": 0.6880530252867947,
+        "diversity_cosine": 0.7569826807173429
+    },
+    {
+        "perplexity": 3519.68310546875,
+        "coherence_20": 0.6142532281455879,
+        "diversity_euclidean": 0.04203771677225982,
+        "diversity_jensenshannon": 0.593700596967448,
+        "diversity_hellinger": 0.6802803605774799,
+        "diversity_cosine": 0.7434159074321306
+    },
+    {
+        "perplexity": 3549.049560546875,
+        "coherence_20": 0.6014267692985283,
+        "diversity_euclidean": 0.04151721675526095,
+        "diversity_jensenshannon": 0.594466786413289,
+        "diversity_hellinger": 0.6808612956319167,
+        "diversity_cosine": 0.7401104536467289
+    },
+    {
+        "perplexity": 3520.3935546875,
+        "coherence_20": 0.5929715324978092,
+        "diversity_euclidean": 0.04198343213049254,
+        "diversity_jensenshannon": 0.5918094190944498,
+        "diversity_hellinger": 0.6781691014302635,
+        "diversity_cosine": 0.7393237797639142
+    },
+    {
+        "perplexity": 3491.356689453125,
+        "coherence_20": 0.5771064546805103,
+        "diversity_euclidean": 0.042429796973544626,
+        "diversity_jensenshannon": 0.5966113444831442,
+        "diversity_hellinger": 0.6838083777315618,
+        "diversity_cosine": 0.745890737633588
+    },
+    {
+        "perplexity": 3562.951171875,
+        "coherence_20": 0.6014603792025003,
+        "diversity_euclidean": 0.04140227107454364,
+        "diversity_jensenshannon": 0.5954316961739179,
+        "diversity_hellinger": 0.6824065308540642,
+        "diversity_cosine": 0.7383444690600252
+    },
+    {
+        "perplexity": 3451.587890625,
+        "coherence_20": 0.6404715391328505,
+        "diversity_euclidean": 0.04332970530597654,
+        "diversity_jensenshannon": 0.5991731825054495,
+        "diversity_hellinger": 0.6871099886895172,
+        "diversity_cosine": 0.7529086843497163
+    },
+    {
+        "perplexity": 3458.670654296875,
+        "coherence_20": 0.5964412504614272,
+        "diversity_euclidean": 0.04132086239585494,
+        "diversity_jensenshannon": 0.5906547170896018,
+        "diversity_hellinger": 0.6766119006327349,
+        "diversity_cosine": 0.7325544117234217
+    },
+    {
+        "perplexity": 3528.36669921875,
+        "coherence_20": 0.5905202149199661,
+        "diversity_euclidean": 0.040845095224182885,
+        "diversity_jensenshannon": 0.6004159892115698,
+        "diversity_hellinger": 0.6888625246254719,
+        "diversity_cosine": 0.740863273882151
+    },
+    {
+        "perplexity": 3520.592041015625,
+        "coherence_20": 0.6015479239721218,
+        "diversity_euclidean": 0.04249209274926621,
+        "diversity_jensenshannon": 0.5982906129965035,
+        "diversity_hellinger": 0.6853776070034413,
+        "diversity_cosine": 0.7441349469094498
+    },
+    {
+        "perplexity": 3547.38720703125,
+        "coherence_20": 0.5979571581948973,
+        "diversity_euclidean": 0.04074762728029841,
+        "diversity_jensenshannon": 0.5926392271763157,
+        "diversity_hellinger": 0.6791158379311104,
+        "diversity_cosine": 0.7322864249994511
+    },
+    {
+        "perplexity": 3469.71728515625,
+        "coherence_20": 0.6437050464173246,
+        "diversity_euclidean": 0.04108025555565882,
+        "diversity_jensenshannon": 0.5975201534315939,
+        "diversity_hellinger": 0.6853543864065,
+        "diversity_cosine": 0.739165445369926
+    },
+    {
+        "perplexity": 3508.910888671875,
+        "coherence_20": 0.6517544453142178,
+        "diversity_euclidean": 0.04152225338208888,
+        "diversity_jensenshannon": 0.5974676653638379,
+        "diversity_hellinger": 0.6845743209224074,
+        "diversity_cosine": 0.7408200260461882
+    },
+    {
+        "perplexity": 3518.653076171875,
+        "coherence_20": 0.651618322070855,
+        "diversity_euclidean": 0.041662404391130975,
+        "diversity_jensenshannon": 0.5933229925234855,
+        "diversity_hellinger": 0.6802080439852981,
+        "diversity_cosine": 0.74032013487335
+    },
+    {
+        "perplexity": 3531.137451171875,
+        "coherence_20": 0.6102135623483453,
+        "diversity_euclidean": 0.0420219192043619,
+        "diversity_jensenshannon": 0.5971136386170331,
+        "diversity_hellinger": 0.6849074199286542,
+        "diversity_cosine": 0.7448820897335943
+    },
+    {
+        "perplexity": 3517.325927734375,
+        "coherence_20": 0.5801877389323388,
+        "diversity_euclidean": 0.04225656934001525,
+        "diversity_jensenshannon": 0.5998562346919837,
+        "diversity_hellinger": 0.6874315111766923,
+        "diversity_cosine": 0.7519714906819774
+    },
+    {
+        "perplexity": 3486.576171875,
+        "coherence_20": 0.638236477710352,
+        "diversity_euclidean": 0.04277134602543611,
+        "diversity_jensenshannon": 0.5941606869437732,
+        "diversity_hellinger": 0.6811625427203637,
+        "diversity_cosine": 0.7492409721646852
+    },
+    {
+        "perplexity": 3575.75341796875,
+        "coherence_20": 0.5724789488975778,
+        "diversity_euclidean": 0.04058719653761623,
+        "diversity_jensenshannon": 0.5956280951220418,
+        "diversity_hellinger": 0.6830227909444238,
+        "diversity_cosine": 0.7354414492271383
+    }
+]

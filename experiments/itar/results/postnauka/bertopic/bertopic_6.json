@@ -1,0 +1,143 @@
+{
+    "scores": {
+        "perplexity": 5709.57763671875,
+        "coherence_20": 1.0607587659146767,
+        "diversity_euclidean": 0.05418811806948502,
+        "diversity_jensenshannon": 0.6496051313842629,
+        "diversity_hellinger": 0.760618555582747,
+        "diversity_cosine": 0.7549142363631377,
+        "fair_ppl_free": 4015.931640625,
+        "fair_ppl_fix": 5623.2197265625,
+        "unfair_ppl_banklike": 5709.57763671875
+    },
+    "topic_coherences": {
+        "0": 0.34063728262380305,
+        "1": 0.39751984282774483,
+        "2": 0.801614355074925,
+        "3": 0.8083322149555296,
+        "4": 0.7381468059844702,
+        "5": 0.44876462721423593,
+        "6": 0.3314267416880179,
+        "7": 1.868370712245547,
+        "8": 2.2936935649937964,
+        "9": 1.245549886378237,
+        "10": 0.8091636348624217,
+        "11": 1.5617199764971843,
+        "12": 1.7821392306432788,
+        "13": 1.0615351667879558,
+        "14": 0.9731558747867508,
+        "15": 1.27555822215827,
+        "16": 0.4885233183417983,
+        "17": 1.0001747009957196,
+        "18": 1.5571601941111977,
+        "19": 1.4319889651226485
+    },
+    "stats": {
+        "num_topics": 21,
+        "num_common_words": 82061,
+        "num_model_words": 82113,
+        "num_bt_words": 82061,
+        "top_diffs": [
+            {
+                "total": 0,
+                "lost_bt": 0,
+                "lost_model": 0
+            },
+            {
+                "total": 0,
+                "lost_bt": 0,
+                "lost_model": 0
+            },
+            {
+                "total": 0,
+                "lost_bt": 0,
+                "lost_model": 0
+            },
+            {
+                "total": 0,
+                "lost_bt": 0,
+                "lost_model": 0
+            },
+            {
+                "total": 0,
+                "lost_bt": 0,
+                "lost_model": 0
+            },
+            {
+                "total": 0,
+                "lost_bt": 0,
+                "lost_model": 0
+            },
+            {
+                "total": 0,
+                "lost_bt": 0,
+                "lost_model": 0
+            },
+            {
+                "total": 0,
+                "lost_bt": 0,
+                "lost_model": 0
+            },
+            {
+                "total": 0,
+                "lost_bt": 0,
+                "lost_model": 0
+            },
+            {
+                "total": 0,
+                "lost_bt": 0,
+                "lost_model": 0
+            },
+            {
+                "total": 0,
+                "lost_bt": 0,
+                "lost_model": 0
+            },
+            {
+                "total": 0,
+                "lost_bt": 0,
+                "lost_model": 0
+            },
+            {
+                "total": 0,
+                "lost_bt": 0,
+                "lost_model": 0
+            },
+            {
+                "total": 0,
+                "lost_bt": 0,
+                "lost_model": 0
+            },
+            {
+                "total": 0,
+                "lost_bt": 0,
+                "lost_model": 0
+            },
+            {
+                "total": 0,
+                "lost_bt": 0,
+                "lost_model": 0
+            },
+            {
+                "total": 0,
+                "lost_bt": 0,
+                "lost_model": 0
+            },
+            {
+                "total": 0,
+                "lost_bt": 0,
+                "lost_model": 0
+            },
+            {
+                "total": 0,
+                "lost_bt": 0,
+                "lost_model": 0
+            },
+            {
+                "total": 0,
+                "lost_bt": 0,
+                "lost_model": 0
+            }
+        ]
+    }
+}
