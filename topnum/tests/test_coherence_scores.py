@@ -41,8 +41,42 @@ SMALL_SEGMENT_LENGTHS = [1, 2, 4]
 SMALL_SEGMENT_LENGTH_PROBABILITIES = [0.3, 0.45, 0.25]
 DOCUMENT_LENGTH = 100
 TOP_WORD_PROBABILITY_TIMES_BIGGER = 4
+
 PHI_FILE_NAME = 'phi.csv'
 DATASET_FILE_NAME = 'dataset.csv'
+
+TEXT_TYPES = [
+    TextType.VW_TEXT,
+    TextType.RAW_TEXT,
+]
+COMPUTATION_METHODS = [
+    ComputationMethod.SEGMENT_LENGTH,
+    ComputationMethod.SEGMENT_WEIGHT,
+    ComputationMethod.SUM_OVER_WINDOW,
+    ComputationMethod.VARIANCE_IN_WINDOW,
+    ComputationMethod.FOCUS_CONSISTENCY,
+]
+RESEARCH_COMPUTATION_METHODS = [
+    ComputationMethod.VARIANCE_IN_WINDOW,
+    ComputationMethod.FOCUS_CONSISTENCY,
+]
+WORD_TOPIC_RELATEDNESS_TYPES = [
+    WordTopicRelatednessType.PWT,
+    WordTopicRelatednessType.PTW,
+]
+SPECIFICITY_ESTIMATION_METHODS = [
+    SpecificityEstimationMethod.NONE,
+    SpecificityEstimationMethod.MAXIMUM,
+    SpecificityEstimationMethod.AVERAGE,
+]
+
+
+RESEARCH_INTRATEXT_MESSAGE = (
+    f"Coherences {RESEARCH_COMPUTATION_METHODS} were presented in the original paper"
+    f" and are implemented partly as a tribute,"
+    f" partly for research purposes."
+    f" For real use, preference should be given to {COMPUTATION_METHODS} methods."
+)
 
 
 class _MockModel(BaseModel):
@@ -211,12 +245,10 @@ class TestIntratextCoherenceScore:
     @pytest.mark.parametrize(
         'text_type, computation_method, word_topic_relatedness, specificity_estimation',
         list(product(
-            [TextType.VW_TEXT, TextType.RAW_TEXT],
-            [ComputationMethod.SEGMENT_LENGTH, ComputationMethod.SEGMENT_WEIGHT,
-             ComputationMethod.SUM_OVER_WINDOW],
-            [WordTopicRelatednessType.PWT, WordTopicRelatednessType.PTW],
-            [SpecificityEstimationMethod.NONE, SpecificityEstimationMethod.MAXIMUM,
-             SpecificityEstimationMethod.AVERAGE]
+            TEXT_TYPES,
+            COMPUTATION_METHODS,
+            WORD_TOPIC_RELATEDNESS_TYPES,
+            SPECIFICITY_ESTIMATION_METHODS
         ))
     )
     def test_compute_intratext(
@@ -226,12 +258,31 @@ class TestIntratextCoherenceScore:
             word_topic_relatedness: WordTopicRelatednessType,
             specificity_estimation: SpecificityEstimationMethod) -> None:
 
+        if computation_method in RESEARCH_COMPUTATION_METHODS:
+            pytest.xfail(RESEARCH_INTRATEXT_MESSAGE)
+
         score = _IntratextCoherenceScore(
             self.dataset,
             text_type=text_type,
             computation_method=computation_method,
             word_topic_relatedness=word_topic_relatedness,
             specificity_estimation=specificity_estimation
+        )
+
+        self._check_compute(score)
+
+    @pytest.mark.parametrize(
+        'window',
+        [2, 4, 10]  # TODO: window = 1 -> fail (sometimes?)
+    )
+    def test_compute_topden(self, window) -> None:
+        score = _IntratextCoherenceScore(
+            self.dataset,
+            text_type=TextType.VW_TEXT,
+            computation_method=ComputationMethod.SUM_OVER_WINDOW,
+            word_topic_relatedness=WordTopicRelatednessType.PTW,
+            specificity_estimation=SpecificityEstimationMethod.NONE,
+            window=window,
         )
 
         self._check_compute(score)
@@ -246,12 +297,10 @@ class TestIntratextCoherenceScore:
     @pytest.mark.parametrize(
         'text_type, computation_method, word_topic_relatedness, specificity_estimation',
         list(product(
-            [TextType.VW_TEXT, TextType.RAW_TEXT],
-            [ComputationMethod.SEGMENT_LENGTH, ComputationMethod.SEGMENT_WEIGHT,
-             ComputationMethod.SUM_OVER_WINDOW],
-            [WordTopicRelatednessType.PWT, WordTopicRelatednessType.PTW],
-            [SpecificityEstimationMethod.NONE, SpecificityEstimationMethod.MAXIMUM,
-             SpecificityEstimationMethod.AVERAGE]
+            TEXT_TYPES,
+            COMPUTATION_METHODS,
+            WORD_TOPIC_RELATEDNESS_TYPES,
+            SPECIFICITY_ESTIMATION_METHODS
         ))
     )
     def test_call_intratext(
@@ -260,6 +309,9 @@ class TestIntratextCoherenceScore:
             computation_method: ComputationMethod,
             word_topic_relatedness: WordTopicRelatednessType,
             specificity_estimation: SpecificityEstimationMethod) -> None:
+
+        if computation_method in RESEARCH_COMPUTATION_METHODS:
+            pytest.xfail(RESEARCH_INTRATEXT_MESSAGE)
 
         score = _IntratextCoherenceScore(
             self.dataset,
@@ -281,12 +333,10 @@ class TestIntratextCoherenceScore:
     @pytest.mark.parametrize(
         'text_type, computation_method, word_topic_relatedness, specificity_estimation',
         list(product(
-            [TextType.VW_TEXT, TextType.RAW_TEXT],
-            [ComputationMethod.SEGMENT_LENGTH, ComputationMethod.SEGMENT_WEIGHT,
-             ComputationMethod.SUM_OVER_WINDOW],
-            [WordTopicRelatednessType.PWT, WordTopicRelatednessType.PTW],
-            [SpecificityEstimationMethod.NONE, SpecificityEstimationMethod.MAXIMUM,
-             SpecificityEstimationMethod.AVERAGE]
+            TEXT_TYPES,
+            COMPUTATION_METHODS,
+            WORD_TOPIC_RELATEDNESS_TYPES,
+            SPECIFICITY_ESTIMATION_METHODS
         ))
     )
     @pytest.mark.parametrize(
@@ -300,6 +350,9 @@ class TestIntratextCoherenceScore:
             word_topic_relatedness: WordTopicRelatednessType,
             specificity_estimation: SpecificityEstimationMethod,
             what_documents: str) -> None:
+
+        if computation_method in RESEARCH_COMPUTATION_METHODS:
+            pytest.xfail(RESEARCH_INTRATEXT_MESSAGE)
 
         if what_documents == 'first':
             documents = [self.documents[0]]
@@ -324,10 +377,9 @@ class TestIntratextCoherenceScore:
     @pytest.mark.parametrize(
         'text_type, word_topic_relatedness, specificity_estimation',
         list(product(
-            [TextType.VW_TEXT, TextType.RAW_TEXT],
-            [WordTopicRelatednessType.PWT, WordTopicRelatednessType.PTW],
-            [SpecificityEstimationMethod.NONE, SpecificityEstimationMethod.MAXIMUM,
-             SpecificityEstimationMethod.AVERAGE]
+            TEXT_TYPES,
+            WORD_TOPIC_RELATEDNESS_TYPES,
+            SPECIFICITY_ESTIMATION_METHODS
         ))
     )
     def test_compute_toptokens(
@@ -355,10 +407,9 @@ class TestIntratextCoherenceScore:
     @pytest.mark.parametrize(
         'text_type, word_topic_relatedness, specificity_estimation',
         list(product(
-            [TextType.VW_TEXT, TextType.RAW_TEXT],
-            [WordTopicRelatednessType.PWT, WordTopicRelatednessType.PTW],
-            [SpecificityEstimationMethod.NONE, SpecificityEstimationMethod.MAXIMUM,
-             SpecificityEstimationMethod.AVERAGE]
+            TEXT_TYPES,
+            WORD_TOPIC_RELATEDNESS_TYPES,
+            SPECIFICITY_ESTIMATION_METHODS
         ))
     )
     def test_call_toptokens(
@@ -386,10 +437,9 @@ class TestIntratextCoherenceScore:
     @pytest.mark.parametrize(
         'text_type, word_topic_relatedness, specificity_estimation',
         list(product(
-            [TextType.VW_TEXT, TextType.RAW_TEXT],
-            [WordTopicRelatednessType.PWT, WordTopicRelatednessType.PTW],
-            [SpecificityEstimationMethod.NONE, SpecificityEstimationMethod.MAXIMUM,
-             SpecificityEstimationMethod.AVERAGE]
+            TEXT_TYPES,
+            WORD_TOPIC_RELATEDNESS_TYPES,
+            SPECIFICITY_ESTIMATION_METHODS
         ))
     )
     @pytest.mark.parametrize(

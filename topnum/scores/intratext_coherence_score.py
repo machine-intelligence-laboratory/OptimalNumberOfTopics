@@ -1,18 +1,22 @@
 import numpy as np
 import pandas as pd
+import warnings
 
 from enum import (
     auto,
     IntEnum
 )
-from topicnet.cooking_machine import Dataset
-from topicnet.cooking_machine.models.base_model import BaseModel
 from typing import (
+    Callable,
     Dict,
     List,
+    Optional,
     Tuple,
     Union
 )
+
+from topicnet.cooking_machine import Dataset
+from topicnet.cooking_machine.models.base_model import BaseModel
 
 from ..data.vowpal_wabbit_text_collection import VowpalWabbitTextCollection
 from ._base_coherence_score import (
@@ -33,19 +37,35 @@ class ComputationMethod(IntEnum):
     Attributes
     ----------
         SEGMENT_LENGTH
-            Estimate the length of topic segments
+            Estimate the length of topic segments (TopLen)
         SEGMENT_WEIGHT
             Estimate the weight of topic segment
-            (weight - sum of specificities for the topic over words in segment)
+            (weight as sum of specificities for the topic over words in segment)
         SUM_OVER_WINDOW
             Sum of specificities for the topic over words in given window.
             The process is as follows:
             word of the topic is found in text, it is the center of the first window;
-            next word of the topic is found (outside of the previous window), window; etc
+            next word of the topic is found (outside of the previous window),
+            it is the center of the new window; etc
+        VARIANCE_IN_WINDOW
+            Estimate the variance between segment word vector components
+            corresponding to the topic (SemantiC_Var)
+        FOCUS_CONSISTENCY
+            Estimate how much text adjacent words differ,
+            summing the pairs of differences between max components
+            of corresponding word vectors (FoCon)
     """
     SEGMENT_LENGTH = auto()
     SEGMENT_WEIGHT = auto()
     SUM_OVER_WINDOW = auto()
+    VARIANCE_IN_WINDOW = auto()
+    FOCUS_CONSISTENCY = auto()
+
+
+_RESEARCH_COMPUTATION_METHODS = [
+    ComputationMethod.VARIANCE_IN_WINDOW,
+    ComputationMethod.FOCUS_CONSISTENCY,
+]
 
 
 class IntratextCoherenceScore(BaseTopicScore):
@@ -73,6 +93,8 @@ class IntratextCoherenceScore(BaseTopicScore):
             max_num_out_of_topic_words=10,
             window=10,
             verbose: bool = False,
+            should_compute: Optional[
+                Union[Callable[[int], bool], bool]] = True,  # TODO: very slow on full collection
     ):
         """
         Parameters
@@ -120,6 +142,7 @@ class IntratextCoherenceScore(BaseTopicScore):
         self._window = window
 
         self._verbose = verbose
+        self._should_compute = should_compute
 
         self._score = self._initialize()
 
@@ -139,6 +162,7 @@ class IntratextCoherenceScore(BaseTopicScore):
             max_num_out_of_topic_words=self._max_num_out_of_topic_words,
             window=self._window,
             verbose=self._verbose,
+            should_compute=self._should_compute,
         )
 
     def compute(
@@ -164,7 +188,10 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
             specificity_estimation: SpecificityEstimationMethod = SpecificityEstimationMethod.NONE,
             max_num_out_of_topic_words: int = 10,
             window: int = 10,
-            verbose: bool = False):
+            verbose: bool = False,
+            should_compute: Optional[
+                Union[Callable[[int], bool], bool]] = None,
+            ):
 
         # TODO: word_topic_relatedness seems to be connected with TopTokensViewer stuff
         super().__init__(
@@ -174,12 +201,23 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
             word_topic_relatedness=word_topic_relatedness,
             specificity_estimation=specificity_estimation,
             verbose=verbose,
+            should_compute=should_compute,
         )
 
         if not isinstance(computation_method, ComputationMethod):
             raise TypeError(
                 f'Wrong "computation_method": \"{computation_method}\". '
                 f'Expect to be \"{ComputationMethod}\"')
+
+        if computation_method in _RESEARCH_COMPUTATION_METHODS:
+            warnings.warn(
+                f"Coherences {_RESEARCH_COMPUTATION_METHODS} were also presented in the original paper"
+                f" but preference should be given to other (TopLen-based) methods."
+                f" Still, coherences {_RESEARCH_COMPUTATION_METHODS} are also implemented,"
+                f" partly as a tribute, partly for research purposes."
+                f" Once again, coherence {computation_method} is not intended for \"production\" use."
+                f" But you do you, it's not like there's a coherence police or something."
+            )
 
         if not isinstance(max_num_out_of_topic_words, int):
             raise TypeError(
@@ -191,11 +229,12 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
                 f'Wrong "window": \"{window}\". '
                 f'Expect to be \"int\"')
 
-        if window < 0 or (window == 0 and computation_method == ComputationMethod.SUM_OVER_WINDOW):
+        if window < 0 or (window == 0 and computation_method in [ComputationMethod.SUM_OVER_WINDOW,
+                                                                 ComputationMethod.VARIANCE_IN_WINDOW]):
             raise ValueError(
                 f'Wrong value for "window": \"{window}\". '
                 f'Expect to be non-negative. And greater than zero in case '
-                f'computation_method == ComputationMethod.SUM_OVER_WINDOW')
+                f'computation_method is SUM_OVER_WINDOW or VARIANCE_IN_WINDOW.')
 
         self._computation_method = computation_method
         self._max_num_out_of_topic_words = max_num_out_of_topic_words
@@ -218,6 +257,20 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
 
             return average_sum_over_window
 
+        elif self._computation_method == ComputationMethod.VARIANCE_IN_WINDOW:
+            average_variance_in_window = self._compute_variance_in_window(
+                topic, words, word_topic_relatednesses
+            )
+
+            return average_variance_in_window
+
+        elif self._computation_method == ComputationMethod.FOCUS_CONSISTENCY:
+            average_focus_consistency = self._compute_focus_consistency(
+                topic, words, word_topic_relatednesses
+            )
+
+            return average_focus_consistency
+
         topic_segment_length, topic_segment_weight = self._compute_segment_characteristics(
             topic, words, word_topic_relatednesses
         )
@@ -227,6 +280,30 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
 
         elif self._computation_method == ComputationMethod.SEGMENT_WEIGHT:
             return topic_segment_weight
+
+    # @lru_cache(maxsize=None)  # did't provide speed up
+    def _get_word_topic_index(
+            self,
+            word: WordType,
+            word_topic_relatednesses: pd.DataFrame,
+            word_topic_indices: np.array,
+            ) -> int:
+        # if word not in word_topic_relatednesses.index:
+        #     return -1
+        # else:
+        #     return word_topic_indices[
+        #         word_topic_relatednesses.index.get_loc(word)
+        #     ]
+
+        # if word not in self._word2index:
+        #     return -1
+        # else:
+        #     return word_topic_indices[self._word2index[word]]
+
+        try:
+            return self._word_topic_indices[self._word2index[word]]
+        except KeyError:
+            return -1
 
     def _compute_segment_characteristics(
             self,
@@ -238,16 +315,15 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
         topic_segment_lengths = []
         topic_segment_weights = []
 
-        topic_index = word_topic_relatednesses.columns.get_loc(topic)
-        word_topic_indices = np.argmax(word_topic_relatednesses.values, axis=1)
+        topic_index = self._topic2index[topic]  # word_topic_relatednesses.columns.get_loc(topic)
+        # word_topic_indices = np.argmax(word_topic_relatednesses.values, axis=1)
 
-        def get_word_topic_index(word):
-            if word not in word_topic_relatednesses.index:
-                return -1
-            else:
-                return word_topic_indices[
-                    word_topic_relatednesses.index.get_loc(word)
-                ]
+        def get_word_topic_index(word: WordType) -> int:
+            return self._get_word_topic_index(
+                word=word,
+                word_topic_relatednesses=None,
+                word_topic_indices=None,
+            )
 
         index = 0
 
@@ -260,8 +336,9 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
                 continue
 
             segment_length = 1
-            segment_weight = _IntratextCoherenceScore._get_relatedness(
-                words[index], topic, word_topic_relatednesses
+            segment_weight = self._get_relatedness(
+                words[index], topic, None  # word_topic_relatednesses is not used here
+                                           # (besides, lru_cache is applied and who knows how it would react to pd.DataFrame as param)
             )
 
             num_out_of_topic_words = 0
@@ -273,8 +350,8 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
                     num_out_of_topic_words += 1
                 else:
                     segment_length += 1
-                    segment_weight += _IntratextCoherenceScore._get_relatedness(
-                        words[index], topic, word_topic_relatednesses
+                    segment_weight += self._get_relatedness(
+                        words[index], topic, None
                     )
 
                     num_out_of_topic_words = 0
@@ -300,22 +377,21 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
             words: List[WordType],
             word_topic_relatednesses: pd.DataFrame) -> Union[float, None]:
 
-        topic_index = word_topic_relatednesses.columns.get_loc(topic)
-        word_topic_indices = np.argmax(word_topic_relatednesses.values, axis=1)
+        topic_index = self._topic2index[topic]  # word_topic_relatednesses.columns.get_loc(topic)
+        # word_topic_indices = np.argmax(word_topic_relatednesses.values, axis=1)
 
         def get_word_topic_index(word: WordType) -> int:
-            if word not in word_topic_relatednesses.index:
-                return -1
-            else:
-                return word_topic_indices[
-                    word_topic_relatednesses.index.get_loc(word)
-                ]
+            return self._get_word_topic_index(
+                word=word,
+                word_topic_relatednesses=None,
+                word_topic_indices=None,
+            )
 
         def find_next_topic_word(starting_index: int) -> int:
             index = starting_index
 
-            while index < len(words) and\
-                    get_word_topic_index(words[index]) != topic_index:
+            while (index < len(words)
+                   and get_word_topic_index(words[index]) != topic_index):
                 index += 1
 
             if index == len(words):
@@ -329,26 +405,123 @@ class _IntratextCoherenceScore(_BaseCoherenceScore):
             return None
 
         sums = list()
+        border_left_index = 0
+        border_right_index = len(words) - 1
 
         while word_index < len(words) and word_index != -1:
             original_word_index = word_index
 
-            window_lower_bound = word_index - int(np.floor(self._window // 2))
-            window_upper_bound = word_index + int(np.ceil(self._window // 2))
-
-            sum_in_window = np.sum(
-                [
-                    _IntratextCoherenceScore._get_relatedness(
-                        w, topic, word_topic_relatednesses
-                    )
-                    for w in words[window_lower_bound:window_upper_bound]
-                ]
+            window_lower_bound = max(
+                border_left_index, word_index - self._window // 2
             )
+            window_upper_bound = min(
+                border_right_index, word_index + self._window // 2
+            ) + 1
+
+            assert window_lower_bound <= word_index
+
+            # sum_in_window = sum(  # np.sum
+            #     [
+            #         self._get_relatedness(w, topic, word_topic_relatednesses)
+            #         for w in words[window_lower_bound:window_upper_bound]
+            #     ]
+            # )
+
+            sum_in_window = 0.0
+
+            for j in range(window_lower_bound, window_upper_bound):
+                sum_in_window = sum_in_window + self._get_relatedness(
+                    words[j], topic, None
+                )
 
             sums.append(sum_in_window)
 
             word_index = find_next_topic_word(window_upper_bound)
+            border_left_index = window_upper_bound
 
             assert word_index > original_word_index or word_index == -1
 
         return float(np.mean(sums))
+
+    def _compute_variance_in_window(
+            self,
+            topic: str,
+            words: List[WordType],
+            word_topic_relatednesses: pd.DataFrame) -> Union[float, None]:
+
+        topic_relatednesses = [
+            self._get_relatedness(word, topic, None)
+            for word in words
+        ]
+
+        variances = list()
+        index = 0
+
+        while index == 0 or index + self._window - 1 < len(words):
+            relatedness_window = topic_relatednesses[index:index + self._window]
+            # TODO: better differentiate good and bad topics?..
+            #  (low variance is not necessarily a good "goodness" sign:
+            #  for example, sequences [100, 100, 100]
+            #  and [-17.5, -17.5, -17.5] both have zero variance)
+            variances.append(np.var(relatedness_window))
+
+            index += 1
+
+        if len(variances) == 0:
+            return None
+        else:
+            return -1 * float(np.mean(variances))  # the higher the better
+
+    def _compute_focus_consistency(
+            self,
+            topic: str,
+            words: List[WordType],
+            word_topic_relatednesses: pd.DataFrame) -> Union[float, None]:
+
+        if len(words) == 0:
+            return None
+
+        # word_topic_indices = np.argmax(word_topic_relatednesses.values, axis=1)
+
+        def get_word_topic_index(word: WordType) -> int:
+            return self._get_word_topic_index(
+                word=word,
+                word_topic_relatednesses=None,
+                word_topic_indices=None,
+            )
+
+        word_topics = [
+            word_topic_relatednesses.columns[get_word_topic_index(word)]
+            for word in words
+        ]
+
+        differences = list()
+        index = 0
+
+        while index + 1 < len(words):  # like window = 2
+            cur_word, next_word = words[index], words[index + 1]
+            cur_topic, next_topic = word_topics[index], word_topics[index + 1]
+
+            r_cw_ct = self._get_relatedness(
+                cur_word, cur_topic, None
+            )
+            r_cw_nt = self._get_relatedness(
+                cur_word, next_topic, None
+            )
+            r_nw_ct = self._get_relatedness(
+                next_word, cur_topic, None
+            )
+            r_nw_nt = self._get_relatedness(
+                next_word, next_topic, None
+            )
+
+            diff1 = abs(r_cw_ct - r_nw_ct)
+            diff2 = abs(r_cw_nt - r_nw_nt)
+            differences.append(diff1 + diff2)
+
+            index += 1
+
+        if len(differences) == 0:
+            return None
+        else:
+            return -1 * float(np.mean(differences))  # the higher the better

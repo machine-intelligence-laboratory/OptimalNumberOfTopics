@@ -69,8 +69,9 @@ def compute_phi(
 
     word_in_word_frequencies, document_frequencies = _count_word_in_word_frequencies(
         dataset=dataset,
+        vocabulary_size=len(phi_index),
         text_column=text_column,
-        word2index=word2index
+        word2index=word2index,
     )
     word_in_word_probabilities = _count_word_in_word_probabilities(
         word_in_word_frequencies
@@ -122,6 +123,7 @@ def _check_clusterization_distance_func(
 
 def _count_word_in_word_frequencies(
         dataset: Dataset,
+        vocabulary_size: int,
         text_column: str,
         word2index: Dict[str, int],
         split_on_paragraphs: bool = True,
@@ -130,13 +132,11 @@ def _count_word_in_word_frequencies(
         smoothing_value: float = 0.01,
         num_docs_to_log: int = 500) -> Tuple[np.ndarray, np.ndarray]:  # 2D, 1D
 
-    words_dimension_size = max(list(word2index.values())) + 1
-
     frequencies = np.zeros(
-        shape=(words_dimension_size, words_dimension_size)
+        shape=(vocabulary_size, vocabulary_size)
     )
     document_frequencies = np.zeros(
-        shape=(words_dimension_size,)
+        shape=(vocabulary_size,)
     )
 
     def process_words(words: List[str]) -> None:

@@ -27,7 +27,7 @@ def _compute_kl(T, theta, doc_lengths):
     theta_distrib = theta.dot(doc_lengths)
 
     # TODO: dtype was 'object'? how could it be?
-    theta_distrib = np.array(theta_distrib.values, dtype=np.float)
+    theta_distrib = np.array(theta_distrib.values, dtype=uniform_distrib.dtype)
 
     return stats.entropy(uniform_distrib, theta_distrib)
 

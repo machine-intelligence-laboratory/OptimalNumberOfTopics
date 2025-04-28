@@ -1,14 +1,19 @@
-from scipy.spatial.distance import pdist
-import numpy as np
-from scipy.spatial.distance import squareform
-import pandas as pd
-from topicnet.cooking_machine.models import (
-    BaseScore as BaseTopicNetScore,
-    TopicModel
-)
+import warnings
+
 from typing import (
     List,
     Union
+)
+
+import numpy as np
+import pandas as pd
+
+from scipy.spatial.distance import pdist
+from scipy.spatial.distance import squareform
+
+from topicnet.cooking_machine.models import (
+    BaseScore as BaseTopicNetScore,
+    TopicModel
 )
 
 from .base_custom_score import BaseCustomScore
@@ -80,8 +85,9 @@ class DiversityScore(BaseCustomScore):
             name: str,
             metric: str = L2,
             class_ids: Union[List[str], str] = None,
+            topic_names: List[str] = None,
             closest: bool = False):
-        '''
+        """
         Parameters
         ----------
         metric
@@ -91,27 +97,41 @@ class DiversityScore(BaseCustomScore):
             (Actually, supports anything implemented in scipy.spatial.distance,
             but not everything is sanity-checked)
         class_ids
+        topic_names
         closest
             if False, the score will calculate average pairwise distance (default)
             if True, will calculate the average distance to the closest topic
-        '''
 
+        """
         super().__init__(name)
 
         metric = metric.lower()
 
         self._metric = metric
         self._class_ids = class_ids
-
+        self._topic_names = topic_names
         self._closest = closest
+
         self._score = self._initialize()
 
+        if self._topic_names is None:
+            warnings.warn(
+                'Make sure you do not compute diversity with background topics!'
+                ' Specify the `topic_names` parameter if needed.'
+            )
+
     def _initialize(self) -> BaseTopicNetScore:
-        return _DiversityScore(self._metric, self._class_ids, self._closest)
+        return _DiversityScore(self._metric, self._class_ids, self._topic_names, self._closest)
 
 
 class _DiversityScore(BaseTopicNetScore):
-    def __init__(self, metric: str, class_ids: Union[List[str], str] = None, closest: bool = False):
+    def __init__(
+            self,
+            metric: str,
+            class_ids: Union[List[str], str] = None,
+            topic_names: List[str] = None,
+            closest: bool = False
+            ):
         super().__init__()
 
         metric = metric.lower()
@@ -128,16 +148,31 @@ class _DiversityScore(BaseTopicNetScore):
 
         self._metric = metric
         self._class_ids = class_ids
+        self._topic_names = topic_names
         self.closest = closest
 
     def call(self, model: TopicModel):
         phi = model.get_phi(class_ids=self._class_ids)
+        all_topic_names = list(phi.columns)
+
+        if self._topic_names is not None:
+            phi = phi.loc[:, self._topic_names]
+        else:
+            phi = phi.loc[:, all_topic_names]
 
         if self._metric == "hellinger":
             matrix = np.sqrt(phi.T)
             condensed_distances = pdist(matrix, metric='euclidean') / np.sqrt(2)
         else:
             condensed_distances = pdist(phi.T, metric=self._metric)
+
+        orig_num_dists = len(condensed_distances)
+        condensed_distances = condensed_distances[np.isfinite(condensed_distances)]
+        filtered_num_dists = len(condensed_distances)
+        
+        if filtered_num_dists < 0.9 * orig_num_dists:
+            print(f'Skipping computation of dists: {(filtered_num_dists, orig_num_dists)}.')
+            return -1
 
         if self.closest:
             df = pd.DataFrame(

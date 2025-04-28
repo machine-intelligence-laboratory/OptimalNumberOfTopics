@@ -63,8 +63,15 @@ class _SpectralDivergenceScore(BaseTopicNetScore):
         phi = model.get_phi(class_ids=self.modalities)
 
         c_m1 = np.linalg.svd(phi, compute_uv=False)
+
         c_m2 = self.document_lengths.dot(theta.T)
-        c_m2 += 0.0001  # we need this to prevent components equal to zero
+        c_m2 = c_m2.to_numpy()
+
+        # Otherwise, _symmetric_kl will result in error (np.float32 vs np.float arrays...)
+        c_m2 = c_m2.astype(c_m1.dtype, copy=False)
+
+        # We need this to prevent components equal to zero
+        c_m2 += 0.0001
 
         if len(c_m1) != phi.shape[1]:
             warnings.warn(
@@ -76,10 +83,10 @@ class _SpectralDivergenceScore(BaseTopicNetScore):
 
             return 1.0
 
-        # we do not need to normalize these vectors
+        # We do not need to normalize these vectors
         return _symmetric_kl(c_m1, c_m2)
 
-    # TODO: this piece is copy-pastd among three different scores
+    # TODO: this piece is copy-pasted among three different scores
     def save(self, path: str) -> None:
         dataset = self._dataset
         self._dataset = None
